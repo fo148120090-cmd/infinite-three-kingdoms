@@ -63,6 +63,25 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     }
     if (path.length !== distance) return { units, message: '돌진 경로가 전장을 벗어납니다.', success: false };
 
+    // 목표 적 칸은 관통하고, 뒤에 연속 배치된 생존 적이 있으면 계속 타격한다.
+    // 최초의 빈 칸에 도달하면 그 칸에 착지하며, 아군 칸에는 절대 겹치지 않는다.
+    let landing: { x: number; y: number } | null = null;
+    for (let step = distance + 1; ; step += 1) {
+      const x = caster.x + dx * step;
+      const y = caster.y + dy * step;
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) break;
+      const occupant = next.find((u) => u.currentHp > 0 && u.x === x && u.y === y && u.id !== caster.id);
+      if (!occupant) {
+        landing = { x, y };
+        break;
+      }
+      if (occupant.team === 'enemy') {
+        path.push({ x, y });
+        continue;
+      }
+      break;
+    }
+
     const pathKeys = new Set(path.map(({ x, y }) => `${x},${y}`));
     const hitEnemies = aliveEnemies(next).filter((u) => pathKeys.has(`${u.x},${u.y}`));
     if (!hitEnemies.length) return { units, message: '돌진 경로에 적이 필요합니다.', success: false };
@@ -74,10 +93,11 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
       return { ...u, currentHp: Math.max(0, u.currentHp - damage) };
     });
 
-    const destination = path[path.length - 1];
-    const blocked = next.some((u) => u.currentHp > 0 && u.id !== caster.id && u.x === destination.x && u.y === destination.y);
-    if (!blocked) next = next.map((u) => u.id === caster.id ? { ...u, x: destination.x, y: destination.y } : u);
-    message += ` · 직선 ${distance}칸 관통 · ${hitEnemies.length}명 타격`;
+    if (landing) {
+      next = next.map((u) => u.id === caster.id ? { ...u, x: landing!.x, y: landing!.y } : u);
+    }
+    const landingText = landing ? ` · ${landing.x + 1},${landing.y + 1}칸 착지` : ' · 착지 가능한 칸 없음';
+    message += ` · 직선 ${path.length}칸 관통 · ${hitEnemies.length}명 타격${landingText}`;
     return finish();
   }
   if (name === '천뢰') {
