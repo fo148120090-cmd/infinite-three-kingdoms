@@ -4,30 +4,7 @@ import BattleEngine from './BattleEngine';
 import './battle-engine.css';
 
 const KEY='infinite-three-kingdoms-save-v2';
-const ranges:Record<string,number>={유비:2,관우:1,장비:1,조운:1,제갈량:3,조조:2,하후돈:1,손권:2,여포:1,초선:2};
-const moves:Record<string,number>={유비:3,관우:3,장비:2,조운:4,제갈량:2,조조:3,하후돈:3,손권:3,여포:4,초선:3};
-const terrainAt=(i:number)=>i===17||i===18||i===24?'forest':i===11||i===12?'hill':i===26||i===27?'water':i===32?'fort':'plain';
-const terrainCost=(i:number)=>terrainAt(i)==='forest'?2:1;
 function readSave(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}}
-function BattleGuide(){
- useEffect(()=>{
-  const remaining:Record<string,number>={},previous:Record<string,number>={};
-  const resetMovement=()=>Object.keys(moves).forEach(k=>remaining[k]=moves[k]);
-  const paint=()=>{
-   const grids=Array.from(document.querySelectorAll('.battle-grid,.grid')) as HTMLElement[],grid=grids.find(g=>g.children.length===42);if(!grid)return;
-   const cells=Array.from(grid.children) as HTMLElement[];
-   const selected=Object.keys(ranges).find(name=>Array.from(document.querySelectorAll('b')).some(x=>x.textContent?.trim()===name))||'';
-   cells.forEach(cell=>{cell.style.position='relative';cell.style.transition='box-shadow .12s, background .12s';cell.style.boxShadow=''});if(!selected)return;
-   const selectedIndex=cells.findIndex(c=>(c.textContent||'').includes(selected));if(selectedIndex<0)return;
-   const prev=previous[selected];if(prev!==undefined&&prev!==selectedIndex)remaining[selected]=Math.max(0,(remaining[selected]??moves[selected])-terrainCost(selectedIndex));previous[selected]=selectedIndex;if(remaining[selected]===undefined)remaining[selected]=moves[selected];
-   const sx=selectedIndex%7,sy=Math.floor(selectedIndex/7);
-   cells.forEach((cell,i)=>{const text=cell.textContent||'';if(!text)return;const x=i%7,y=Math.floor(i/7),d=Math.abs(x-sx)+Math.abs(y-sy),occupied=/🟦|🟥/.test(text),water=terrainAt(i)==='water';if(text.includes(selected))cell.style.boxShadow='inset 0 0 0 3px #91a0ff';else if(/🟥/.test(text)&&d<=ranges[selected])cell.style.boxShadow='inset 0 0 0 3px #bd5d5d';else if(!occupied&&!water&&d>0&&d<=remaining[selected])cell.style.boxShadow='inset 0 0 0 2px #3f8a91'});
-  };
-  const onClick=(e:MouseEvent)=>{const el=e.target as HTMLElement,button=el.closest('button');if(button?.textContent?.includes('턴 종료'))resetMovement();if(button?.closest('.grid,.battle-grid')){window.setTimeout(paint,30);window.setTimeout(paint,180)}};
-  document.addEventListener('click',onClick,true);const observer=new MutationObserver(paint);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(paint,250);paint();
-  return()=>{document.removeEventListener('click',onClick,true);observer.disconnect();window.clearInterval(timer)};
- },[]);return null;
-}
 function Settings(){
  const[open,setOpen]=useState(false),[save,setSave]=useState(readSave),refresh=()=>setSave(readSave());
  const reset=()=>{if(!window.confirm('게임 진행 데이터를 초기화할까요?'))return;localStorage.removeItem(KEY);window.location.reload()};
@@ -45,4 +22,4 @@ function BattleEngineBridge(){
  },[]);
  return active?<div className="be-overlay"><BattleEngine/></div>:null;
 }
-export default function AppShell(){return <><App/><BattleGuide/><BattleEngineBridge/><Settings/></>}
+export default function AppShell(){return <><App/><BattleEngineBridge/><Settings/></>}
