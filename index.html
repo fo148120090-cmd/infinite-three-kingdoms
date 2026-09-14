@@ -1,16 +1,35 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=no"/><meta name="theme-color" content="#0b1020"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><title>무한삼국지: 천탑전기</title><style>html,body,#root{margin:0;min-height:100%;background:#0b0f16}*{box-sizing:border-box}button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}body{-webkit-font-smoothing:antialiased;overscroll-behavior:none}@media(max-width:640px){body{font-size:14px}button{min-height:42px}.battle-grid{gap:3px!important}.battle-grid button{min-height:58px!important;padding:4px!important;font-size:12px}.battle-actions{position:sticky;bottom:0;z-index:5;padding:8px!important;background:rgba(11,15,22,.96);backdrop-filter:blur(8px)}.mobile-nav{position:sticky;top:0;z-index:6;padding:6px!important;background:rgba(11,15,22,.96);backdrop-filter:blur(8px)}.mobile-card{padding:10px!important}.mobile-resource{font-size:12px}.tower-tile-move{box-shadow:inset 0 0 0 2px #4da3ff,0 0 10px rgba(77,163,255,.35)!important;background:#173454!important}.tower-tile-attack{box-shadow:inset 0 0 0 2px #ff5c69,0 0 10px rgba(255,92,105,.35)!important;background:#4a2028!important}.tower-tile-selected{box-shadow:inset 0 0 0 3px #ffd54a,0 0 12px rgba(255,213,74,.35)!important}.tower-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin:8px 0;color:#b9c3d3}.tower-legend span{padding:5px 8px;border-radius:999px;background:#151b25}.tower-legend .mv{border:1px solid #4da3ff}.tower-legend .at{border:1px solid #ff5c69}.tower-legend .sel{border:1px solid #ffd54a}.tower-settings{position:fixed;right:12px;top:max(12px,env(safe-area-inset-top));z-index:1000;width:44px;height:44px;min-height:44px;border:1px solid #3b465b;border-radius:50%;background:#111827;color:#fff;font-size:20px;box-shadow:0 5px 20px rgba(0,0,0,.35)}.tower-settings-modal{position:fixed;inset:0;z-index:999;background:rgba(3,6,12,.78);display:flex;align-items:flex-end;justify-content:center;padding:12px}.tower-settings-panel{width:min(520px,100%);max-height:82vh;overflow:auto;background:#111827;border:1px solid #344057;border-radius:18px;padding:16px;color:#eef3fb;box-shadow:0 20px 60px rgba(0,0,0,.5)}.tower-settings-panel h2{margin:0 0 12px}.tower-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tower-settings-stat{padding:10px;border-radius:10px;background:#182132;border:1px solid #29364b}.tower-settings-stat small{display:block;color:#9aa6b8}.tower-settings-close,.tower-settings-reset{width:100%;margin-top:10px;border-radius:10px;padding:11px;border:1px solid #39465b;background:#192235;color:#fff}.tower-settings-reset{border-color:#8a4650;background:#3a1f25}}</style></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script><script>
-(function(){
-const KEY='infinite-three-kingdoms-save-v2';
-const ranges={유비:2,관우:1,장비:1,조운:1,제갈량:3,조조:2,하후돈:1,손권:2,여포:1,초선:2};
-const moves={유비:3,관우:3,장비:2,조운:4,제갈량:2,조조:3,하후돈:3,손권:3,여포:4,초선:3};
-let lastBattle=false,lastSelected='',moveLeft=null;
-function save(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}}
-function isBattle(){return !!document.querySelector('.battle-grid')||Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('기본공격')&&b.textContent.includes('턴 종료'))}
-function ensureLegend(){if(!isBattle())return;if(document.querySelector('.tower-legend'))return;const grid=document.querySelector('.battle-grid');if(!grid)return;const l=document.createElement('div');l.className='tower-legend';l.innerHTML='<span class="mv">🔵 이동 가능</span><span class="at">🔴 공격 가능</span><span class="sel">🟡 선택 장수</span>';grid.parentNode.insertBefore(l,grid)}
-function paint(){if(!isBattle())return;ensureLegend();const grid=document.querySelector('.battle-grid');if(!grid)return;const cells=Array.from(grid.children);const action=Array.from(document.querySelectorAll('b')).find(x=>Object.prototype.hasOwnProperty.call(ranges,x.textContent.trim()));const name=action?action.textContent.trim():'';if(name!==lastSelected){lastSelected=name;moveLeft=moves[name]??null}cells.forEach((c,i)=>{c.classList.remove('tower-tile-move','tower-tile-attack','tower-tile-selected');const text=c.textContent||'';if(name&&text.includes(name))c.classList.add('tower-tile-selected');const x=i%7,y=Math.floor(i/7), occupied=/🟦|🟥/.test(text);if(!name)return;const selectedCell=c.classList.contains('tower-tile-selected');if(selectedCell)return;const d=cells.length===42?Math.abs(x-(cells.findIndex(z=>(z.textContent||'').includes(name))%7))+Math.abs(y-Math.floor(cells.findIndex(z=>(z.textContent||'').includes(name))/7)):99;if(/🟥/.test(text)&&d<=ranges[name])c.classList.add('tower-tile-attack');else if(!occupied&&d>0&&d<=(moveLeft??moves[name])&&c.dataset.water!=='1')c.classList.add('tower-tile-move')});lastBattle=true}
-function installSettings(){if(document.querySelector('.tower-settings'))return;const b=document.createElement('button');b.className='tower-settings';b.setAttribute('aria-label','게임 설정');b.textContent='⚙️';b.onclick=()=>{const s=save(),owned=Array.isArray(s.owned)?s.owned:[],form=Array.isArray(s.formation)?s.formation:[],eq=s.equipment&&typeof s.equipment==='object'?Object.values(s.equipment):[];const m=document.createElement('div');m.className='tower-settings-modal';m.innerHTML='<div class="tower-settings-panel"><h2>⚙️ 게임 설정</h2><div class="tower-settings-grid"><div class="tower-settings-stat"><small>천탑 진행</small><b>'+(s.floor||1)+'층</b></div><div class="tower-settings-stat"><small>계정 레벨</small><b>Lv.'+(s.level||1)+'</b></div><div class="tower-settings-stat"><small>보유 장수</small><b>'+owned.length+'명</b></div><div class="tower-settings-stat"><small>현재 편성</small><b>'+form.length+'/5명</b></div><div class="tower-settings-stat"><small>보옥</small><b>💎 '+(s.gems||0)+'</b></div><div class="tower-settings-stat"><small>금화</small><b>🪙 '+(s.gold||0)+'</b></div></div><p style="color:#9aa6b8;font-size:13px;line-height:1.5">수동 턴제 전투 · 7×6 전장 · 삼국지 장수 vs 판타지 몬스터<br>자동전투와 궁극기는 사용하지 않습니다.</p><button class="tower-settings-reset">게임 데이터 초기화</button><button class="tower-settings-close">닫기</button></div>';m.querySelector('.tower-settings-close').onclick=()=>m.remove();m.querySelector('.tower-settings-reset').onclick=()=>{if(confirm('게임 진행 데이터를 초기화할까요?')){localStorage.removeItem(KEY);location.reload()}};m.onclick=e=>{if(e.target===m)m.remove()};document.body.appendChild(m)};document.body.appendChild(b)}
-const obs=new MutationObserver(()=>{installSettings();if(isBattle())paint()});obs.observe(document.body,{childList:true,subtree:true});setInterval(()=>{installSettings();if(isBattle())paint()},500);
-installSettings();
-})();
-</script></body></html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=no"/>
+<meta name="theme-color" content="#0b1020"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>무한삼국지: 천탑전기</title>
+<style>
+html,body,#root{margin:0;min-height:100%;background:#0b0f16}*{box-sizing:border-box}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}body{-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+@media(max-width:640px){
+ body{font-size:14px}button{min-height:42px}
+ .battle-grid{gap:3px!important}.battle-grid button{min-height:58px!important;padding:4px!important;font-size:12px}
+ .battle-actions{position:sticky;bottom:0;z-index:5;padding:8px!important;background:rgba(11,15,22,.96);backdrop-filter:blur(8px)}
+ .mobile-nav{position:sticky;top:0;z-index:6;padding:6px!important;background:rgba(11,15,22,.96);backdrop-filter:blur(8px)}
+ .mobile-card{padding:10px!important}.mobile-resource{font-size:12px}
+ .tower-tile-move{box-shadow:inset 0 0 0 2px #4da3ff,0 0 10px rgba(77,163,255,.35)!important;background:#173454!important}
+ .tower-tile-attack{box-shadow:inset 0 0 0 2px #ff5c69,0 0 10px rgba(255,92,105,.35)!important;background:#4a2028!important}
+ .tower-tile-selected{box-shadow:inset 0 0 0 3px #ffd54a,0 0 12px rgba(255,213,74,.35)!important}
+ .tower-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin:8px 0;color:#b9c3d3}
+ .tower-legend span{padding:5px 8px;border-radius:999px;background:#151b25}.tower-legend .mv{border:1px solid #4da3ff}.tower-legend .at{border:1px solid #ff5c69}.tower-legend .sel{border:1px solid #ffd54a}
+ .tower-settings{position:fixed;right:12px;top:max(12px,env(safe-area-inset-top));z-index:1000;width:44px;height:44px;min-height:44px;border:1px solid #3b465b;border-radius:50%;background:#111827;color:#fff;font-size:20px;box-shadow:0 5px 20px rgba(0,0,0,.35)}
+ .tower-settings-modal{position:fixed;inset:0;z-index:999;background:rgba(3,6,12,.78);display:flex;align-items:flex-end;justify-content:center;padding:12px}
+ .tower-settings-panel{width:min(520px,100%);max-height:82vh;overflow:auto;background:#111827;border:1px solid #344057;border-radius:18px;padding:16px;color:#eef3fb;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+ .tower-settings-panel h2{margin:0 0 12px}.tower-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .tower-settings-stat{padding:10px;border-radius:10px;background:#182132;border:1px solid #29364b}.tower-settings-stat small{display:block;color:#9aa6b8}
+ .tower-settings-close,.tower-settings-reset{width:100%;margin-top:10px;border-radius:10px;padding:11px;border:1px solid #39465b;background:#192235;color:#fff}
+ .tower-settings-reset{border-color:#8a4650;background:#3a1f25}.tower-settings-note{color:#9aa6b8;font-size:13px;line-height:1.5}
+}
+</style>
+</head>
+<body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+</html>
