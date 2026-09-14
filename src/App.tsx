@@ -1,53 +1,95 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Save, Sparkles, Sword, Shield, Footprints, Crosshair, Flame, RotateCcw } from 'lucide-react';
+import { ChevronRight, Save, Sparkles, Sword, Shield, RotateCcw } from 'lucide-react';
 
-type Faction='Wei'|'Shu'|'Wu'|'Warlords'|'Yellow Turbans'|'Heavenly Mandate';
-type General={id:string;name:string;title:string;faction:Faction;role:string;hp:number;atk:number;range:number;move:number;skill:string;skillPower:number;ultimate:string;ultimatePower:number;equipment:string};
-type Unit=General & {team:'player'|'enemy';x:number;y:number;currentHp:number;acted:boolean;buff:number;debuff:number;rage:number;stunned:number;facing:'up'|'down'|'left'|'right'};
-type Pos={x:number;y:number};
+type Faction = 'Wei' | 'Shu' | 'Wu' | 'Warlords';
+type General = {
+  id: string; name: string; title: string; faction: Faction; role: string;
+  hp: number; atk: number; range: number; move: number;
+  skill: string; skillPower: number; ultimate: string; ultimatePower: number; equipment: string;
+};
+type Unit = General & { team: 'player' | 'enemy'; x: number; y: number; currentHp: number; acted: boolean; rage: number; buff: number; stunned: boolean };
+type Terrain = 'plain' | 'forest' | 'hill' | 'water' | 'fort';
 
-type Terrain='plain'|'forest'|'hill'|'water'|'fort';
-const terrain:Terrain[] = Array.from({length:42},(_,i)=> i===17||i===18||i===24?'forest':i===11||i===12?'hill':i===26||i===27?'water':i===32?'fort':'plain');
-const terrainName:Record<Terrain,string>={plain:'평지',forest:'숲',hill:'고지',water:'수로',fort:'진지'};
-const generals:General[]=[
- ['liu-bei','유비','인덕의 군주','Shu','지원',120,22,2,3,'인덕의 격려',0,'인덕의 대의',0,'쌍검'],
- ['guan-yu','관우','미염공','Shu','전사',150,38,1,3,'청룡참',28,'청룡언월도',55,'청룡언월도'],
- ['zhang-fei','장비','만인지적','Shu','수호',190,28,1,2,'호통',0,'장판교 포효',34,'장팔사모'],
- ['zhao-yun','조운','상산의 용','Shu','기병',135,34,1,4,'용진',18,'칠진칠출',48,'용담창'],
- ['zhuge-liang','제갈량','와룡','Shu','책사',95,30,3,2,'천뢰',24,'공성계',42,'백우선'],
- ['cao-cao','조조','위무제','Wei','책사',125,29,2,3,'간웅의 명령',0,'위무의 천명',36,'의천검'],
- ['xiahou-dun','하후돈','독안의 맹장','Wei','전사',160,35,1,3,'맹격',20,'독안참',45,'칠성도'],
- ['sun-quan','손권','강동의 호랑이','Wu','지원',130,27,2,3,'강동의 결의',0,'강동패왕',30,'벽옥검'],
- ['lu-bu','여포','천하무쌍','Warlords','기병',180,48,1,4,'천하무쌍',42,'신마난무',70,'방천화극'],
- ['diao-chan','초선','경국지색','Warlords','지원',90,24,2,3,'매혹',0,'폐월의 춤',32,'금선연'],
-].map(([id,name,title,faction,role,hp,atk,range,move,skill,skillPower,ultimate,ultimatePower,equipment])=>({id,name,title,faction:faction as Faction,role,hp:Number(hp),atk:Number(atk),range:Number(range),move:Number(move),skill,skillPower:Number(skillPower),ultimate,ultimatePower:Number(ultimatePower),equipment}));
-const key='infinite-three-kingdoms-save'; const W=7,H=6;
-const dist=(a:Pos,b:Pos)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
-const terrainMove=(t:Terrain)=>t==='forest'?2:t==='water'?99:1;
-function App(){
- const [screen,setScreen]=useState<'home'|'tower'|'battle'|'generals'>('home');
- const [floor,setFloor]=useState(()=>Number(localStorage.getItem(key)||'1'));
- const [selected,setSelected]=useState('guan-yu'); const [target,setTarget]=useState<string|null>(null);
- const [units,setUnits]=useState<Unit[]>([]); const [turn,setTurn]=useState<'player'|'enemy'>('player');
- const [mode,setMode]=useState<'move'|'attack'|'skill'|'ultimate'>('move'); const [round,setRound]=useState(1);
- const [log,setLog]=useState<string[]>(['천탑 제1층 전투 준비 완료.']);
- const team=useMemo(()=>generals.slice(0,5),[]); const selectedUnit=units.find(u=>u.id===selected);
- const addLog=(text:string)=>setLog(l=>[text,...l].slice(0,8)); const alive=(u:Unit)=>u.currentHp>0;
- const startBattle=()=>{const ps=team.map((g,i)=>({...g,team:'player' as const,x:i%3,y:5-Math.floor(i/3),currentHp:g.hp,acted:false,buff:0,debuff:0,rage:0,stunned:0,facing:'up' as const}));const enemyIds=floor%10===0?['lu-bu','xiahou-dun','cao-cao']:['xiahou-dun','zhang-fei','sun-quan'];const es=enemyIds.map((id,i)=>{const g=generals.find(x=>x.id===id)!;return {...g,team:'enemy' as const,x:4+(i%2),y:i+1,currentHp:g.hp+floor*5,acted:false,buff:0,debuff:0,rage:0,stunned:0,facing:'down' as const}});setUnits([...ps,...es]);setSelected('guan-yu');setTarget(null);setTurn('player');setMode('move');setRound(1);setLog([`천탑 ${floor}층: ${floor%10===0?'보스전! ':''}적 장수 ${es.length}명이 등장했다.`]);setScreen('battle');};
- const save=()=>{localStorage.setItem(key,String(floor));addLog('진행 상황을 저장했습니다.');};
- const reachable=selectedUnit&&turn==='player'&&!selectedUnit.acted?Array.from({length:W*H},(_,i)=>({x:i%W,y:Math.floor(i/W)})).filter(p=>dist(selectedUnit,p)<=selectedUnit.move&&terrainMove(terrain[p.y*W+p.x])<99&&!units.some(u=>alive(u)&&u.x===p.x&&u.y===p.y)):[];
- const moveTo=(p:Pos)=>{if(!selectedUnit||mode!=='move'||!reachable.some(r=>r.x===p.x&&r.y===p.y))return;const old={x:selectedUnit.x,y:selectedUnit.y};setUnits(us=>us.map(u=>u.id===selected?{...u,x:p.x,y:p.y,facing:p.x>old.x?'right':p.x<old.x?'left':p.y>old.y?'down':'up'}:u));setMode('attack');addLog(`${selectedUnit.name}이(가) ${terrainName[terrain[p.y*W+p.x]]}으로 이동했다.`);};
- const damage=(a:Unit,t:Unit,bonus=0)=>{const dx=t.x-a.x,dy=t.y-a.y;const back=t.facing==='up'&&dy>0||t.facing==='down'&&dy<0||t.facing==='left'&&dx>0||t.facing==='right'&&dx<0;const side=!back&&((t.facing==='up'||t.facing==='down')&&dx!==0||(t.facing==='left'||t.facing==='right')&&dy!==0);const terrainBonus=terrain[t.y*W+t.x]==='fort'?8:terrain[t.y*W+t.x]==='hill'?4:0;return Math.max(1,a.atk+a.buff-a.debuff+bonus+terrainBonus-Math.floor(t.hp*.08)+(back?Math.floor(a.atk*.35):side?Math.floor(a.atk*.15):0));};
- const spendAction=(id:string)=>setUnits(us=>us.map(u=>u.id===id?{...u,acted:true,rage:Math.min(100,u.rage+20)}:u));
- const attack=()=>{if(!selectedUnit||selectedUnit.team!=='player'||selectedUnit.acted||turn!=='player')return;const t=units.find(u=>u.id===target&&u.team==='enemy'&&alive(u));if(!t||dist(selectedUnit,t)>selectedUnit.range){addLog('공격할 적을 선택하세요.');return;}const d=damage(selectedUnit,t);const counter=alive(t)&&dist(selectedUnit,t)<=t.range;setUnits(us=>us.map(u=>u.id===selected?{...u,acted:true,rage:Math.min(100,u.rage+25)}:u.id===t.id?{...u,currentHp:Math.max(0,u.currentHp-d),rage:Math.min(100,u.rage+15)}:u));addLog(`${selectedUnit.name}의 공격 → ${t.name} ${d} 피해${d>selectedUnit.atk?' (후방/측면 보정)':''}`);if(counter&&t.currentHp-d>0)setTimeout(()=>{setUnits(us=>us.map(u=>u.id===selected&&alive(u)?{...u,currentHp:Math.max(0,u.currentHp-damage(t,u))}:u));addLog(`${t.name}의 반격!`);},120);setTarget(null);setMode('move');};
- const useSkill=()=>{if(!selectedUnit||selectedUnit.acted||turn!=='player')return;const hit=units.filter(u=>u.team==='enemy'&&alive(u)&&dist(selectedUnit,u)<=selectedUnit.range+(selectedUnit.skill==='천뢰'?1:0));if(selectedUnit.skill==='인덕의 격려'){const ally=units.find(u=>u.team==='player'&&u.id!==selectedUnit.id&&alive(u));if(!ally)return;setUnits(us=>us.map(u=>u.id===ally.id?{...u,buff:u.buff+8}:u.id===selected?{...u,acted:true}:u));addLog(`${ally.name} 공격력 +8`);return;}if(selectedUnit.skill==='강동의 결의'){setUnits(us=>us.map(u=>u.team==='player'&&alive(u)?{...u,buff:u.buff+3}:u.id===selected?{...u,acted:true}:u));addLog('아군 전체 공격력 +3');return;}if(selectedUnit.skill==='호통'){setUnits(us=>us.map(u=>u.id===selected?{...u,acted:true}:u));addLog('호통! 적의 공격 대상을 장비에게 유도했다.');return;}if(selectedUnit.skill==='간웅의 명령'){setUnits(us=>us.map(u=>u.id===selected?{...u,acted:true}:u.team==='enemy'&&alive(u)?{...u,debuff:u.debuff+6}:u));addLog('적 전체 공격력 -6');return;}if(selectedUnit.skill==='매혹'){const t=hit.find(u=>u.id===target)||hit[0];if(!t)return;setUnits(us=>us.map(u=>u.id===selected?{...u,acted:true}:u.id===t.id?{...u,stunned:1}:u));addLog(`${t.name}이(가) 매혹되어 행동 불가`);return;}if(!hit.length){addLog('스킬 범위 안에 적이 없습니다.');return;}const hits=selectedUnit.skill==='천뢰'?hit:hit.filter(u=>u.id===target).length?hit.filter(u=>u.id===target):hit.slice(0,1);setUnits(us=>us.map(u=>u.id===selected?{...u,acted:true,rage:Math.min(100,u.rage+20)}:hits.some(t=>t.id===u.id)?{...u,currentHp:Math.max(0,u.currentHp-damage(selectedUnit,u,selectedUnit.skillPower))}:u));addLog(`${selectedUnit.name}의 ${selectedUnit.skill}! ${hits.length}명 적중`);setTarget(null);setMode('move');};
- const ultimate=()=>{if(!selectedUnit||selectedUnit.rage<100||selectedUnit.acted||turn!=='player')return;const hit=units.filter(u=>u.team==='enemy'&&alive(u)&&dist(selectedUnit,u)<=selectedUnit.range+1);if(!hit.length){addLog('궁극기 범위 안에 적이 없습니다.');return;}const hits=selectedUnit.id==='zhuge-liang'||selectedUnit.id==='lu-bu'?hit:hit.filter(u=>u.id===target).length?hit.filter(u=>u.id===target):hit.slice(0,1);setUnits(us=>us.map(u=>u.id===selected?{...u,acted:true,rage:0}:hits.some(t=>t.id===u.id)?{...u,currentHp:Math.max(0,u.currentHp-damage(selectedUnit,u,selectedUnit.ultimatePower))}:u));addLog(`★ ${selectedUnit.name}의 궁극기 ${selectedUnit.ultimate}!`);setTarget(null);setMode('move');};
- const endTurn=()=>{if(turn!=='player')return;setTurn('enemy');setMode('move');setTimeout(()=>{setUnits(prev=>{let next=prev.map(u=>u.team==='player'?{...u,acted:false}:u);const targets=next.filter(u=>u.team==='player'&&alive(u));next=next.map(e=>{if(e.team!=='enemy'||!alive(e)||e.stunned){if(e.stunned)return {...e,stunned:0,acted:true};return e;}const t=targets.slice().sort((a,b)=>dist(a,e)-dist(b,e))[0];if(!t)return e;if(dist(e,t)<=e.range){const d=damage(e,t);const idx=next.findIndex(u=>u.id===t.id);if(idx>=0)next[idx]={...next[idx],currentHp:Math.max(0,next[idx].currentHp-d)};addLog(`${e.name}의 공격 → ${t.name} ${d} 피해`);}return {...e,acted:true};});return next});setTurn('player');setRound(r=>r+1);},400);};
- const victory=units.length>0&&!units.some(u=>u.team==='enemy'&&alive(u)); const defeat=units.length>0&&!units.some(u=>u.team==='player'&&alive(u));
- const nextFloor=()=>{const n=floor+1;setFloor(n);localStorage.setItem(key,String(n));setScreen('tower');};
- if(screen==='home')return <main className="app"><header><div><small>INFINITE THREE KINGDOMS</small><h1>무한삼국지: 천탑전기</h1><p>삼국지 SRPG · 무한 천탑 · 장수 수집</p></div><button onClick={save}><Save size={16}/> 저장</button></header><section className="hero"><div><span className="badge">MVP BUILD 0.3</span><h2>전장을 지배하라.</h2><p>이동 · 지형 · 전후방 공격 · 협공 · 반격 · 궁극기까지.</p><button className="primary" onClick={()=>setScreen('tower')}>천탑 입장 <ChevronRight/></button></div><div className="orb">∞</div></section><nav className="cards"><button onClick={()=>setScreen('tower')}><Sword/><b>천탑</b><span>{floor}층 진행 중 · 10층 보스</span></button><button onClick={()=>setScreen('generals')}><Shield/><b>장수</b><span>{generals.length}명 · 전용장비 준비</span></button><button><Sparkles/><b>소환</b><span>다음 단계에서 개방</span></button></nav></main>;
- if(screen==='tower')return <main className="app"><header><button className="back" onClick={()=>setScreen('home')}>← 메인</button><h1>천탑</h1><button onClick={save}><Save size={16}/></button></header><section className="tower"><div className="tower-info"><span>현재 진행</span><strong>{floor}층</strong><p>10층 보스 · 50층 대보스 · 100층 대사건</p><button className="primary" onClick={startBattle}>{floor%10===0?'보스전 시작':'전투 시작'}</button></div><div className="floors">{Array.from({length:20},(_,i)=>{const n=floor+i;return <div className={n===floor?'floor active':'floor'} key={n}><small>{n%10===0?'BOSS':''}</small>{n}</div>})}</div></section></main>;
- if(screen==='generals')return <main className="app"><header><button className="back" onClick={()=>setScreen('home')}>← 메인</button><h1>장수</h1><span/></header><div className="roster">{generals.map(g=><article className="general" key={g.id}><div className="portrait">{g.name[0]}</div><div><h3>{g.name} <em>★5</em></h3><p>{g.title} · {g.faction}</p><span>{g.role} · HP {g.hp} · ATK {g.atk} · 이동 {g.move} · 사거리 {g.range}</span><small>스킬: {g.skill} · 궁극기: {g.ultimate}</small><small>전용장비: {g.equipment}</small></div></article>)}</div></main>;
- return <main className="app battle"><header><button className="back" onClick={()=>setScreen('tower')}>← 천탑</button><div><small>천탑 {floor}층 · ROUND {round}</small><h1>전투 {floor%10===0?'· BOSS':''}</h1></div><span className={turn==='player'?'turn':'turn enemy'}>{turn==='player'?'아군 턴':'적 턴'}</span></header><div className="battle-layout"><section><div className="grid">{Array.from({length:W*H},(_,i)=>{const x=i%W,y=Math.floor(i/W),u=units.find(a=>a.x===x&&a.y===y&&alive(a));const canMove=reachable.some(p=>p.x===x&&p.y===y);const enemy=units.find(a=>a.team==='enemy'&&alive(a)&&a.x===x&&a.y===y);const inRange=selectedUnit&&enemy?dist(selectedUnit,enemy)<=selectedUnit.range:false;return <button className={`cell terrain-${terrain[i]} ${u?.team||''} ${u?.id===selected?'selected':''} ${u?.id===target?'chosen-target':''} ${canMove?'moveable':''} ${inRange?'targetable':''}`} key={i} onClick={()=>u?.team==='player'?setSelected(u.id):enemy?setTarget(enemy.id):canMove&&moveTo({x,y})}><span className="terrain-mark">{terrain[i]==='forest'?'♣':terrain[i]==='hill'?'▲':terrain[i]==='water'?'≈':terrain[i]==='fort'?'◆':''}</span>{u&&<><b>{u.name[0]}</b><small>{Math.max(0,u.currentHp)} {u.rage>=100?'★':''}</small></>}</button>})}</div><div className="controls"><b>{selectedUnit?.name||'장수 선택'}</b><button className={mode==='move'?'active-control':''} onClick={()=>setMode('move')}><Footprints/> 이동</button><button className={mode==='attack'?'active-control':''} onClick={()=>setMode('attack')}><Sword/> 공격</button><button onClick={useSkill}><Sparkles/> {selectedUnit?.skill||'스킬'}</button><button className={selectedUnit?.rage===100?'ultimate-ready':''} onClick={ultimate}><Flame/> 궁극기</button><button onClick={endTurn}>턴 종료</button></div><div className="unit-info">{selectedUnit&&<><strong>{selectedUnit.name}</strong><span>HP {Math.max(0,selectedUnit.currentHp)}/{selectedUnit.hp}</span><span>ATK {selectedUnit.atk+selectedUnit.buff-selectedUnit.debuff}</span><span>RAGE {selectedUnit.rage}/100</span><span>{terrainName[terrain[selectedUnit.y*W+selectedUnit.x]]}</span><span>전용 {selectedUnit.equipment}</span></>}</div></section><aside><h3>전투 기록</h3>{log.map((x,i)=><p key={i}>{x}</p>)}<hr/><p>적 HP: {units.filter(u=>u.team==='enemy').reduce((s,u)=>s+Math.max(0,u.currentHp),0)}</p><p>지형: 숲=이동 2 · 고지/진지=방어 유리 · 수로=이동 불가</p>{victory&&<div className="victory"><h2>승리!</h2><p>천탑 {floor}층 돌파 · 보상 획득</p><button className="primary" onClick={nextFloor}>다음 층</button></div>}{defeat&&<div className="victory"><h2>패배</h2><p>전열이 무너졌습니다.</p><button className="primary" onClick={startBattle}><RotateCcw/> 재도전</button></div>}</aside></div></main>;
+type SaveData = { floor: number; gold: number; gems: number; level: number; equipLevel: number; owned: string[] };
+const saveKey = 'infinite-three-kingdoms-save-v2';
+const W = 7, H = 6;
+const terrain: Terrain[] = Array.from({ length: W * H }, (_, i) => i === 17 || i === 18 || i === 24 ? 'forest' : i === 11 || i === 12 ? 'hill' : i === 26 || i === 27 ? 'water' : i === 32 ? 'fort' : 'plain');
+const terrainName: Record<Terrain, string> = { plain: '평지', forest: '숲', hill: '고지', water: '수로', fort: '진지' };
+
+const generals: General[] = [
+  { id:'liu-bei', name:'유비', title:'인덕의 군주', faction:'Shu', role:'지원', hp:120, atk:22, range:2, move:3, skill:'인덕의 격려', skillPower:0, ultimate:'인덕의 대의', ultimatePower:0, equipment:'쌍검' },
+  { id:'guan-yu', name:'관우', title:'미염공', faction:'Shu', role:'전사', hp:150, atk:38, range:1, move:3, skill:'청룡참', skillPower:28, ultimate:'청룡언월도', ultimatePower:55, equipment:'청룡언월도' },
+  { id:'zhang-fei', name:'장비', title:'만인지적', faction:'Shu', role:'수호', hp:190, atk:28, range:1, move:2, skill:'호통', skillPower:0, ultimate:'장판교 포효', ultimatePower:34, equipment:'장팔사모' },
+  { id:'zhao-yun', name:'조운', title:'상산의 용', faction:'Shu', role:'기병', hp:135, atk:34, range:1, move:4, skill:'용진', skillPower:18, ultimate:'칠진칠출', ultimatePower:48, equipment:'용담창' },
+  { id:'zhuge-liang', name:'제갈량', title:'와룡', faction:'Shu', role:'책사', hp:95, atk:30, range:3, move:2, skill:'천뢰', skillPower:24, ultimate:'공성계', ultimatePower:42, equipment:'백우선' },
+  { id:'cao-cao', name:'조조', title:'위무제', faction:'Wei', role:'책사', hp:125, atk:29, range:2, move:3, skill:'간웅의 명령', skillPower:0, ultimate:'위무의 천명', ultimatePower:36, equipment:'의천검' },
+  { id:'xiahou-dun', name:'하후돈', title:'독안의 맹장', faction:'Wei', role:'전사', hp:160, atk:35, range:1, move:3, skill:'맹격', skillPower:20, ultimate:'독안참', ultimatePower:45, equipment:'칠성도' },
+  { id:'sun-quan', name:'손권', title:'강동의 호랑이', faction:'Wu', role:'지원', hp:130, atk:27, range:2, move:3, skill:'강동의 결의', skillPower:0, ultimate:'강동패왕', ultimatePower:30, equipment:'벽옥검' },
+  { id:'lu-bu', name:'여포', title:'천하무쌍', faction:'Warlords', role:'기병', hp:180, atk:48, range:1, move:4, skill:'천하무쌍', skillPower:42, ultimate:'신마난무', ultimatePower:70, equipment:'방천화극' },
+  { id:'diao-chan', name:'초선', title:'경국지색', faction:'Warlords', role:'지원', hp:90, atk:24, range:2, move:3, skill:'매혹', skillPower:0, ultimate:'폐월의 춤', ultimatePower:32, equipment:'금선연' },
+];
+
+const defaultSave: SaveData = { floor:1, gold:5000, gems:300, level:1, equipLevel:0, owned:generals.slice(0,5).map(g=>g.id) };
+const loadSave = (): SaveData => { try { return { ...defaultSave, ...JSON.parse(localStorage.getItem(saveKey) || '{}') }; } catch { return defaultSave; } };
+const dist = (a:{x:number;y:number}, b:{x:number;y:number}) => Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+const stat = (g: General, s: SaveData) => ({ hp:g.hp + (s.level-1)*12, atk:g.atk + (s.level-1)*3 + s.equipLevel*4 });
+
+export default function App() {
+  const [saveData, setSaveData] = useState<SaveData>(() => loadSave());
+  const [screen, setScreen] = useState<'home'|'tower'|'generals'|'summon'|'battle'>('home');
+  const [selected, setSelected] = useState('guan-yu');
+  const [target, setTarget] = useState<string | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [turn, setTurn] = useState<'player'|'enemy'>('player');
+  const [log, setLog] = useState<string[]>(['천탑 전투 준비 완료.']);
+  const [mode, setMode] = useState<'move'|'attack'|'skill'>('move');
+  const selectedUnit = units.find(u => u.id === selected);
+  const addLog = (s:string) => setLog(v => [s, ...v].slice(0,7));
+  const persist = (next: SaveData) => { setSaveData(next); localStorage.setItem(saveKey, JSON.stringify(next)); };
+  const team = useMemo(() => generals.filter(g => saveData.owned.includes(g.id)).slice(0,5), [saveData.owned]);
+
+  const startBattle = () => {
+    const ps = team.map((g,i) => { const st=stat(g,saveData); return { ...g, ...st, team:'player' as const, x:i%3, y:5-Math.floor(i/3), currentHp:st.hp, acted:false, rage:0, buff:0, stunned:false }; });
+    const ids = saveData.floor % 10 === 0 ? ['lu-bu','xiahou-dun','cao-cao'] : ['xiahou-dun','zhang-fei','sun-quan'];
+    const es = ids.map((id,i) => { const g=generals.find(x=>x.id===id)!; const st=stat(g,saveData); return { ...g, ...st, team:'enemy' as const, x:4+(i%2), y:i+1, currentHp:st.hp+saveData.floor*5, acted:false, rage:0, buff:0, stunned:false }; });
+    setUnits([...ps,...es]); setSelected(team[1]?.id || team[0]?.id || 'liu-bei'); setTarget(null); setTurn('player'); setMode('move'); setLog([`천탑 ${saveData.floor}층 ${saveData.floor%10===0?'보스전! ':''}전투 시작.`]); setScreen('battle');
+  };
+
+  const damage = (a:Unit,b:Unit,bonus=0) => {
+    const t=terrain[b.y*W+b.x]; const terrainBonus=t==='fort'?8:t==='hill'?4:0;
+    return Math.max(1,a.atk+a.buff+bonus+terrainBonus-Math.floor(b.hp*.08));
+  };
+  const attack = () => {
+    if(!selectedUnit || selectedUnit.team!=='player' || selectedUnit.acted || turn!=='player') return;
+    const t=units.find(u=>u.id===target && u.team==='enemy' && u.currentHp>0); if(!t || dist(selectedUnit,t)>selectedUnit.range){addLog('공격할 적을 선택하세요.');return;}
+    const d=damage(selectedUnit,t); setUnits(us=>us.map(u=>u.id===selectedUnit.id?{...u,acted:true,rage:Math.min(100,u.rage+25)}:u.id===t.id?{...u,currentHp:Math.max(0,u.currentHp-d),rage:Math.min(100,u.rage+15)}:u)); addLog(`${selectedUnit.name} → ${t.name} ${d} 피해`); setTarget(null); setMode('move');
+  };
+  const skill = () => {
+    if(!selectedUnit || selectedUnit.acted || turn!=='player') return;
+    const enemies=units.filter(u=>u.team==='enemy'&&u.currentHp>0&&dist(selectedUnit,u)<=selectedUnit.range+(selectedUnit.skill==='천뢰'?1:0));
+    if(selectedUnit.skill==='인덕의 격려'){const ally=units.find(u=>u.team==='player'&&u.id!==selectedUnit.id&&u.currentHp>0);if(!ally)return;setUnits(us=>us.map(u=>u.id===ally.id?{...u,buff:u.buff+8}:u.id===selectedUnit.id?{...u,acted:true}:u));addLog(`${ally.name} 공격력 +8`);return;}
+    if(selectedUnit.skill==='강동의 결의'){setUnits(us=>us.map(u=>u.team==='player'&&u.currentHp>0?{...u,buff:u.buff+3}:u.id===selectedUnit.id?{...u,acted:true}:u));addLog('아군 전체 공격력 +3');return;}
+    if(selectedUnit.skill==='간웅의 명령'){setUnits(us=>us.map(u=>u.team==='enemy'&&u.currentHp>0?{...u,atk:Math.max(1,u.atk-6)}:u.id===selectedUnit.id?{...u,acted:true}:u));addLog('적 전체 공격력 -6');return;}
+    const t=enemies.find(u=>u.id===target)||enemies[0]; if(!t){addLog('스킬 범위 안에 적이 없습니다.');return;}
+    setUnits(us=>us.map(u=>u.id===selectedUnit.id?{...u,acted:true,rage:Math.min(100,u.rage+20)}:u.id===t.id?{...u,currentHp:Math.max(0,u.currentHp-damage(selectedUnit,t,selectedUnit.skillPower))}:u)); addLog(`${selectedUnit.name}의 ${selectedUnit.skill}!`); setTarget(null); setMode('move');
+  };
+  const endTurn = () => {
+    if(turn!=='player')return; setTurn('enemy');
+    setTimeout(()=>{setUnits(prev=>{let next=prev.map(u=>u.team==='player'?{...u,acted:false}:u);const targets=next.filter(u=>u.team==='player'&&u.currentHp>0);for(const e of next.filter(u=>u.team==='enemy'&&u.currentHp>0)){const t=targets.slice().sort((a,b)=>dist(a,e)-dist(b,e))[0];if(t&&dist(e,t)<=e.range){const d=damage(e,t);const idx=next.findIndex(x=>x.id===t.id);if(idx>=0)next[idx]={...next[idx],currentHp:Math.max(0,next[idx].currentHp-d)};addLog(`${e.name} → ${t.name} ${d} 피해`);}}return next});setTurn('player');},350);
+  };
+  const victory=units.length>0 && !units.some(u=>u.team==='enemy'&&u.currentHp>0); const defeat=units.length>0 && !units.some(u=>u.team==='player'&&u.currentHp>0);
+  const clearFloor=()=>{const reward=500+(saveData.floor%10===0?1000:0);persist({...saveData,floor:saveData.floor+1,gold:saveData.gold+reward,gems:saveData.gems+(saveData.floor%10===0?30:5)});setScreen('tower');setUnits([]);addLog(`천탑 클리어! 골드 +${reward}`);};
+  const levelUp=()=>{const cost=saveData.level*300;if(saveData.gold<cost){addLog('골드가 부족합니다.');return;}persist({...saveData,level:saveData.level+1,gold:saveData.gold-cost});};
+  const equipUp=()=>{const cost=(saveData.equipLevel+1)*500;if(saveData.gold<cost){addLog('골드가 부족합니다.');return;}persist({...saveData,equipLevel:saveData.equipLevel+1,gold:saveData.gold-cost});};
+  const summon=()=>{if(saveData.gems<30){addLog('보석이 부족합니다.');return;}const pool=generals[Math.floor(Math.random()*generals.length)];const owned=saveData.owned.includes(pool.id);persist({...saveData,gems:saveData.gems-30,owned:owned?saveData.owned:[...saveData.owned,pool.id]});addLog(owned?`${pool.name} 중복 획득!`:`${pool.name} 획득!`);};
+
+  if(screen==='home') return <main className="app"><header><div><small>INFINITE THREE KINGDOMS</small><h1>무한삼국지: 천탑전기</h1><p>삼국지 SRPG · 무한 천탑 · 장수 수집</p></div><button onClick={()=>persist(saveData)}><Save size={16}/> 저장</button></header><section className="hero"><div><span className="badge">MVP BUILD 0.5</span><h2>전장을 지배하라.</h2><p>성장 · 장비 · 소환 · 천탑 전투를 하나의 루프로 연결했습니다.</p><button className="primary" onClick={()=>setScreen('tower')}>천탑 입장 <ChevronRight/></button></div><div className="orb">∞</div></section><nav className="cards"><button onClick={()=>setScreen('tower')}><Sword/><b>천탑</b><span>{saveData.floor}층 · 10층 보스</span></button><button onClick={()=>setScreen('generals')}><Shield/><b>장수</b><span>{saveData.owned.length}/{generals.length}명 · Lv.{saveData.level}</span></button><button onClick={()=>setScreen('summon')}><Sparkles/><b>소환</b><span>{saveData.gems} 보석</span></button></nav></main>;
+
+  if(screen==='tower') return <main className="app"><header><button className="back" onClick={()=>setScreen('home')}>← 메인</button><h1>천탑</h1><button onClick={()=>persist(saveData)}><Save size={16}/></button></header><section className="tower"><div className="tower-info"><span>현재 진행</span><strong>{saveData.floor}층</strong><p>10층마다 보스 · 50층 대보스 · 100층 스토리 이벤트</p><button className="primary" onClick={startBattle}>전투 시작 <ChevronRight/></button></div><div className="reward"><b>클리어 보상</b><span>골드 +500 · 보석 +5</span><span>보스층 보석 +30</span></div></section></main>;
+
+  if(screen==='generals') return <main className="app"><header><button className="back" onClick={()=>setScreen('home')}>← 메인</button><h1>장수</h1><span>골드 {saveData.gold}</span></header><section className="panel"><div className="upgrade"><b>계정 성장 Lv.{saveData.level}</b><button onClick={levelUp}>레벨업 ({saveData.level*300}G)</button><b>전용장비 강화 +{saveData.equipLevel}</b><button onClick={equipUp}>장비 강화 ({(saveData.equipLevel+1)*500}G)</button></div>{generals.map(g=>{const st=stat(g,saveData);return <article className="general" key={g.id}><div><b>{g.name}</b><small>{g.title} · {g.role}</small></div><span>HP {st.hp} · ATK {st.atk}</span><em>{g.equipment}</em></article>})}</section></main>;
+
+  if(screen==='summon') return <main className="app"><header><button className="back" onClick={()=>setScreen('home')}>← 메인</button><h1>장수 소환</h1><span>💎 {saveData.gems}</span></header><section className="summon"><Sparkles size={52}/><h2>천탑의 부름</h2><p>10명의 장수 중 무작위로 1명을 소환합니다.</p><button className="primary" onClick={summon}>1회 소환 · 30 보석</button><div className="owned">보유 장수: {saveData.owned.map(id=>generals.find(g=>g.id===id)?.name).join(' · ')}</div></section></main>;
+
+  return <main className="app"><header><button className="back" onClick={()=>setScreen('tower')}>← 천탑</button><h1>{saveData.floor}층 전투</h1><span>Round · {turn}</span></header><section className="battle"><div className="grid">{Array.from({length:W*H},(_,i)=>{const x=i%W,y=Math.floor(i/W),u=units.find(v=>v.x===x&&v.y===y&&v.currentHp>0);const t=terrain[i];return <button key={i} className={`cell ${t} ${u?.team||''} ${u?.id===target?'target':''}`} onClick={()=>{if(u?.team==='enemy'){setTarget(u.id);setMode('attack');}else if(mode==='move'&&selectedUnit&&!u) {const r=dist(selectedUnit,{x,y});if(r<=selectedUnit.move&&t!=='water')setUnits(us=>us.map(v=>v.id===selectedUnit.id?{...v,x,y,acted:false}:v));}}}>{u?<><b>{u.name}</b><small>{Math.max(0,u.currentHp)}/{u.hp}</small></>:terrainName[t]}</button>})}</div><aside className="battle-side"><div className="unit-list">{units.filter(u=>u.team==='player').map(u=><button className={u.id===selected?'selected':''} onClick={()=>setSelected(u.id)} key={u.id}>{u.name} <span>{Math.max(0,u.currentHp)}</span></button>)}</div><div className="actions"><button onClick={attack}><Sword/> 공격</button><button onClick={skill}><Sparkles/> 스킬</button><button onClick={endTurn}><RotateCcw/> 턴 종료</button></div><div className="log">{log.map((x,i)=><p key={i}>{x}</p>)}</div>{victory&&<button className="primary" onClick={clearFloor}>승리 · 보상 받기</button>}{defeat&&<button className="primary" onClick={startBattle}>패배 · 재도전</button>}</aside></section></main>;
 }
-export default App;
