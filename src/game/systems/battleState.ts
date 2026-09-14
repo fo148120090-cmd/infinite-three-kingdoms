@@ -34,9 +34,11 @@ function finalize(state: BattleState, message: string): BattleState {
 
 function advanceStatuses(unit: Unit): Unit {
   if (unit.statusTurns <= 0 || unit.status === 'none') return unit;
+  const statusDamage = unit.status === 'burn' ? Math.max(1, Math.floor(unit.maxHp * 0.06)) : 0;
   const nextTurns = Math.max(0, unit.statusTurns - 1);
   return {
     ...unit,
+    currentHp: Math.max(0, unit.currentHp - statusDamage),
     statusTurns: nextTurns,
     status: nextTurns === 0 ? 'none' : unit.status,
   };
