@@ -9,3 +9,4 @@ export * from './rewards';
 export * from './skills';
 export * from './tower';
 export * from './battleModifiers';
+export * from './battleRuntime';
