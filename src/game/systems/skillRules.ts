@@ -1,4 +1,5 @@
 import type { Terrain, Unit } from '../types';
+import { BOARD_WIDTH } from '../data/constants';
 import { calculateDamage, isInRange } from './battleRules';
 
 export type SkillResult = {
@@ -39,6 +40,7 @@ export function resolveGeneralSkill(
     next = next.map((u) => u.team === 'player' && u.currentHp > 0
       ? { ...u, buff: u.buff + (u.id === caster.id ? 3 : 8), status: 'guard', statusTurns: 1 }
       : u);
+    message += ' · 아군 전체 강화';
     return finish();
   }
 
@@ -54,7 +56,9 @@ export function resolveGeneralSkill(
     return { units, message: '사거리 내 적 대상이 필요합니다.', success: false };
   }
 
-  const targetTerrain = terrain[target.y * 7 + target.x];
+  const targetTerrain = terrain[target.y * BOARD_WIDTH + target.x];
+  if (!targetTerrain) return { units, message: '대상 지형 정보를 찾을 수 없습니다.', success: false };
+
   const damage = calculateDamage(caster, target, targetTerrain, caster.skillPower);
   next = next.map((u) => u.id === target.id
     ? { ...u, currentHp: Math.max(0, u.currentHp - damage) }
