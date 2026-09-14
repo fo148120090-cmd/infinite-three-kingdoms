@@ -11,7 +11,7 @@ export const BATTLE_FIELD_HEIGHT = 10;
 export type BattleFieldSeed = number;
 
 const DEPLOYMENT_ROWS = new Set([0, 1, 8, 9]);
-const TERRAIN_POOL: Terrain[] = ['forest', 'forest', 'hill', 'hill', 'fort', 'water'];
+const RANDOM_TERRAINS: Terrain[] = ['forest', 'hill', 'fort', 'water'];
 
 function seededRandom(seed: number) {
   let state = seed >>> 0;
@@ -37,35 +37,24 @@ export function createBattleField(seed: BattleFieldSeed): Terrain[] {
   const candidates: number[] = [];
 
   for (let y = 2; y <= 7; y += 1) {
-    for (let x = 0; x < BATTLE_FIELD_WIDTH; x += 1) {
-      candidates.push(y * BATTLE_FIELD_WIDTH + x);
-    }
+    for (let x = 0; x < BATTLE_FIELD_WIDTH; x += 1) candidates.push(y * BATTLE_FIELD_WIDTH + x);
   }
 
   const shuffled = shuffle(candidates, random);
-  const counts: Record<Terrain, number> = {
-    plain: 0,
-    forest: 10,
-    hill: 7,
-    water: 4,
-    fort: 4,
-  };
-
+  const counts: Record<Terrain, number> = { plain: 0, forest: 10, hill: 7, water: 4, fort: 4 };
   let cursor = 0;
-  for (const terrain of TERRAIN_POOL) {
-    const amount = counts[terrain];
-    for (let i = 0; i < amount; i += 1) {
+  for (const terrain of RANDOM_TERRAINS) {
+    for (let i = 0; i < counts[terrain]; i += 1) {
       const index = shuffled[cursor++];
       if (index !== undefined) field[index] = terrain;
     }
   }
 
-  // Keep the two central fort cells as a tactical landmark while allowing
-  // the surrounding terrain to change every battle.
+  // Central fort is a stable tactical landmark; its surrounding terrain changes.
   const fortCells = [4 * BATTLE_FIELD_WIDTH + 4, 4 * BATTLE_FIELD_WIDTH + 5, 5 * BATTLE_FIELD_WIDTH + 4, 5 * BATTLE_FIELD_WIDTH + 5];
   for (const index of fortCells) field[index] = 'fort';
 
-  // Guarantee a simple crossing through the center so water cannot split the map.
+  // Guarantee multiple routes through the middle so water cannot split the map.
   const crossing = [3 * BATTLE_FIELD_WIDTH + 3, 3 * BATTLE_FIELD_WIDTH + 4, 3 * BATTLE_FIELD_WIDTH + 5, 6 * BATTLE_FIELD_WIDTH + 4, 6 * BATTLE_FIELD_WIDTH + 5];
   for (const index of crossing) {
     if (field[index] === 'water') field[index] = random() > 0.5 ? 'forest' : 'plain';
@@ -73,9 +62,7 @@ export function createBattleField(seed: BattleFieldSeed): Terrain[] {
 
   // Deployment rows are always plain by design.
   for (const y of DEPLOYMENT_ROWS) {
-    for (let x = 0; x < BATTLE_FIELD_WIDTH; x += 1) {
-      field[y * BATTLE_FIELD_WIDTH + x] = 'plain';
-    }
+    for (let x = 0; x < BATTLE_FIELD_WIDTH; x += 1) field[y * BATTLE_FIELD_WIDTH + x] = 'plain';
   }
 
   return field;
@@ -85,7 +72,7 @@ export function createBattleFieldSeed(): BattleFieldSeed {
   return (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
 }
 
-/** Backward-compatible default field for systems that only need a terrain sample. */
+/** Backward-compatible sample field for systems that only need terrain data. */
 export const FIXED_BATTLE_FIELD: Terrain[] = createBattleField(0x3a5f21);
 
 if (FIXED_BATTLE_FIELD.length !== BATTLE_FIELD_WIDTH * BATTLE_FIELD_HEIGHT) {
