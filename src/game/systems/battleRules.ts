@@ -1,7 +1,7 @@
 import type { Terrain, Unit } from '../types';
+import { BOARD_HEIGHT, BOARD_WIDTH } from '../data/constants';
 
-export const BOARD_WIDTH = 7;
-export const BOARD_HEIGHT = 6;
+export { BOARD_WIDTH, BOARD_HEIGHT };
 
 export const TERRAIN_COST: Record<Terrain, number> = {
   plain: 1,
@@ -29,11 +29,7 @@ export type ReachableCell = {
 
 const key = (x: number, y: number) => `${x},${y}`;
 
-/**
- * Returns every cell that can actually be reached with the unit's remaining
- * movement points. Terrain cost and occupied cells are respected.
- * Water remains blocked by the existing 99 movement cost.
- */
+/** Fixed 10×10 field movement. Terrain cost and occupied cells are respected. */
 export function getReachableCells(
   unit: Pick<Unit, 'x' | 'y' | 'movePoints'>,
   terrain: Terrain[],
@@ -57,6 +53,7 @@ export function getReachableCells(
       if (occupied.has(key(x, y)) && !(x === unit.x && y === unit.y)) continue;
 
       const terrainType = terrain[y * BOARD_WIDTH + x];
+      if (!terrainType) continue;
       const nextCost = current.cost + TERRAIN_COST[terrainType];
       if (nextCost > unit.movePoints) continue;
 
@@ -65,8 +62,7 @@ export function getReachableCells(
       if (previous !== undefined && previous <= nextCost) continue;
 
       best.set(cellKey, nextCost);
-      const next = { x, y, cost: nextCost };
-      queue.push(next);
+      queue.push({ x, y, cost: nextCost });
     }
   }
 
