@@ -11,11 +11,6 @@ export type SkillResult = {
 const aliveEnemies = (units: Unit[]) => units.filter((u) => u.team === 'enemy' && u.currentHp > 0);
 const alivePlayers = (units: Unit[]) => units.filter((u) => u.team === 'player' && u.currentHp > 0);
 
-/**
- * Resolves a general's unique skill without introducing an ultimate system.
- * Skills consume the unit's action and remain deterministic from the current
- * board state, keeping the battle suitable for manual SRPG play.
- */
 export function resolveGeneralSkill(
   units: Unit[],
   casterId: string,
@@ -46,9 +41,9 @@ export function resolveGeneralSkill(
 
   if (name === '간웅의 명령') {
     next = next.map((u) => u.team === 'enemy' && u.currentHp > 0
-      ? { ...u, atk: Math.max(1, u.atk - 6), status: 'slow', statusTurns: 1 }
+      ? { ...u, status: 'slow', statusTurns: 1 }
       : u);
-    message += ' · 적 전체 약화';
+    message += ' · 적 전체 둔화';
     return finish();
   }
 
