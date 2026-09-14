@@ -1,12 +1,11 @@
 import type { Terrain, Unit } from '../types';
-import { BOARD_WIDTH } from '../data/constants';
+import { BOARD_WIDTH, BOARD_HEIGHT } from '../data/constants';
 import { calculateDamage, isInRange } from './battleRules';
 
 export type SkillResult = { units: Unit[]; message: string; success: boolean };
 const aliveEnemies = (units: Unit[]) => units.filter((u) => u.team === 'enemy' && u.currentHp > 0);
 const alivePlayers = (units: Unit[]) => units.filter((u) => u.team === 'player' && u.currentHp > 0);
 const adjacentEnemies = (caster: Unit, units: Unit[]) => aliveEnemies(units).filter((u) => Math.abs(u.x - caster.x) + Math.abs(u.y - caster.y) <= 1);
-const nearestEnemy = (caster: Unit, units: Unit[]) => aliveEnemies(units).sort((a,b) => Math.abs(a.x-caster.x)+Math.abs(a.y-caster.y) - (Math.abs(b.x-caster.x)+Math.abs(b.y-caster.y)))[0];
 
 export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: string | null, terrain: Terrain[]): SkillResult {
   const caster = units.find((u) => u.id === casterId && u.team === 'player' && u.currentHp > 0);
@@ -48,15 +47,38 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     message += ` · ${target.name} ${damage} 피해 + 화상`; return finish();
   }
   if (name === '용진') {
-    const enemy = target ?? nearestEnemy(caster, next);
-    if (!enemy || !isInRange(caster, enemy, caster.range)) return { units, message: '사거리 내 적 대상이 필요합니다.', success: false };
-    const tile = terrain[enemy.y * BOARD_WIDTH + enemy.x]; if (!tile) return { units, message: '전장 지형 정보를 찾을 수 없습니다.', success: false };
-    const damage = calculateDamage(caster, enemy, tile, caster.skillPower);
-    const nx = Math.max(0, Math.min(9, caster.x + Math.sign(enemy.x - caster.x)));
-    const ny = Math.max(0, Math.min(9, caster.y + Math.sign(enemy.y - caster.y)));
-    const occupied = next.some((u) => u.currentHp > 0 && u.id !== caster.id && u.x === nx && u.y === ny);
-    next = next.map((u) => u.id === enemy.id ? { ...u, currentHp: Math.max(0, u.currentHp - damage) } : u.id === caster.id && !occupied ? { ...u, x: nx, y: ny } : u);
-    message += ` · 돌진 ${damage} 피해`; return finish();
+    if (!target || !isInRange(caster, target, caster.range)) return { units, message: '사거리 내 적 대상을 지정해야 합니다.', success: false };
+    const dx = Math.sign(target.x - caster.x);
+    const dy = Math.sign(target.y - caster.y);
+    if (dx !== 0 && dy !== 0) return { units, message: '용진은 가로 또는 세로 직선 방향의 적만 지정할 수 있습니다.', success: false };
+    const distance = Math.abs(target.x - caster.x) + Math.abs(target.y - caster.y);
+    if (distance === 0) return { units, message: '자신을 대상으로 할 수 없습니다.', success: false };
+
+    const path: Array<{ x: number; y: number }> = [];
+    for (let step = 1; step <= distance; step += 1) {
+      const x = caster.x + dx * step;
+      const y = caster.y + dy * step;
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) break;
+      path.push({ x, y });
+    }
+    if (path.length !== distance) return { units, message: '돌진 경로가 전장을 벗어납니다.', success: false };
+
+    const pathKeys = new Set(path.map(({ x, y }) => `${x},${y}`));
+    const hitEnemies = aliveEnemies(next).filter((u) => pathKeys.has(`${u.x},${u.y}`));
+    if (!hitEnemies.length) return { units, message: '돌진 경로에 적이 필요합니다.', success: false };
+
+    next = next.map((u) => {
+      if (!pathKeys.has(`${u.x},${u.y}`) || u.team !== 'enemy' || u.currentHp <= 0) return u;
+      const tile = terrain[u.y * BOARD_WIDTH + u.x]; if (!tile) return u;
+      const damage = calculateDamage(caster, u, tile, caster.skillPower);
+      return { ...u, currentHp: Math.max(0, u.currentHp - damage) };
+    });
+
+    const destination = path[path.length - 1];
+    const blocked = next.some((u) => u.currentHp > 0 && u.id !== caster.id && u.x === destination.x && u.y === destination.y);
+    if (!blocked) next = next.map((u) => u.id === caster.id ? { ...u, x: destination.x, y: destination.y } : u);
+    message += ` · 직선 ${distance}칸 관통 · ${hitEnemies.length}명 타격`;
+    return finish();
   }
   if (name === '천뢰') {
     if (!target || !isInRange(caster, target, caster.range)) return { units, message: '사거리 내 적 대상이 필요합니다.', success: false };
