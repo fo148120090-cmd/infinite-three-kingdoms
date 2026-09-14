@@ -1,6 +1,7 @@
 import type { General, Unit } from '../types';
 import { getMonsterEncounter, getMonsterRegion, type Monster } from '../data/monsters';
 import { BOARD_WIDTH, BOARD_HEIGHT } from '../data/constants';
+import { applyMonsterTurnEffects } from './monsterTurnEffects';
 
 export function getMonsterFloorScale(floor: number): number {
   return 1 + Math.max(0, floor - 1) * 0.035;
@@ -45,21 +46,19 @@ export function createMonsterEnemy(monster: Monster, index: number, floor: numbe
   };
 }
 
-/**
- * Builds the enemy wave for the current tower floor.
- * Normal floors use the region's three regular monster types; boss floors
- * use the boss encounter supplied by the monster data layer.
- */
 export function createMonsterEnemies(floor: number): Unit[] {
   const encounter = getMonsterEncounter(floor);
-  if (floor % 10 === 0) {
-    return encounter.map((monster, index) => createMonsterEnemy(monster, index, floor));
-  }
+  const enemies = floor % 10 === 0
+    ? encounter.map((monster, index) => createMonsterEnemy(monster, index, floor))
+    : (() => {
+        const region = getMonsterRegion(floor);
+        const ids = [region.monsters[0], region.monsters[1], region.monsters[0], region.monsters[2]];
+        return ids
+          .map(id => encounter.find(monster => monster.id === id))
+          .filter((monster): monster is Monster => Boolean(monster))
+          .map((monster, index) => createMonsterEnemy(monster, index, floor));
+      })();
 
-  const region = getMonsterRegion(floor);
-  const ids = [region.monsters[0], region.monsters[1], region.monsters[0], region.monsters[2]];
-  return ids
-    .map(id => encounter.find(monster => monster.id === id))
-    .filter((monster): monster is Monster => Boolean(monster))
-    .map((monster, index) => createMonsterEnemy(monster, index, floor));
+  applyMonsterTurnEffects(enemies, floor, 0);
+  return enemies;
 }
