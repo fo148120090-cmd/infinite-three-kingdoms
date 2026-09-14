@@ -10,3 +10,4 @@ export * from './skills';
 export * from './tower';
 export * from './battleModifiers';
 export * from './battleRuntime';
+export * from './monsterBattle';
