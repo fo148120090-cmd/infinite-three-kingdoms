@@ -25,8 +25,8 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     message += ' · 아군 전체 회복 + 방어(2턴)'; return finish();
   }
   if (name === '간웅의 명령') {
-    next = next.map((u) => u.team === 'enemy' && u.currentHp > 0 ? { ...u, status: 'slow', statusTurns: 1 } : u);
-    message += ' · 적 전체 둔화'; return finish();
+    next = next.map((u) => u.team === 'enemy' && u.currentHp > 0 ? { ...u, status: 'slow', statusTurns: 2 } : u);
+    message += ' · 적 전체 둔화(2턴)'; return finish();
   }
   if (name === '맹격' || name === '호통') {
     const targets = adjacentEnemies(caster, next);
