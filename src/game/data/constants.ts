@@ -1,3 +1,5 @@
+export const BOARD_WIDTH = 7;
+export const BOARD_HEIGHT = 6;
 export const SAVE_KEY = 'infinite-three-kingdoms-save-v2';
 export const MAX_EQUIPMENT_LEVEL = 20;
 export const MAX_GENERAL_STARS = 6;
