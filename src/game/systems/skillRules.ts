@@ -1,4 +1,4 @@
-import type { Unit } from '../types';
+import type { Terrain, Unit } from '../types';
 import { calculateDamage, isInRange } from './battleRules';
 
 export type SkillResult = {
@@ -7,15 +7,20 @@ export type SkillResult = {
   success: boolean;
 };
 
-const aliveEnemies = (units: Unit) => units.filter((u) => u.team === 'enemy' && u.currentHp > 0);
-const alivePlayers = (units: Unit) => units.filter((u) => u.team === 'player' && u.currentHp > 0);
+const aliveEnemies = (units: Unit[]) => units.filter((u) => u.team === 'enemy' && u.currentHp > 0);
+const alivePlayers = (units: Unit[]) => units.filter((u) => u.team === 'player' && u.currentHp > 0);
 
 /**
  * Resolves a general's unique skill without introducing an ultimate system.
- * Skills consume the unit's action and always remain deterministic from the
- * current board state, which keeps the battle suitable for manual SRPG play.
+ * Skills consume the unit's action and remain deterministic from the current
+ * board state, keeping the battle suitable for manual SRPG play.
  */
-export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: string | null, terrain: Unit extends never ? never : any[]): SkillResult {
+export function resolveGeneralSkill(
+  units: Unit[],
+  casterId: string,
+  targetId: string | null,
+  terrain: Terrain[],
+): SkillResult {
   const caster = units.find((u) => u.id === casterId && u.team === 'player' && u.currentHp > 0);
   if (!caster || caster.acted) return { units, message: '스킬을 사용할 수 없습니다.', success: false };
 
@@ -24,10 +29,10 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
   let next = units.map((u) => ({ ...u }));
   let message = `${caster.name}의 ${name}`;
 
-  const finish = (ok = true): SkillResult => ({
-    units: next.map((u) => u.id === caster.id ? { ...u, acted: ok ? true : u.acted } : u),
+  const finish = (): SkillResult => ({
+    units: next.map((u) => u.id === caster.id ? { ...u, acted: true } : u),
     message,
-    success: ok,
+    success: true,
   });
 
   if (name === '인덕의 격려' || name === '강동의 결의') {
