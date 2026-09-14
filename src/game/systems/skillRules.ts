@@ -17,12 +17,12 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
   const finish = (): SkillResult => ({ units: next.map((u) => u.id === caster.id ? { ...u, acted: true } : u), message, success: true });
 
   if (name === '인덕의 격려') {
-    next = next.map((u) => u.team === 'player' && u.currentHp > 0 ? { ...u, buff: u.buff + 8, status: 'guard', statusTurns: 1 } : u);
-    message += ' · 아군 전체 공격 강화 + 가드'; return finish();
+    next = next.map((u) => u.team === 'player' && u.currentHp > 0 ? { ...u, buff: u.buff + 8, status: 'guard', statusTurns: 2 } : u);
+    message += ' · 아군 전체 공격 강화 + 가드(2턴)'; return finish();
   }
   if (name === '강동의 결의') {
-    next = next.map((u) => u.team === 'player' && u.currentHp > 0 ? { ...u, buff: u.buff + 5, currentHp: Math.min(u.maxHp, u.currentHp + 12), status: 'guard', statusTurns: 1 } : u);
-    message += ' · 아군 전체 회복 + 방어'; return finish();
+    next = next.map((u) => u.team === 'player' && u.currentHp > 0 ? { ...u, buff: u.buff + 5, currentHp: Math.min(u.maxHp, u.currentHp + 12), status: 'guard', statusTurns: 2 } : u);
+    message += ' · 아군 전체 회복 + 방어(2턴)'; return finish();
   }
   if (name === '간웅의 명령') {
     next = next.map((u) => u.team === 'enemy' && u.currentHp > 0 ? { ...u, status: 'slow', statusTurns: 1 } : u);
@@ -35,7 +35,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
       const hit = targets.find((t) => t.id === u.id); if (!hit) return u;
       const tile = terrain[u.y * BOARD_WIDTH + u.x]; if (!tile) return u;
       const damage = calculateDamage(caster, hit, tile, caster.skillPower);
-      return { ...u, currentHp: Math.max(0, u.currentHp - damage), status: name === '호통' ? 'stun' : u.status, statusTurns: name === '호통' ? 1 : u.statusTurns };
+      return { ...u, currentHp: Math.max(0, u.currentHp - damage), status: name === '호통' ? 'stun' : u.status, statusTurns: name === '호통' ? 2 : u.statusTurns };
     });
     message += ` · ${targets.length}명 타격`; return finish();
   }
@@ -63,8 +63,6 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     }
     if (path.length !== distance) return { units, message: '돌진 경로가 전장을 벗어납니다.', success: false };
 
-    // 목표 적 칸은 관통하고, 뒤에 연속 배치된 생존 적이 있으면 계속 타격한다.
-    // 최초의 빈 칸에 도달하면 그 칸에 착지하며, 아군 칸에는 절대 겹치지 않는다.
     let landing: { x: number; y: number } | null = null;
     for (let step = distance + 1; ; step += 1) {
       const x = caster.x + dx * step;
@@ -107,14 +105,14 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
       const hit = targets.find((t) => t.id === u.id); if (!hit) return u;
       const tile = terrain[u.y * BOARD_WIDTH + u.x]; if (!tile) return u;
       const damage = calculateDamage(caster, hit, tile, caster.skillPower);
-      return { ...u, currentHp: Math.max(0, u.currentHp - damage), status: 'stun', statusTurns: 1 };
+      return { ...u, currentHp: Math.max(0, u.currentHp - damage), status: 'stun', statusTurns: 2 };
     });
     message += ` · 번개 범위 ${targets.length}명`; return finish();
   }
   if (name === '매혹') {
     if (!target || !isInRange(caster, target, caster.range)) return { units, message: '사거리 내 적 대상이 필요합니다.', success: false };
-    next = next.map((u) => u.id === target.id ? { ...u, status: 'stun', statusTurns: 1 } : u);
-    message += ` · ${target.name} 행동 봉쇄`; return finish();
+    next = next.map((u) => u.id === target.id ? { ...u, status: 'stun', statusTurns: 2 } : u);
+    message += ` · ${target.name} 행동 봉쇄(2턴)`; return finish();
   }
   if (!target || !isInRange(caster, target, caster.range)) return { units, message: '사거리 내 적 대상이 필요합니다.', success: false };
   const targetTerrain = terrain[target.y * BOARD_WIDTH + target.x]; if (!targetTerrain) return { units, message: '대상 지형 정보를 찾을 수 없습니다.', success: false };
