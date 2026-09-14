@@ -1,5 +1,5 @@
 import type { Terrain, Unit } from '../types';
-import { getReachableCells, isInRange } from './battleRules';
+import { BOARD_WIDTH, getReachableCells, isInRange } from './battleRules';
 
 export type BattleCellView = {
   x: number;
@@ -23,8 +23,8 @@ export function buildBattleCellViews(
     : new Set<string>();
 
   return terrain.map((tile, index) => {
-    const x = index % 7;
-    const y = Math.floor(index / 7);
+    const x = index % BOARD_WIDTH;
+    const y = Math.floor(index / BOARD_WIDTH);
     const unit = units.find((candidate) => candidate.currentHp > 0 && candidate.x === x && candidate.y === y) ?? null;
     const targetable = Boolean(selected && unit && unit.team === 'enemy' && isInRange(selected, unit, selected.range) && !selected.acted);
     return {
