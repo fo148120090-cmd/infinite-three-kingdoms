@@ -32,6 +32,16 @@ function finalize(state: BattleState, message: string): BattleState {
   return { ...state, log: [...state.log, message] };
 }
 
+function advanceStatuses(unit: Unit): Unit {
+  if (unit.statusTurns <= 0 || unit.status === 'none') return unit;
+  const nextTurns = Math.max(0, unit.statusTurns - 1);
+  return {
+    ...unit,
+    statusTurns: nextTurns,
+    status: nextTurns === 0 ? 'none' : unit.status,
+  };
+}
+
 export function createBattleState(units: Unit[], log: string[] = ['전투를 시작합니다.']): BattleState {
   const safeUnits = cloneUnits(units).map((unit) => ({
     ...unit,
@@ -91,7 +101,6 @@ export function attackBattleTarget(state: BattleState, terrain: Terrain[]): Batt
   const target = state.units.find((unit) => unit.id === state.targetId && unit.team === 'enemy' && unit.currentHp > 0);
   if (!attacker || !target || !canTargetEnemy(attacker, target)) return { state, success: false, message: '공격 가능한 적을 선택하세요.' };
 
-  // The battle field is fixed at 10×10; never use the legacy 7-column index here.
   const tile = terrain[target.y * BOARD_WIDTH + target.x];
   if (!tile) return { state, success: false, message: '전장 지형 정보를 찾을 수 없습니다.' };
   const damage = calculateDamage(attacker, target, tile);
@@ -128,8 +137,8 @@ export function endPlayerTurn(state: BattleState, terrain: Terrain[]): BattleAct
   if (state.phase !== 'player') return { state, success: false, message: '플레이어 턴이 아닙니다.' };
   const enemyResult = resolveEnemyTurn(state.units, terrain);
   const reset = enemyResult.units.map((unit) => unit.team === 'player' && unit.currentHp > 0
-    ? { ...unit, acted: false, movePoints: unit.move, statusTurns: Math.max(0, unit.statusTurns - 1), status: unit.statusTurns <= 1 ? 'none' : unit.status }
-    : unit);
+    ? { ...advanceStatuses(unit), acted: false, movePoints: unit.move }
+    : advanceStatuses(unit));
   const enemyMessages = enemyResult.messages.length ? enemyResult.messages.join(' / ') : '몬스터가 행동하지 않았습니다.';
   const interim: BattleState = { ...state, units: reset, turn: 'player', phase: 'player', targetId: null, log: [...state.log, '몬스터 턴', enemyMessages] };
   const outcome = isBattleOver(reset);
