@@ -1,4 +1,5 @@
 import type { Terrain, Unit } from '../types';
+import { BOARD_WIDTH } from '../data/constants';
 import { canTargetEnemy, calculateDamage, getReachableCells, isBattleOver, isInRange } from './battleRules';
 import { resolveGeneralSkill } from './skillRules';
 import { resolveEnemyTurn } from './enemyAi';
@@ -65,7 +66,7 @@ export function selectBattleTarget(state: BattleState, id: string | null): Battl
 
 export function getSelectedReachableCells(state: BattleState, terrain: Terrain[]) {
   const selected = state.units.find((unit) => unit.id === state.selectedId && unit.team === 'player' && unit.currentHp > 0);
-  if (!selected || state.phase !== 'player' || selected.acted) return [];
+  if (!selected || state.phase !== 'player' || selected.acted || selected.movePoints <= 0) return [];
   const occupied = new Set(state.units.filter((unit) => unit.currentHp > 0).map((unit) => cellKey(unit.x, unit.y)));
   return getReachableCells(selected, terrain, occupied);
 }
@@ -73,7 +74,7 @@ export function getSelectedReachableCells(state: BattleState, terrain: Terrain[]
 export function moveBattleUnit(state: BattleState, terrain: Terrain[], x: number, y: number): BattleActionResult {
   if (state.phase !== 'player') return { state, success: false, message: '지금은 이동할 수 없습니다.' };
   const selected = state.units.find((unit) => unit.id === state.selectedId && unit.team === 'player' && unit.currentHp > 0);
-  if (!selected || selected.acted) return { state, success: false, message: '이동할 장수를 선택하세요.' };
+  if (!selected || selected.acted || selected.movePoints <= 0) return { state, success: false, message: '이동할 장수를 선택하세요.' };
   const reachable = getSelectedReachableCells(state, terrain);
   const destination = reachable.find((cell) => cell.x === x && cell.y === y);
   if (!destination) return { state, success: false, message: '이동할 수 없는 칸입니다.' };
@@ -90,7 +91,9 @@ export function attackBattleTarget(state: BattleState, terrain: Terrain[]): Batt
   const target = state.units.find((unit) => unit.id === state.targetId && unit.team === 'enemy' && unit.currentHp > 0);
   if (!attacker || !target || !canTargetEnemy(attacker, target)) return { state, success: false, message: '공격 가능한 적을 선택하세요.' };
 
-  const tile = terrain[target.y * 7 + target.x];
+  // The battle field is fixed at 10×10; never use the legacy 7-column index here.
+  const tile = terrain[target.y * BOARD_WIDTH + target.x];
+  if (!tile) return { state, success: false, message: '전장 지형 정보를 찾을 수 없습니다.' };
   const damage = calculateDamage(attacker, target, tile);
   const units = cloneUnits(state.units).map((unit) => {
     if (unit.id === attacker.id) return { ...unit, acted: true };
