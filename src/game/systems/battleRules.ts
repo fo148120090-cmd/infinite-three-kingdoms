@@ -91,19 +91,31 @@ export function canTargetEnemy(
     && isInRange(attacker, target, attacker.range);
 }
 
+const ROLE_DEFENSE_BONUS: Record<string, number> = {
+  '수호': 8,
+  '전사': 5,
+  '기병': 3,
+  '지원': 2,
+  '책사': 1,
+};
+
+export function getEffectiveDefense(unit: Pick<Unit, 'defense' | 'role' | 'status'>): number {
+  const roleBonus = ROLE_DEFENSE_BONUS[unit.role] ?? 2;
+  const guardBonus = unit.status === 'guard' ? 8 : 0;
+  return Math.max(0, unit.defense + roleBonus + guardBonus);
+}
+
 export function calculateDamage(
   attacker: Pick<Unit, 'atk' | 'buff'>,
-  defender: Pick<Unit, 'maxHp' | 'status'>,
+  defender: Pick<Unit, 'defense' | 'role' | 'status'>,
   terrainType: Terrain,
   power = 0,
 ): number {
   const terrainBonus = TERRAIN_ATTACK_BONUS[terrainType];
-  const guardReduction = defender.status === 'guard' ? 8 : 0;
+  const defense = getEffectiveDefense(defender);
   return Math.max(
     1,
-    attacker.atk + attacker.buff + power + terrainBonus
-      - Math.floor(defender.maxHp * 0.08)
-      - guardReduction,
+    attacker.atk + attacker.buff + power + terrainBonus - defense,
   );
 }
 
