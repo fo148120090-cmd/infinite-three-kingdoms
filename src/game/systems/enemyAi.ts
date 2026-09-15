@@ -38,7 +38,7 @@ export function resolveEnemyTurn(units: Unit[], terrain: Terrain[]): EnemyTurnRe
 
     const occupied = new Set(next.filter((u) => u.currentHp > 0 && u.id !== enemy.id).map((u) => `${u.x},${u.y}`));
     const moveUnit = enemy.status === 'slow' && enemy.statusTurns > 0
-      ? { ...enemy, movePoints: Math.max(1, Math.floor(enemy.move * 0.3)) }
+      ? { ...enemy, movePoints: Math.max(1, Math.floor(enemy.move * 0.5)) }
       : enemy;
     const reachable = getReachableCells(moveUnit, terrain, occupied);
     reachable.sort((a, b) => {
