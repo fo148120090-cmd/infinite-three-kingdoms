@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import App from './App';
 import BattleEngine from './BattleEngine';
+import GeneralStatusModal from './GeneralStatusModal';
 import './battle-engine.css';
+import './general-status.css';
 import { getTowerFloorRule } from './game/systems/towerRules';
 
 const KEY='infinite-three-kingdoms-save-v2';
@@ -30,20 +32,7 @@ function migrateSave(){
     const owned=Array.isArray(raw.owned)?Array.from(new Set(raw.owned.filter((v):v is string=>typeof v==='string'))):[];
     const formation=Array.isArray(raw.formation)?Array.from(new Set(raw.formation.filter((v):v is string=>typeof v==='string'&&owned.includes(v)))).slice(0,5):[];
     const map=(v:unknown)=>v&&typeof v==='object'&&!Array.isArray(v)?v:{};
-    const normalized={
-      ...raw,
-      floor:Math.floor(num(raw.floor,1,1)),
-      gold:Math.floor(num(raw.gold,5000)),
-      gems:Math.floor(num(raw.gems,300)),
-      level:Math.floor(num(raw.level,1,1)),
-      materials:Math.floor(num(raw.materials,120)),
-      owned,
-      formation,
-      equipment:map(raw.equipment),
-      stars:map(raw.stars),
-      fragments:map(raw.fragments),
-      tsSkins:map(raw.tsSkins),
-    };
+    const normalized={...raw,floor:Math.floor(num(raw.floor,1,1)),gold:Math.floor(num(raw.gold,5000)),gems:Math.floor(num(raw.gems,300)),level:Math.floor(num(raw.level,1,1)),materials:Math.floor(num(raw.materials,120)),owned,formation,equipment:map(raw.equipment),stars:map(raw.stars),fragments:map(raw.fragments),tsSkins:map(raw.tsSkins)};
     localStorage.setItem(KEY,JSON.stringify(normalized));
   }catch{}
 }
@@ -60,34 +49,9 @@ function TowerRewardNotice(){
  const initialFloor=Math.max(1,Math.floor(Number(readSave().floor)||1));
  const seenFloor=useRef(initialFloor);
  const[reward,setReward]=useState<{floor:number;gold:number;gems:number;materials:number;boss:boolean}|null>(null);
- useEffect(()=>{
-  const check=()=>{
-   const next=Math.max(1,Math.floor(Number(readSave().floor)||1));
-   if(next<=seenFloor.current){seenFloor.current=next;return;}
-   const cleared=seenFloor.current;
-   seenFloor.current=next;
-   const rule=getTowerFloorRule(cleared);
-   setReward({floor:cleared,gold:rule.reward.gold,gems:rule.reward.gems,materials:rule.reward.materials,boss:rule.kind==='boss'});
-  };
-  const timer=window.setInterval(check,400);
-  return()=>window.clearInterval(timer);
- },[]);
+ useEffect(()=>{const check=()=>{const next=Math.max(1,Math.floor(Number(readSave().floor)||1));if(next<=seenFloor.current){seenFloor.current=next;return}const cleared=seenFloor.current;seenFloor.current=next;const rule=getTowerFloorRule(cleared);setReward({floor:cleared,gold:rule.reward.gold,gems:rule.reward.gems,materials:rule.reward.materials,boss:rule.kind==='boss'});};const timer=window.setInterval(check,400);return()=>window.clearInterval(timer)},[]);
  if(!reward)return null;
- return <div className="tower-reward-modal" role="dialog" aria-modal="true" aria-labelledby="tower-reward-title">
-   <div className="tower-reward-panel">
-    <div className="tower-reward-icon">🏆</div>
-    <small>천탑 클리어</small>
-    <h2 id="tower-reward-title">{reward.floor}층 돌파!</h2>
-    {reward.boss&&<div className="tower-reward-boss">BOSS FLOOR CLEAR</div>}
-    <p>획득한 보상을 확인하세요.</p>
-    <div className="tower-reward-grid">
-      <div><b>🪙 {reward.gold.toLocaleString()}</b><span>금화</span></div>
-      <div><b>💎 {reward.gems}</b><span>보옥</span></div>
-      <div><b>🔨 {reward.materials}</b><span>강화 재료</span></div>
-    </div>
-    <button className="tower-reward-close" onClick={()=>setReward(null)}>확인</button>
-   </div>
- </div>;
+ return <div className="tower-reward-modal" role="dialog" aria-modal="true" aria-labelledby="tower-reward-title"><div className="tower-reward-panel"><div className="tower-reward-icon">🏆</div><small>천탑 클리어</small><h2 id="tower-reward-title">{reward.floor}층 돌파!</h2>{reward.boss&&<div className="tower-reward-boss">BOSS FLOOR CLEAR</div>}<p>획득한 보상을 확인하세요.</p><div className="tower-reward-grid"><div><b>🪙 {reward.gold.toLocaleString()}</b><span>금화</span></div><div><b>💎 {reward.gems}</b><span>보옥</span></div><div><b>🔨 {reward.materials}</b><span>강화 재료</span></div></div><button className="tower-reward-close" onClick={()=>setReward(null)}>확인</button></div></div>;
 }
 
 function BattleEngineBridge(){
@@ -95,4 +59,4 @@ function BattleEngineBridge(){
  useEffect(()=>{const detect=()=>setActive(Boolean(document.querySelector('.battle-layout')));const observer=new MutationObserver(detect);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(detect,400);detect();return()=>{observer.disconnect();window.clearInterval(timer)}},[]);
  return active?<div className="be-overlay"><BattleEngine/></div>:null;
 }
-export default function AppShell(){return <><App/><BattleEngineBridge/><Settings/><TowerRewardNotice/></>}
+export default function AppShell(){return <><App/><BattleEngineBridge/><Settings/><TowerRewardNotice/><GeneralStatusModal/></>}
