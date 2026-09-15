@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import App from './App';
 import BattleEngine from './BattleEngine';
 import './battle-engine.css';
+import { getTowerFloorRule } from './game/systems/towerRules';
 
 const KEY='infinite-three-kingdoms-save-v2';
 
@@ -62,11 +63,11 @@ function TowerRewardNotice(){
  useEffect(()=>{
   const check=()=>{
    const next=Math.max(1,Math.floor(Number(readSave().floor)||1));
-   if(next<=seenFloor.current){seenFloor.current=next;return}
+   if(next<=seenFloor.current){seenFloor.current=next;return;}
    const cleared=seenFloor.current;
    seenFloor.current=next;
-   const boss=cleared%10===0;
-   setReward({floor:cleared,gold:boss?1500:500,gems:boss?30:5,materials:boss?30:10,boss});
+   const rule=getTowerFloorRule(cleared);
+   setReward({floor:cleared,gold:rule.reward.gold,gems:rule.reward.gems,materials:rule.reward.materials,boss:rule.kind==='boss'});
   };
   const timer=window.setInterval(check,400);
   return()=>window.clearInterval(timer);
