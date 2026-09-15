@@ -12,12 +12,13 @@ export function createMonsterUnitV2(monster: Monster, index: number, floor: numb
   const scale = options.statScale ?? getMonsterFloorScale(floor);
   const hp = Math.floor(monster.hp * scale);
   const atk = Math.floor(monster.atk * scale);
+  const defense = Math.floor(monster.hp * 0.08 * scale) + (monster.boss ? 10 : 4);
   return {
     id: `${monster.id}-${index}`,
     name: monster.name,
     title: monster.tribe,
     faction: 'Warlords', role: monster.role,
-    hp, atk, range: monster.range, move: monster.move,
+    hp, atk, defense, range: monster.range, move: monster.move,
     skill: monster.skill, skillPower: Math.floor(monster.skillPower * scale),
     ultimate: '', ultimatePower: 0, equipment: '', grade: monster.boss ? 6 : 1,
     tsName: '', tsTitle: '', team: 'enemy',
