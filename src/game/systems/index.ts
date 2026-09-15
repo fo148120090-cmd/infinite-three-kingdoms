@@ -1,5 +1,5 @@
 export * from './combat';
-export * from './enemyAI';
+export * from './enemyAi';
 export * from './equipment';
 export * from './formation';
 export * from './movement';
