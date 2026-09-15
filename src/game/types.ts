@@ -11,6 +11,7 @@ export type General = {
   role: string;
   hp: number;
   atk: number;
+  defense: number;
   range: number;
   move: number;
   skill: string;
