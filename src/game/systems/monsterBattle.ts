@@ -11,6 +11,7 @@ export function createMonsterEnemy(monster: Monster, index: number, floor: numbe
   const scale = getMonsterFloorScale(floor);
   const hp = Math.floor(monster.hp * scale);
   const atk = Math.floor(monster.atk * scale);
+  const defense = Math.floor(monster.hp * 0.08 * scale) + (monster.boss ? 10 : 4);
   const placeholder: General = {
     id: `${monster.id}-${index}`,
     name: monster.name,
@@ -19,6 +20,7 @@ export function createMonsterEnemy(monster: Monster, index: number, floor: numbe
     role: monster.role,
     hp,
     atk,
+    defense,
     range: monster.range,
     move: monster.move,
     skill: monster.skill,
