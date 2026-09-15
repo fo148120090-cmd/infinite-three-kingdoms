@@ -11,11 +11,18 @@ import { BOARD_HEIGHT, BOARD_WIDTH } from './game/data/constants';
 const KEY='infinite-three-kingdoms-save-v2';
 const terrainLabel:Record<Terrain,string>={plain:'평지',forest:'숲',hill:'고지',water:'물',fort:'요새'};
 
-type SaveLike={floor?:number;level?:number;formation?:string[];equipment?:Record<string,{level?:number;equipped?:boolean}>;stars?:Record<string,number>;gold?:number;gems?:number;materials?:number};
+type EquipmentState={level?:number;equipped?:boolean;optionA?:number;optionB?:number};
+type SaveLike={floor?:number;level?:number;formation?:string[];equipment?:Record<string,EquipmentState>;stars?:Record<string,number>;gold?:number;gems?:number;materials?:number};
 function readSave():SaveLike{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}}
 function buildPlayers(save:SaveLike):Unit[]{
  const formation=(save.formation||[]).map(id=>GENERAL_BY_ID[id]).filter(Boolean).slice(0,5);
- return formation.map((g,i)=>{const eq=save.equipment?.[g.id],star=save.stars?.[g.id]||1,level=save.level||1,equipLevel=eq?.equipped===false?0:(eq?.level||0),mult=1+0.05*(star-1),hp=Math.floor((g.hp+(level-1)*12+equipLevel*10)*mult),atk=Math.floor((g.atk+(level-1)*3+equipLevel*4)*mult);return {...g,hp,atk,maxHp:hp,currentHp:hp,team:'player' as const,x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none' as const,statusTurns:0};});
+ return formation.map((g,i)=>{
+  const eq=save.equipment?.[g.id],star=Math.max(1,Math.min(6,save.stars?.[g.id]||1)),level=Math.max(1,save.level||1),equipLevel=eq?.equipped===false?0:Math.max(0,eq?.level||0),mult=1+0.05*(star-1);
+  const hpOption=eq?.equipped===false?0:(eq?.optionA===1?equipLevel*5:eq?.optionB===1?equipLevel*5:0);
+  const atkOption=eq?.equipped===false?0:(eq?.optionA===0?equipLevel*2:eq?.optionB===0?equipLevel*2:0);
+  const hp=Math.floor((g.hp+(level-1)*12+equipLevel*10+hpOption)*mult),atk=Math.floor((g.atk+(level-1)*3+equipLevel*4+atkOption)*mult);
+  return {...g,hp,atk,maxHp:hp,currentHp:hp,team:'player' as const,x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none' as const,statusTurns:0};
+ });
 }
 function terrainClass(t:Terrain){return `be-terrain-${t}`}
 export default function BattleEngine(){
