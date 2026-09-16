@@ -106,7 +106,8 @@ export function endPlayerTurn(state: BattleState, terrain: Terrain[], floor = 1)
   if (state.phase !== 'player') return { state, success: false, message: '플레이어 턴이 아닙니다.' };
 
   const workingUnits = cloneUnits(state.units);
-  const bossEffects = applyMonsterTurnEffects(workingUnits, floor, state.turn === 'enemy' ? 1 : 0);
+  const monsterTurn = state.log.filter((entry) => entry === '몬스터 턴').length;
+  const bossEffects = applyMonsterTurnEffects(workingUnits, floor, monsterTurn);
   const enemyResult = resolveEnemyTurn(workingUnits, terrain);
   const effectMessages = bossEffects.map((effect) => effect.message);
   const reset = enemyResult.units.map((unit) => unit.team === 'player' && unit.currentHp > 0
