@@ -7,6 +7,7 @@ import { canEndPlayerTurn, createBattleState, endPlayerTurn, moveBattleUnit, sel
 import { buildBattlePresentation } from './game/systems/battlePresentation';
 import { getTowerFloorRule, getNextTowerFloor } from './game/systems/towerRules';
 import { BOARD_HEIGHT, BOARD_WIDTH } from './game/data/constants';
+import { applyBattleModifiers } from './game/systems/battleModifiers';
 
 const KEY='infinite-three-kingdoms-save-v2';
 const terrainLabel:Record<Terrain,string>={plain:'평지',forest:'숲',hill:'고지',water:'물',fort:'요새'};
@@ -22,7 +23,8 @@ function buildPlayers(save:SaveLike):Unit[]{
   const hpOption=eq?.equipped===false?0:(eq?.optionA===1?equipLevel*5:eq?.optionB===1?equipLevel*5:0);
   const atkOption=eq?.equipped===false?0:(eq?.optionA===0?equipLevel*2:eq?.optionB===0?equipLevel*2:0);
   const hp=Math.floor((g.hp+(level-1)*12+equipLevel*10+hpOption)*mult),atk=Math.floor((g.atk+(level-1)*3+equipLevel*4+atkOption)*mult),defense=Math.floor((g.defense+(level-1)*1.5+equipLevel*2+((eq?.optionA===1||eq?.optionB===1)?Math.floor(equipLevel*.8):0))*mult);
-  return {...g,hp,atk,defense,maxHp:hp,currentHp:hp,team:'player' as const,x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none' as const,statusTurns:0};
+  const base:Unit={...g,hp,atk,defense,maxHp:hp,currentHp:hp,team:'player',x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none',statusTurns:0};
+  return applyBattleModifiers(base,formation);
  });
 }
 function terrainClass(t:Terrain){return `be-terrain-${t}`}
