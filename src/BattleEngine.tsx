@@ -15,12 +15,12 @@ const statusLabel:Record<Unit['status'],string>={none:'정상',stun:'기절',bur
 const statusBadge:Record<Exclude<Unit['status'],'none'>,string>={stun:'💫',burn:'🔥',slow:'🐌',guard:'🛡'};
 
 type EquipmentState={level?:number;equipped?:boolean;optionA?:number;optionB?:number};
-type SaveLike={floor?:number;level?:number;formation?:string[];equipment?:Record<string,EquipmentState>;stars?:Record<string,number>;gold?:number;gems?:number;materials?:number};
+type SaveLike={floor?:number;level?:number;generalLevels?:Record<string,number>;formation?:string[];equipment?:Record<string,EquipmentState>;stars?:Record<string,number>;gold?:number;gems?:number;materials?:number};
 function readSave():SaveLike{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}}
 function buildPlayers(save:SaveLike):Unit[]{
  const formation=(save.formation||[]).map(id=>GENERAL_BY_ID[id]).filter(Boolean).slice(0,5);
  return formation.map((g,i)=>{
-  const eq=save.equipment?.[g.id],star=Math.max(1,Math.min(6,save.stars?.[g.id]||1)),level=Math.max(1,save.level||1),equipLevel=eq?.equipped===false?0:Math.max(0,eq?.level||0),mult=1+0.05*(star-1);
+  const eq=save.equipment?.[g.id],star=Math.max(1,Math.min(6,save.stars?.[g.id]||1)),level=Math.max(1,save.generalLevels?.[g.id]||save.level||1),equipLevel=eq?.equipped===false?0:Math.max(0,eq?.level||0),mult=1+0.05*(star-1);
   const hpOption=eq?.equipped===false?0:(eq?.optionA===1?equipLevel*5:eq?.optionB===1?equipLevel*5:0);
   const atkOption=eq?.equipped===false?0:(eq?.optionA===0?equipLevel*2:eq?.optionB===0?equipLevel*2:0);
   const hp=Math.floor((g.hp+(level-1)*12+equipLevel*10+hpOption)*mult),atk=Math.floor((g.atk+(level-1)*3+equipLevel*4+atkOption)*mult),defense=Math.floor((g.defense+(level-1)*1.5+equipLevel*2+((eq?.optionA===1||eq?.optionB===1)?Math.floor(equipLevel*.8):0))*mult);
@@ -31,7 +31,7 @@ function buildPlayers(save:SaveLike):Unit[]{
 function terrainClass(t:Terrain){return `be-terrain-${t}`}
 export default function BattleEngine(){
  const[save,setSave]=useState<SaveLike>(readSave);const[engine,setEngine]=useState<BattleState|null>(null);const[terrain,setTerrain]=useState<Terrain[]>([]);const[seed,setSeed]=useState(0);const floor=save.floor||1;const rule=getTowerFloorRule(floor);const players=useMemo(()=>buildPlayers(save),[save]);
- const formationKey=useMemo(()=>players.map(player=>player.id).join(','),[players]);
+ const formationKey=useMemo(()=>players.map(player=>`${player.id}:${player.maxHp}:${player.atk}:${player.defense}`).join(','),[players]);
  const start=()=>{const nextSeed=createBattleFieldSeed();const nextTerrain=createBattleField(nextSeed);const enemies=createMonsterEnemies(floor);setSeed(nextSeed);setTerrain(nextTerrain);setEngine(createBattleState([...players,...enemies],[`천탑 ${floor}층 · ${rule.kind==='boss'?'BOSS':'일반'} 전투`,`지형 시드 ${nextSeed}`]));};
  useEffect(()=>{start()},[floor,formationKey]);if(!engine||terrain.length!==BOARD_WIDTH*BOARD_HEIGHT)return null;
  const presentation=buildBattlePresentation(engine.units,terrain,engine.selectedId),selected=presentation.selected;const reachable=new Set(presentation.cells.filter(c=>c.reachable).map(c=>`${c.x},${c.y}`)),targets=new Set(presentation.cells.filter(c=>c.targetable).map(c=>`${c.x},${c.y}`));
