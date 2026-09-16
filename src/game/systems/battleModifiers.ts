@@ -1,15 +1,15 @@
 import type { General, Unit } from '../types';
 import { getFormationBonus } from './formation';
 import { getRelationshipBonus } from './relationships';
-import { getDamageReductionPct, getPassive, getPassiveRageGain } from './passives';
+import { getDamageReductionPct, getPassive } from './passives';
 
 export type BattleModifiers = {
   attackPct: number;
   hpPct: number;
   skillPowerPct: number;
-  critPct: number;
   damageReductionPct: number;
   rageGain: number;
+  critPct: number;
 };
 
 export function getBattleModifiers(generals: General[]): BattleModifiers {
@@ -68,5 +68,5 @@ export function applyBattleDamageReduction(unit: Pick<Unit, 'id'>, damage: numbe
 }
 
 export function getBattleRageGain(unit: Pick<Unit, 'id'>, generals: General[]): number {
-  return getUnitBattleModifiers(unit, generals).rageGain + getPassiveRageGain(unit);
+  return getUnitBattleModifiers(unit, generals).rageGain;
 }
