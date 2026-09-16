@@ -52,7 +52,8 @@ export function useMonsterSkill(enemy: Unit, target: Unit, units: Unit[], terrai
     return { used: true, message: `${enemy.name}의 ${name} → ${target.name} ${damage} 피해 · 화상 2턴` };
   }
 
-  if (name.includes('방어') || name.includes('철벽') || name.includes('수호') || name.includes('용린')) {
+  // Defensive monster skills enter the existing guard state instead of dealing damage.
+  if (name.includes('방어') || name.includes('방패') || name.includes('철벽') || name.includes('수호') || name.includes('용린')) {
     enemy.status = 'guard';
     enemy.statusTurns = 2;
     return { used: true, message: `${enemy.name}의 ${name} → 방어 태세 2턴` };
