@@ -11,6 +11,8 @@ export type BattleCellView = {
   selected: boolean;
 };
 
+const canAct = (unit: Unit) => unit.currentHp > 0 && !(unit.status === 'stun' && unit.statusTurns > 0);
+
 export function buildBattleCellViews(
   units: Unit[],
   terrain: Terrain[],
@@ -18,15 +20,19 @@ export function buildBattleCellViews(
 ): BattleCellView[] {
   const selected = units.find((unit) => unit.id === selectedId) ?? null;
   const occupied = new Set(units.filter((unit) => unit.currentHp > 0).map((unit) => `${unit.x},${unit.y}`));
-  const reachable = selected && selected.team === 'player' && !selected.acted
-    ? new Set(getReachableCells(selected, terrain, occupied).map((cell) => `${cell.x},${cell.y}`))
+  const actionable = Boolean(selected && selected.team === 'player' && canAct(selected) && !selected.acted);
+  const mover = actionable && selected?.status === 'slow' && selected.statusTurns > 0
+    ? { ...selected, movePoints: Math.max(1, Math.ceil(selected.move / 2)) }
+    : selected;
+  const reachable = actionable && mover && mover.movePoints > 0
+    ? new Set(getReachableCells(mover, terrain, occupied).map((cell) => `${cell.x},${cell.y}`))
     : new Set<string>();
 
   return terrain.map((tile, index) => {
     const x = index % BOARD_WIDTH;
     const y = Math.floor(index / BOARD_WIDTH);
     const unit = units.find((candidate) => candidate.currentHp > 0 && candidate.x === x && candidate.y === y) ?? null;
-    const targetable = Boolean(selected && unit && unit.team === 'enemy' && isInRange(selected, unit, selected.range) && !selected.acted);
+    const targetable = Boolean(actionable && unit && unit.team === 'enemy' && isInRange(selected!, unit, selected!.range));
     return {
       x,
       y,
