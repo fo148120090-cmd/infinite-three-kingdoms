@@ -3,6 +3,7 @@ import { BOARD_WIDTH } from '../data/constants';
 import { canTargetEnemy, calculateDamage, getReachableCells, isBattleOver, isInRange } from './battleRules';
 import { resolveGeneralSkill } from './skillRules';
 import { resolveEnemyTurn } from './enemyAi';
+import { applyBattleDamageReduction } from './battleModifiers';
 
 export type BattleTurn = 'player' | 'enemy';
 export type BattlePhase = 'player' | 'enemy' | 'victory' | 'defeat';
@@ -73,7 +74,8 @@ export function attackBattleTarget(state: BattleState, terrain: Terrain[]): Batt
   if (!attacker || !target || !canAct(attacker) || !canTargetEnemy(attacker, target)) return { state, success: false, message: attacker?.status === 'stun' ? '기절 상태라 공격할 수 없습니다.' : '공격 가능한 적을 선택하세요.' };
   const tile = terrain[target.y * BOARD_WIDTH + target.x];
   if (!tile) return { state, success: false, message: '전장 지형 정보를 찾을 수 없습니다.' };
-  const damage = calculateDamage(attacker, target, tile);
+  const rawDamage = calculateDamage(attacker, target, tile);
+  const damage = applyBattleDamageReduction(target, rawDamage);
   const units = cloneUnits(state.units).map((unit) => unit.id === attacker.id ? { ...unit, acted: true } : unit.id === target.id ? { ...unit, currentHp: Math.max(0, unit.currentHp - damage) } : unit);
   return { state: finalize({ ...state, units, targetId: null }, `${attacker.name}의 공격 → ${target.name} ${damage} 피해`), success: true, message: '공격 완료' };
 }
