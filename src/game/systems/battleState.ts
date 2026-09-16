@@ -4,6 +4,7 @@ import { canTargetEnemy, calculateDamage, getReachableCells, isBattleOver, isInR
 import { resolveGeneralSkill } from './skillRules';
 import { resolveEnemyTurn } from './enemyAi';
 import { applyBattleDamageReduction } from './battleModifiers';
+import { applyMonsterTurnEffects } from './monsterTurnEffects';
 
 export type BattleTurn = 'player' | 'enemy';
 export type BattlePhase = 'player' | 'enemy' | 'victory' | 'defeat';
@@ -101,18 +102,23 @@ export function canEndPlayerTurn(state: BattleState): boolean {
   return state.phase === 'player' && !state.units.some((unit) => unit.team === 'player' && unit.currentHp > 0 && !unit.acted && canAct(unit));
 }
 
-export function endPlayerTurn(state: BattleState, terrain: Terrain[]): BattleActionResult {
+export function endPlayerTurn(state: BattleState, terrain: Terrain[], floor = 1): BattleActionResult {
   if (state.phase !== 'player') return { state, success: false, message: '플레이어 턴이 아닙니다.' };
-  const enemyResult = resolveEnemyTurn(state.units, terrain);
+
+  const workingUnits = cloneUnits(state.units);
+  const bossEffects = applyMonsterTurnEffects(workingUnits, floor, state.turn === 'enemy' ? 1 : 0);
+  const enemyResult = resolveEnemyTurn(workingUnits, terrain);
+  const effectMessages = bossEffects.map((effect) => effect.message);
   const reset = enemyResult.units.map((unit) => unit.team === 'player' && unit.currentHp > 0
     ? { ...advanceStatuses(unit), acted: false, movePoints: unit.status === 'slow' && unit.statusTurns > 0 ? Math.max(1, Math.ceil(unit.move / 2)) : unit.move }
     : advanceStatuses(unit));
-  const enemyMessages = enemyResult.messages.length ? enemyResult.messages.join(' / ') : '몬스터가 행동하지 않았습니다.';
-  const interim: BattleState = { ...state, units: reset, turn: 'player', phase: 'player', targetId: null, log: [...state.log, '몬스터 턴', enemyMessages] };
+  const enemyMessages = [...effectMessages, ...enemyResult.messages];
+  const enemyLog = enemyMessages.length ? enemyMessages.join(' / ') : '몬스터가 행동하지 않았습니다.';
+  const interim: BattleState = { ...state, units: reset, turn: 'player', phase: 'player', targetId: null, log: [...state.log, '몬스터 턴', enemyLog] };
   const outcome = isBattleOver(reset);
-  if (outcome) return { state: finalize(interim, outcome === 'player' ? '전투 승리!' : '전투 패배...'), success: true, message: enemyMessages };
+  if (outcome) return { state: finalize(interim, outcome === 'player' ? '전투 승리!' : '전투 패배...'), success: true, message: enemyLog };
   const selected = reset.find((unit) => unit.team === 'player' && canAct(unit));
-  return { state: { ...interim, selectedId: selected?.id ?? null }, success: true, message: enemyMessages };
+  return { state: { ...interim, selectedId: selected?.id ?? null }, success: true, message: enemyLog };
 }
 
 export function getBattleTargetable(state: BattleState): Unit[] {
