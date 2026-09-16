@@ -1,7 +1,7 @@
 import type { General, Unit } from '../types';
 import { getFormationBonus } from './formation';
 import { getRelationshipBonus } from './relationships';
-import { getDamageReductionPct, getPassive, getPassiveRageGain, getSkillPowerMultiplier } from './passives';
+import { getDamageReductionPct, getPassive } from './passives';
 
 export type BattleModifiers = {
   attackPct: number;
@@ -62,6 +62,7 @@ export function getBattleDamageReductionPct(unit: Pick<Unit, 'id'>): number {
   return getDamageReductionPct(unit);
 }
 
-export function getBattleRageGain(unit: Pick<Unit, 'id'>, generals: General[]): number {
-  return getUnitBattleModifiers(unit, generals).rageGain;
+export function applyBattleDamageReduction(unit: Pick<Unit, 'id'>, damage: number): number {
+  const reduction = Math.max(0, Math.min(100, getBattleDamageReductionPct(unit)));
+  return Math.max(1, Math.floor(damage * (1 - reduction / 100)));
 }
