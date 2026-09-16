@@ -1,6 +1,7 @@
 import type { Terrain, Unit } from '../types';
 import { BOARD_WIDTH, BOARD_HEIGHT } from '../data/constants';
 import { calculateDamage, isInRange } from './battleRules';
+import { applyBattleDamageReduction, getBattleSkillPowerMultiplier } from './battleModifiers';
 
 export type SkillResult = { units: Unit[]; message: string; success: boolean };
 const aliveEnemies = (units: Unit[]) => units.filter((u) => u.team === 'enemy' && u.currentHp > 0);
@@ -12,6 +13,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
   if (!caster || caster.acted) return { units, message: '스킬을 사용할 수 없습니다.', success: false };
   const target = targetId ? units.find((u) => u.id === targetId && u.team === 'enemy' && u.currentHp > 0) : undefined;
   const name = caster.skill;
+  const skillPower = Math.floor(caster.skillPower * getBattleSkillPowerMultiplier(caster, alivePlayers(units)));
   let next = units.map((u) => ({ ...u }));
   let message = `${caster.name}의 ${name}`;
   const finish = (): SkillResult => ({ units: next.map((u) => u.id === caster.id ? { ...u, acted: true } : u), message, success: true });
@@ -34,7 +36,8 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     next = next.map((u) => {
       const hit = targets.find((t) => t.id === u.id); if (!hit) return u;
       const tile = terrain[u.y * BOARD_WIDTH + u.x]; if (!tile) return u;
-      const damage = calculateDamage(caster, hit, tile, caster.skillPower);
+      const rawDamage = calculateDamage(caster, hit, tile, skillPower);
+      const damage = applyBattleDamageReduction(hit, rawDamage);
       return { ...u, currentHp: Math.max(0, u.currentHp - damage), status: name === '호통' ? 'stun' : u.status, statusTurns: name === '호통' ? 2 : u.statusTurns };
     });
     message += ` · ${targets.length}명 타격`; return finish();
@@ -42,7 +45,8 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
   if (name === '청룡참') {
     if (!target || !isInRange(caster, target, caster.range)) return { units, message: '사거리 내 적 대상이 필요합니다.', success: false };
     const tile = terrain[target.y * BOARD_WIDTH + target.x]; if (!tile) return { units, message: '전장 지형 정보를 찾을 수 없습니다.', success: false };
-    const damage = calculateDamage(caster, target, tile, caster.skillPower);
+    const rawDamage = calculateDamage(caster, target, tile, skillPower);
+    const damage = applyBattleDamageReduction(target, rawDamage);
     next = next.map((u) => u.id === target.id ? { ...u, currentHp: Math.max(0, u.currentHp - damage), status: 'burn', statusTurns: 2 } : u);
     message += ` · ${target.name} ${damage} 피해 + 화상`; return finish();
   }
@@ -87,7 +91,8 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     next = next.map((u) => {
       if (!pathKeys.has(`${u.x},${u.y}`) || u.team !== 'enemy' || u.currentHp <= 0) return u;
       const tile = terrain[u.y * BOARD_WIDTH + u.x]; if (!tile) return u;
-      const damage = calculateDamage(caster, u, tile, caster.skillPower);
+      const rawDamage = calculateDamage(caster, u, tile, skillPower);
+      const damage = applyBattleDamageReduction(u, rawDamage);
       return { ...u, currentHp: Math.max(0, u.currentHp - damage) };
     });
 
@@ -104,7 +109,8 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     next = next.map((u) => {
       const hit = targets.find((t) => t.id === u.id); if (!hit) return u;
       const tile = terrain[u.y * BOARD_WIDTH + u.x]; if (!tile) return u;
-      const damage = calculateDamage(caster, hit, tile, caster.skillPower);
+      const rawDamage = calculateDamage(caster, hit, tile, skillPower);
+      const damage = applyBattleDamageReduction(hit, rawDamage);
       return { ...u, currentHp: Math.max(0, u.currentHp - damage), status: 'stun', statusTurns: 2 };
     });
     message += ` · 번개 범위 ${targets.length}명`; return finish();
@@ -116,7 +122,8 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
   }
   if (!target || !isInRange(caster, target, caster.range)) return { units, message: '사거리 내 적 대상이 필요합니다.', success: false };
   const targetTerrain = terrain[target.y * BOARD_WIDTH + target.x]; if (!targetTerrain) return { units, message: '대상 지형 정보를 찾을 수 없습니다.', success: false };
-  const damage = calculateDamage(caster, target, targetTerrain, caster.skillPower);
+  const rawDamage = calculateDamage(caster, target, targetTerrain, skillPower);
+  const damage = applyBattleDamageReduction(target, rawDamage);
   next = next.map((u) => u.id === target.id ? { ...u, currentHp: Math.max(0, u.currentHp - damage) } : u);
   message += ` · ${target.name} ${damage} 피해`; return finish();
 }
