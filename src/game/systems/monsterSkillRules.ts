@@ -10,7 +10,8 @@ const dist = (a: Unit, b: Unit) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 function damageTarget(enemy: Unit, target: Unit, terrain: Terrain[], power: number): number {
   const tile = terrain[target.y * BOARD_WIDTH + target.x];
   if (!tile) return 0;
-  const raw = calculateDamage(enemy, target, tile, power + enemy.buff);
+  // calculateDamage already includes enemy.buff in the attacker term.
+  const raw = calculateDamage(enemy, target, tile, power);
   return applyBattleDamageReduction(target, raw);
 }
 
