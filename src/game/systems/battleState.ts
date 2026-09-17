@@ -21,6 +21,7 @@ function finalize(state: BattleState, message: string): BattleState {
   return { ...state, log: [...state.log, message] };
 }
 function advanceStatuses(unit: Unit): Unit {
+  if (unit.currentHp <= 0) return { ...unit, status: 'none', statusTurns: 0 };
   if (unit.statusTurns <= 0 || unit.status === 'none') return unit;
   const statusDamage = unit.status === 'burn' ? Math.max(1, Math.floor(unit.maxHp * 0.06)) : 0;
   const nextTurns = Math.max(0, unit.statusTurns - 1);
