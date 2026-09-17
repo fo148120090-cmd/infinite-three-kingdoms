@@ -10,7 +10,7 @@ const adjacentEnemies = (caster: Unit, units: Unit[]) => aliveEnemies(units).fil
 
 export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: string | null, terrain: Terrain[]): SkillResult {
   const caster = units.find((u) => u.id === casterId && u.team === 'player' && u.currentHp > 0);
-  if (!caster || caster.acted) return { units, message: '스킬을 사용할 수 없습니다.', success: false };
+  if (!caster || caster.acted || (caster.status === 'stun' && caster.statusTurns > 0)) return { units, message: '스킬을 사용할 수 없습니다.', success: false };
   const target = targetId ? units.find((u) => u.id === targetId && u.team === 'enemy' && u.currentHp > 0) : undefined;
   const name = caster.skill;
   const skillPower = Math.floor(caster.skillPower * getBattleSkillPowerMultiplier(caster, alivePlayers(units)));
@@ -96,9 +96,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
       return { ...u, currentHp: Math.max(0, u.currentHp - damage) };
     });
 
-    if (landing) {
-      next = next.map((u) => u.id === caster.id ? { ...u, x: landing!.x, y: landing!.y } : u);
-    }
+    if (landing) next = next.map((u) => u.id === caster.id ? { ...u, x: landing!.x, y: landing!.y } : u);
     const landingText = landing ? ` · ${landing.x + 1},${landing.y + 1}칸 착지` : ' · 착지 가능한 칸 없음';
     message += ` · 직선 ${path.length}칸 관통 · ${hitEnemies.length}명 타격${landingText}`;
     return finish();
