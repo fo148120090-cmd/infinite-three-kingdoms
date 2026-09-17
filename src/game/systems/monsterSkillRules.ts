@@ -31,7 +31,8 @@ export function useMonsterSkill(enemy: Unit, target: Unit, units: Unit[], terrai
   const name = enemy.skill;
 
   if (name.includes('주술') || name.includes('군령')) {
-    for (const player of players) player.buff -= Math.max(1, Math.floor(enemy.skillPower * 0.4));
+    const weaken = Math.max(1, Math.floor(enemy.skillPower * 0.4));
+    for (const player of players) player.buff = Math.max(0, player.buff - weaken);
     const damage = damageTarget(enemy, target, terrain, enemy.skillPower);
     target.currentHp = Math.max(0, target.currentHp - damage);
     return { used: true, message: `${enemy.name}의 ${name} → ${target.name} ${damage} 피해 · 공격 약화` };
@@ -53,7 +54,6 @@ export function useMonsterSkill(enemy: Unit, target: Unit, units: Unit[], terrai
     return { used: true, message: `${enemy.name}의 ${name} → ${target.name} ${damage} 피해 · 화상 2턴` };
   }
 
-  // Defensive monster skills enter the existing guard state instead of dealing damage.
   if (name.includes('방어') || name.includes('방패') || name.includes('철벽') || name.includes('수호') || name.includes('용린')) {
     enemy.status = 'guard';
     enemy.statusTurns = 2;
