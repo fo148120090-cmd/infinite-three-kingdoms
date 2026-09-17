@@ -47,8 +47,10 @@ export function selectBattleTarget(state: BattleState, id: string | null): Battl
 export function getSelectedReachableCells(state: BattleState, terrain: Terrain[]) {
   const selected = state.units.find((unit) => unit.id === state.selectedId && unit.team === 'player' && unit.currentHp > 0);
   if (!selected || state.phase !== 'player' || selected.acted || selected.movePoints <= 0 || !canAct(selected)) return [];
+  const mover = selected.status === 'slow' && selected.statusTurns > 0
+    ? { ...selected, movePoints: Math.min(selected.movePoints, Math.max(1, Math.ceil(selected.move / 2))) }
+    : selected;
   const occupied = new Set(state.units.filter((unit) => unit.currentHp > 0).map((unit) => cellKey(unit.x, unit.y)));
-  const mover = selected.status === 'slow' && selected.statusTurns > 0 ? { ...selected, movePoints: Math.max(1, Math.ceil(selected.move / 2)) } : selected;
   return getReachableCells(mover, terrain, occupied);
 }
 export function moveBattleUnit(state: BattleState, terrain: Terrain[], x: number, y: number): BattleActionResult {
@@ -75,7 +77,7 @@ export function attackBattleTarget(state: BattleState, terrain: Terrain[]): Batt
 export function useBattleSkill(state: BattleState, terrain: Terrain[]): BattleActionResult {
   if (state.phase !== 'player') return { state, success: false, message: '지금은 스킬을 사용할 수 없습니다.' };
   const caster = state.units.find((unit) => unit.id === state.selectedId && unit.team === 'player' && unit.currentHp > 0);
-  if (!caster || !canAct(caster)) return { state, success: false, message: caster?.status === 'stun' ? '기절 상태라 스킬을 사용할 수 없습니다.' : '지금은 스킬을 사용할 수 없습니다.' };
+  if (!caster || caster.acted || !canAct(caster)) return { state, success: false, message: caster?.status === 'stun' ? '기절 상태라 스킬을 사용할 수 없습니다.' : '지금은 스킬을 사용할 수 없습니다.' };
   const result = resolveGeneralSkill(state.units, state.selectedId ?? '', state.targetId, terrain);
   if (!result.success) return { state, success: false, message: result.message };
   return { state: finalize({ ...state, units: result.units, targetId: null }, result.message), success: true, message: result.message };
