@@ -1,11 +1,12 @@
 import type { Terrain, Unit } from '../types';
-import { BOARD_WIDTH, BOARD_HEIGHT } from '../data/constants';
+import { BOARD_WIDTH } from '../data/constants';
 import { calculateDamage, isInRange } from './battleRules';
 import { applyBattleDamageReduction, getBattleSkillPowerMultiplier } from './battleModifiers';
 
 export type SkillResult = { units: Unit[]; message: string; success: boolean };
 const aliveEnemies = (units: Unit[]) => units.filter((u) => u.team === 'enemy' && u.currentHp > 0);
 const alivePlayers = (units: Unit[]) => units.filter((u) => u.team === 'player' && u.currentHp > 0);
+const allPlayers = (units: Unit[]) => units.filter((u) => u.team === 'player');
 const adjacentEnemies = (caster: Unit, units: Unit[]) => aliveEnemies(units).filter((u) => Math.abs(u.x - caster.x) + Math.abs(u.y - caster.y) <= 1);
 
 export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: string | null, terrain: Terrain[]): SkillResult {
@@ -13,7 +14,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
   if (!caster || caster.acted || (caster.status === 'stun' && caster.statusTurns > 0)) return { units, message: '스킬을 사용할 수 없습니다.', success: false };
   const target = targetId ? units.find((u) => u.id === targetId && u.team === 'enemy' && u.currentHp > 0) : undefined;
   const name = caster.skill;
-  const skillPower = Math.floor(caster.skillPower * getBattleSkillPowerMultiplier(caster, alivePlayers(units)));
+  const skillPower = Math.floor(caster.skillPower * getBattleSkillPowerMultiplier(caster, allPlayers(units)));
   let next = units.map((u) => ({ ...u }));
   let message = `${caster.name}의 ${name}`;
   const finish = (): SkillResult => ({ units: next.map((u) => u.id === caster.id ? { ...u, acted: true } : u), message, success: true });
@@ -62,7 +63,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     for (let step = 1; step <= distance; step += 1) {
       const x = caster.x + dx * step;
       const y = caster.y + dy * step;
-      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) break;
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= 10) break;
       path.push({ x, y });
     }
     if (path.length !== distance) return { units, message: '돌진 경로가 전장을 벗어납니다.', success: false };
@@ -71,7 +72,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     for (let step = distance + 1; ; step += 1) {
       const x = caster.x + dx * step;
       const y = caster.y + dy * step;
-      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) break;
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= 10) break;
       const occupant = next.find((u) => u.currentHp > 0 && u.x === x && u.y === y && u.id !== caster.id);
       if (!occupant) {
         landing = { x, y };
