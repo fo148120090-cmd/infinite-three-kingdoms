@@ -103,11 +103,16 @@ export function endPlayerTurn(state: BattleState, terrain: Terrain[], floor = 1)
     : advanceStatuses(unit));
   const enemyMessages = [...bossEffects.map((effect) => effect.message), ...enemyResult.messages];
   const enemyLog = enemyMessages.length ? enemyMessages.join(' / ') : '몬스터가 행동하지 않았습니다.';
-  const interim: BattleState = { ...state, units: reset, turn: 'player', phase: 'player', targetId: null, log: [...state.log, '몬스터 턴', enemyLog] };
+  const log = [...state.log, '몬스터 턴', enemyLog];
   const outcome = isBattleOver(reset);
-  if (outcome) return { state: finalize(interim, outcome === 'player' ? '전투 승리!' : '전투 패배...'), success: true, message: enemyLog };
+  if (outcome === 'enemy') {
+    return { state: { ...state, units: reset, turn: 'player', phase: 'defeat', targetId: null, log: [...log, '전투 패배...'] }, success: true, message: enemyLog };
+  }
+  if (outcome === 'player') {
+    return { state: { ...state, units: reset, turn: 'player', phase: 'victory', targetId: null, log: [...log, '전투 승리!'] }, success: true, message: enemyLog };
+  }
   const selected = reset.find((unit) => unit.team === 'player' && canAct(unit));
-  return { state: { ...interim, selectedId: selected?.id ?? null }, success: true, message: enemyLog };
+  return { state: { ...state, units: reset, turn: 'player', phase: 'player', targetId: null, selectedId: selected?.id ?? null, log }, success: true, message: enemyLog };
 }
 export function getBattleTargetable(state: BattleState): Unit[] {
   const attacker = state.units.find((unit) => unit.id === state.selectedId && unit.team === 'player' && unit.currentHp > 0);
