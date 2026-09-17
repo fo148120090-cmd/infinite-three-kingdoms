@@ -65,7 +65,8 @@ export function useMonsterSkill(enemy: Unit, target: Unit, units: Unit[], terrai
     target.currentHp = Math.max(0, target.currentHp - damage);
     if (enemy.role === 'boss' || name.includes('낙뢰') || name.includes('붕괴') || name.includes('심판')) {
       for (const player of players.filter((player) => dist(player, target) <= 1 && player.id !== target.id)) {
-        const splash = Math.max(1, Math.floor(damage * 0.45));
+        const rawSplash = Math.max(1, Math.floor(damage * 0.45));
+        const splash = applyBattleDamageReduction(player, rawSplash);
         player.currentHp = Math.max(0, player.currentHp - splash);
       }
     }
