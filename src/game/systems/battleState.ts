@@ -56,8 +56,12 @@ export function selectBattleUnit(state: BattleState, id: string | null): BattleS
 export function selectBattleTarget(state: BattleState, id: string | null): BattleState {
   if (state.phase !== 'player') return state;
   if (!id) return { ...state, targetId: null };
+  const attacker = state.units.find((unit) => unit.id === state.selectedId && unit.team === 'player' && unit.currentHp > 0);
   const target = state.units.find((unit) => unit.id === id && unit.team === 'enemy' && unit.currentHp > 0);
-  return target ? { ...state, targetId: target.id } : state;
+  if (!attacker || attacker.acted || !canAct(attacker) || !target || !isInRange(attacker, target, attacker.range)) {
+    return { ...state, targetId: null };
+  }
+  return { ...state, targetId: target.id };
 }
 
 export function getSelectedReachableCells(state: BattleState, terrain: Terrain[]) {
@@ -76,8 +80,13 @@ export function moveBattleUnit(state: BattleState, terrain: Terrain[], x: number
   if (!selected || selected.acted || selected.movePoints <= 0 || !canAct(selected)) return { state, success: false, message: selected?.status === 'stun' ? '기절 상태라 행동할 수 없습니다.' : '이동할 장수를 선택하세요.' };
   const destination = getSelectedReachableCells(state, terrain).find((cell) => cell.x === x && cell.y === y);
   if (!destination) return { state, success: false, message: '이동할 수 없는 칸입니다.' };
-  const units = cloneUnits(state.units).map((unit) => unit.id === selected.id ? { ...unit, x, y, movePoints: Math.max(0, unit.movePoints - destination.cost) } : unit);
-  return { state: { ...state, units }, success: true, message: `${selected.name} 이동` };
+  const units = cloneUnits(state.units).map((unit) => unit.id === selected.id
+    ? { ...unit, x, y, movePoints: Math.max(0, unit.movePoints - destination.cost) }
+    : unit);
+  const moved = units.find((unit) => unit.id === selected.id)!;
+  const target = state.targetId ? units.find((unit) => unit.id === state.targetId && unit.team === 'enemy' && unit.currentHp > 0) : undefined;
+  const targetId = target && isInRange(moved, target, moved.range) ? target.id : null;
+  return { state: { ...state, units, targetId }, success: true, message: `${selected.name} 이동` };
 }
 
 export function attackBattleTarget(state: BattleState, terrain: Terrain[]): BattleActionResult {
