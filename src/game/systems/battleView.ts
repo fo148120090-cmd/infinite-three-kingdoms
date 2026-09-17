@@ -22,7 +22,7 @@ export function buildBattleCellViews(
   const occupied = new Set(units.filter((unit) => unit.currentHp > 0).map((unit) => `${unit.x},${unit.y}`));
   const actionable = Boolean(selected && selected.team === 'player' && canAct(selected) && !selected.acted);
   const mover = actionable && selected?.status === 'slow' && selected.statusTurns > 0
-    ? { ...selected, movePoints: Math.max(1, Math.ceil(selected.move / 2)) }
+    ? { ...selected, movePoints: Math.min(selected.movePoints, Math.max(1, Math.ceil(selected.move / 2))) }
     : selected;
   const reachable = actionable && mover && mover.movePoints > 0
     ? new Set(getReachableCells(mover, terrain, occupied).map((cell) => `${cell.x},${cell.y}`))
