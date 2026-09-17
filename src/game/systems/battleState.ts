@@ -49,7 +49,13 @@ export function selectBattleUnit(state: BattleState, id: string | null): BattleS
   if (state.phase !== 'player') return state;
   const unit = id ? state.units.find((candidate) => candidate.id === id && candidate.currentHp > 0) : undefined;
   if (!unit) return { ...state, selectedId: null, targetId: null };
-  if (unit.team === 'enemy') return { ...state, targetId: unit.id };
+  if (unit.team === 'enemy') {
+    const attacker = state.units.find((candidate) => candidate.id === state.selectedId && candidate.team === 'player' && candidate.currentHp > 0);
+    if (!attacker || attacker.acted || !canAct(attacker) || !isInRange(attacker, unit, attacker.range)) {
+      return { ...state, targetId: null };
+    }
+    return { ...state, targetId: unit.id };
+  }
   return { ...state, selectedId: unit.id, targetId: null };
 }
 
