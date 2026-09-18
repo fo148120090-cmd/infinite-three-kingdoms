@@ -77,13 +77,31 @@ export function applyLineage(monster:Monster,lineage?:MonsterLineage):Monster{
   const stat=1+(lineage.evolutionStage*.08);
   const tendencies:Tendencies={...monster.tendencies};
   Object.entries(lineage.focus).forEach(([k,v])=>{
-    const map:Record<string,keyof Tendencies>={combat:"aggression",soldier:"aggression",officer:"focus",armor:"caution",command:"cooperation",survival:"survival",magic:"focus",ambush:"pursuit",defense:"caution",strength:"aggression"};
+    const map:Record<string,keyof Tendencies>={combat:"aggression",soldier:"aggression",officer:"focus",armor:"caution",command:"cooperation",survival:"survival",magic:"focus",ambush:"pursuit",defense:"caution",strength:"aggression",split:"cooperation",absorb:"aggression",poison:"focus",mana:"focus",greed:"greed",trap:"caution",scout:"pursuit",hunt:"pursuit",berserk:"aggression",aquatic:"survival",speed:"bravery",mental:"focus",charm:"focus",illusion:"caution",control:"cooperation",song:"focus",web:"caution",war:"aggression",flame:"aggression",domination:"cooperation",size:"aggression",territory:"caution",death:"survival"};
     const key=map[k];
     if(key)tendencies[key]=Math.min(100,tendencies[key]+Math.min(12,v));
   });
   return {...monster,name:form?monster.name+" · "+form:monster.name,level:Math.max(monster.level,lineage.level),
     hp:Math.round(monster.hp*stat),maxHp:Math.round(monster.maxHp*stat),attack:Math.round(monster.attack*stat),
     defense:Math.round(monster.defense*stat),tendencies};
+}
+
+export function evolutionActionBonus(lineage:MonsterLineage|undefined,action:string):number{
+  if(!lineage||lineage.evolutionStage===0)return 0;
+  const focus=Object.entries(lineage.focus).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  const stage=lineage.evolutionStage;
+  const match:Record<string,string[]>={
+    split:["분열"],absorb:["일반 공격"],poison:["독성 압박"],mana:["광역 마법"],
+    combat:["일반 공격","추격"],command:["전투 함성","지휘 명령","보스 패턴"],greed:["함정 투척","일반 공격"],
+    trap:["매복 함정"],scout:["추격"],hunt:["무리 사냥","측면 습격","굴 파기 기습"],defense:["후퇴","회피 기동"],
+    berserk:["광폭화"],aquatic:["측면 습격"],magic:["역할 분석","광역 마법"],speed:["급강하"],
+    mental:["매혹"],charm:["매혹"],illusion:["매혹"],control:["매혹"],song:["매혹"],
+    soldier:["일반 공격","연계 공격"],officer:["지휘 명령"],armor:["전투 함성"],
+    strength:["대지 강타","일반 공격"],web:["거미줄"],war:["일반 공격","광폭화"],
+    flame:["독성 압박"],domination:["역할 분석"],ambush:["굴 파기 기습"],size:["대지 강타"],
+    territory:["영역 지배"],death:["역할 분석"]
+  };
+  return (focus&&match[focus]?.some(x=>action===x))?stage*10:0;
 }
 
 export function evolutionHint(lineage:MonsterLineage):string{
