@@ -223,10 +223,14 @@ export default function App(){
   useEffect(()=>{
     if(screen!=="battle"||!battle.ended)return;
     const victory=battle.result==="victory";
+    const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
+    if(!victory){
+      setSave(s=>({...s,heroes:bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories)}));
+      return;
+    }
     if(victory){
       const gain=180+battle.units.filter(u=>u.team==="enemy").length*55+(battle.room==="boss"?900:0);
       const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
-      const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
       setSave(s=>{
         const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
         return {...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
