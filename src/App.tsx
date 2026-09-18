@@ -480,7 +480,11 @@ export default function App(){
     notify(hero.name+" · "+costumeLabel(hero.job,costumeId)+" 착용");
   };
   const sealWorld=()=>{
-    setSave(s=>({...s,worldSealed:true,heroes:s.heroes.map(h=>awardChronicle({...h,statusNote:"세계의 구멍 봉인 완료"}))}));
+    setSave(s=>({...s,worldSealed:true,heroes:s.heroes.map(h=>{
+      const next={...h,statusNote:"세계의 구멍 봉인 완료"};
+      const awarded=awardChronicle(next);
+      return {...awarded,mood:systemMood(awarded),statusNote:systemStatus(awarded),evaluation:systemEvaluation(awarded)};
+    })}));
     setScreen("home");
     notify("세계의 구멍을 봉인했습니다. 악의 침입이 차단되었습니다.");
   };
