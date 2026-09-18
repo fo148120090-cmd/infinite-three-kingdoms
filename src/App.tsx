@@ -1,73 +1,238 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
-import { Gem, Sword, Shield, Hammer, Package, Star, Users, RotateCcw } from 'lucide-react';
-import { createMonsterEnemies } from './game/systems/monsterBattle';
-import { getMonsterRegion } from './game/data/monsters';
 
-type Faction='Wei'|'Shu'|'Wu'|'Warlords';
-type Screen='home'|'tower'|'generals'|'inventory'|'summon'|'formation'|'battle';
-type General={id:string;name:string;title:string;faction:Faction;role:string;hp:number;atk:number;range:number;move:number;skill:string;skillPower:number;ultimate:string;ultimatePower:number;equipment:string;grade:number;tsName:string;tsTitle:string};
-type Equip={level:number;rarity:number;equipped:boolean;optionA:number;optionB:number};
-type Save={floor:number;gold:number;gems:number;level:number;materials:number;owned:string[];equipment:Record<string,Equip>;stars:Record<string,number>;fragments:Record<string,number>;tsSkins:Record<string,boolean>;formation:string[]};
-type Terrain='plain'|'forest'|'hill'|'water'|'fort';
-type Status='none'|'stun'|'burn'|'slow'|'guard';
-type Unit=General&{team:'player'|'enemy';x:number;y:number;currentHp:number;maxHp:number;acted:boolean;rage:number;buff:number;movePoints:number;status:Status;statusTurns:number};
-const W=7,H=6,KEY='infinite-three-kingdoms-save-v2';
-const G:General[]=[
-['liu-bei','유비','인덕의 군주','Shu','지원',120,22,2,3,'인덕의 격려',0,'인덕의 대의',0,'쌍검',5,'유비·천룡','용덕의 군주'],['guan-yu','관우','미염공','Shu','전사',150,38,1,3,'청룡참',28,'청룡언월도',55,'청룡언월도',5,'관우·홍련','적토의 무장'],['zhang-fei','장비','만인지적','Shu','수호',190,28,1,2,'호통',0,'장판교 포효',34,'장팔사모',4,'장비·흑염','폭렬의 장군'],['zhao-yun','조운','상산의 용','Shu','기병',135,34,1,4,'용진',18,'칠진칠출',48,'용담창',5,'조운·은룡','은룡의 기사'],['zhuge-liang','제갈량','와룡','Shu','책사',95,30,3,2,'천뢰',24,'공성계',42,'백우선',5,'제갈량·성운','성운의 책사'],['cao-cao','조조','위무제','Wei','책사',125,29,2,3,'간웅의 명령',0,'위무의 천명',36,'의천검',5,'조조·흑금','패왕의 군주'],['xiahou-dun','하후돈','독안의 맹장','Wei','전사',160,35,1,3,'맹격',20,'독안참',45,'칠성도',4,'하후돈·백야','백야의 맹장'],['sun-quan','손권','강동의 호랑이','Wu','지원',130,27,2,3,'강동의 결의',0,'강동패왕',30,'벽옥검',4,'손권·벽옥','벽해의 군주'],['lu-bu','여포','천하무쌍','Warlords','기병',180,48,1,4,'천하무쌍',42,'신마난무',70,'방천화극',5,'여포·적월','적월의 마왕'],['diao-chan','초선','경국지색','Warlords','지원',90,24,2,3,'매혹',0,'폐월의 춤',32,'금선연',4,'초선·월화','월화의 무희']
-].map(x=>({id:x[0],name:x[1],title:x[2],faction:x[3] as Faction,role:x[4],hp:+x[5],atk:+x[6],range:+x[7],move:+x[8],skill:x[9],skillPower:+x[10],ultimate:x[11],ultimatePower:+x[12],equipment:x[13],grade:+x[14],tsName:x[15],tsTitle:x[16]})) as General[];
-const terrain:Terrain[]=Array.from({length:42},(_,i)=>i===17||i===18||i===24?'forest':i===11||i===12?'hill':i===26||i===27?'water':i===32?'fort':'plain');
-const tCost:Record<Terrain,number>={plain:1,forest:2,hill:1,water:99,fort:1};
-const equipDefault=()=>Object.fromEntries(G.map(g=>[g.id,{level:0,rarity:1,equipped:true,optionA:0,optionB:1}]));
-const mapNum=()=>Object.fromEntries(G.map(g=>[g.id,0]));
-const mapOne=()=>Object.fromEntries(G.map(g=>[g.id,1]));
-const mapFalse=()=>Object.fromEntries(G.map(g=>[g.id,false]));
-const base:Save={floor:1,gold:5000,gems:300,level:1,materials:120,owned:G.slice(0,5).map(g=>g.id),equipment:equipDefault(),stars:mapOne(),fragments:mapNum(),tsSkins:mapFalse(),formation:G.slice(0,5).map(g=>g.id)};
-function load():Save{try{const r=JSON.parse(localStorage.getItem(KEY)||'{}');const owned=r.owned||base.owned;return {...base,...r,owned,formation:(r.formation||owned).filter((x:string)=>owned.includes(x)).slice(0,5),equipment:{...base.equipment,...r.equipment},stars:{...base.stars,...r.stars},fragments:{...base.fragments,...r.fragments},tsSkins:{...base.tsSkins,...r.tsSkins}}}catch{return base}}
-const dist=(a:{x:number;y:number},b:{x:number;y:number})=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
-const rarity=(l:number)=>l>=15?5:l>=10?4:l>=5?3:l>=3?2:1;
-const rName=(r:number)=>['','일반','고급','희귀','영웅','전설'][r];
-const fragNeed=(s:number)=>s*20;
-const optName=(k:number)=>['공격력 +','최대HP +','치명타 +','스킬 위력 +'][k];
-const optVal=(k:number,l:number)=>k===0?l*2:k===1?l*5:k===2?Math.floor(l/2):l;
-const weighted=(min=1)=>{const p=G.filter(g=>g.grade>=min);const w=p.map(g=>g.grade===5?5:g.grade===4?15:80);let n=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<p.length;i++){n-=w[i];if(n<=0)return p[i]}return p[p.length-1]};
-const towerInfo=(floor:number)=>{const boss=floor%10===0;return{boss,gold:boss?1500:500,gems:boss?30:5,materials:boss?30:10,modifier:boss?['보스: 광폭화','보스: 철벽','보스: 화염진'][Math.floor(floor/10-1)%3]:['일반','숲의 매복','고지의 전술'][floor%3]}};
-export default function App(){
- const[save,setSave]=useState<Save>(load),[screen,setScreen]=useState<Screen>('home'),[selected,setSelected]=useState('guan-yu'),[target,setTarget]=useState<string|null>(null),[units,setUnits]=useState<Unit[]>([]),[turn,setTurn]=useState<'player'|'enemy'>('player'),[log,setLog]=useState<string[]>(['천탑 전투 준비 완료.']);
- const team=useMemo(()=>save.formation.map(id=>G.find(g=>g.id===id)).filter(Boolean) as General[],[save.formation]);
- const sg=G.find(g=>g.id===selected)||G[0];
- const eq=(g:General)=>save.equipment[g.id]||{level:0,rarity:1,equipped:true,optionA:0,optionB:1};
- const star=(g:General)=>save.stars[g.id]||1;
- const stats=(g:General)=>{const e=eq(g),l=e.equipped?e.level:0,m=1+.05*(star(g)-1);let hp=Math.floor((g.hp+(save.level-1)*12+l*10)*m),atk=Math.floor((g.atk+(save.level-1)*3+l*4)*m);[e.optionA,e.optionB].forEach(k=>{const v=optVal(k,l);if(k===0)atk+=v;if(k===1)hp+=v});return{hp,atk}};
- const su=units.find(u=>u.id===selected);const add=(s:string)=>setLog(v=>[s,...v].slice(0,8));const persist=(n:Save)=>{setSave(n);localStorage.setItem(KEY,JSON.stringify(n));};
- const resetGame=()=>{if(!window.confirm('게임 진행 상태를 모두 초기화할까요?\n보유 장수, 장비, 성급, 재화, 천탑 진행도가 모두 초기화됩니다.'))return;const fresh:Save={floor:1,gold:5000,gems:300,level:1,materials:120,owned:G.slice(0,5).map(g=>g.id),equipment:equipDefault(),stars:mapOne(),fragments:mapNum(),tsSkins:mapFalse(),formation:G.slice(0,5).map(g=>g.id)};persist(fresh);setScreen('home');setSelected(fresh.formation[0]||'guan-yu');setTarget(null);setUnits([]);setTurn('player');setLog(['게임 진행 상태가 초기화되었습니다.']);};
- const recruit=(count:number)=>{const cost=count*30;if(save.gems<cost)return add('보옥이 부족합니다.');let owned=[...save.owned],fr={...save.fragments};const out:string[]=[];for(let i=0;i<count;i++){const g=weighted(count===10&&i===9?4:1);if(owned.includes(g.id)){fr[g.id]=(fr[g.id]||0)+10;out.push(`${g.name} 조각+10`)}else{owned.push(g.id);out.push(`${g.name} 영입`)}}persist({...save,gems:save.gems-cost,owned,fragments:fr,formation:save.formation.length?save.formation:owned.slice(0,5)});add(out.join(' / '));};
- const recruitEquip=()=>{if(save.gems<20)return add('장비 소환에 20 보옥이 필요합니다.');const g=G[Math.floor(Math.random()*G.length)],e=save.equipment[g.id]||{level:0,rarity:1,equipped:true,optionA:0,optionB:1};const bonus=1+Math.floor(Math.random()*4);const n={...e,level:Math.min(20,e.level+bonus),rarity:rarity(Math.min(20,e.level+bonus)),optionA:Math.floor(Math.random()*4),optionB:Math.floor(Math.random()*4)};if(n.optionA===n.optionB)n.optionB=(n.optionB+1)%4;persist({...save,gems:save.gems-20,materials:save.materials+10,equipment:{...save.equipment,[g.id]:n}});add(`${g.name} 전용장비 ${rName(n.rarity)} 획득 · +${n.level}`)};
- const start=()=>{if(!team.length)return add('편성을 먼저 구성하세요.');const ps=team.map((g,i)=>{const s=stats(g);return{...g,...s,maxHp:s.hp,currentHp:s.hp,team:'player' as const,x:i%3,y:5-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none' as Status,statusTurns:0}});const info=towerInfo(save.floor);const region=getMonsterRegion(save.floor);const es=createMonsterEnemies(save.floor);setUnits([...ps,...es]);setSelected(team[0].id);setTarget(null);setTurn('player');setLog([`천탑 ${save.floor}층 · ${region.name} · ${info.modifier}${info.boss?' · BOSS':''}`]);setScreen('battle');};
- const damage=(a:Unit,b:Unit,bonus=0)=>Math.max(1,a.atk+a.buff+bonus+(terrain[b.y*W+b.x]==='fort'?8:terrain[b.y*W+b.x]==='hill'?4:0)-Math.floor(b.maxHp*.08)-(b.status==='guard'?8:0));
- const move=(x:number,y:number)=>{if(!su||su.team!=='player'||su.acted||turn!=='player')return;const c=terrain[y*W+x],d=dist(su,{x,y});if(c==='water'||d===0||d>su.movePoints)return;if(units.some(u=>u.currentHp>0&&u.x===x&&u.y===y))return;setUnits(us=>us.map(u=>u.id===su.id?{...u,x,y,movePoints:u.movePoints-tCost[c]}:u))};
- const choose=(u:Unit)=>{if(u.team==='enemy'&&su?.team==='player')setTarget(u.id);else if(u.team==='player'){setSelected(u.id);setTarget(null)}};
- const attack=(power=0)=>{if(!su||su.team!=='player'||su.acted||turn!=='player')return;const t=units.find(u=>u.id===target&&u.team==='enemy'&&u.currentHp>0);if(!t||dist(su,t)>su.range)return add('공격 대상이 필요합니다.');const d=damage(su,t,power);setUnits(us=>us.map(u=>u.id===su.id?{...u,acted:true,rage:Math.min(100,u.rage+25)}:u.id===t.id?{...u,currentHp:Math.max(0,u.currentHp-d),rage:Math.min(100,u.rage+15)}:u));add(`${su.name} → ${t.name} ${d} 피해`);setTarget(null)};
- const skill=()=>{if(!su||su.acted)return;if(su.skill==='인덕의 격려'||su.skill==='강동의 결의'){setUnits(us=>us.map(u=>u.team==='player'&&u.currentHp>0?{...u,buff:u.buff+(u.id===su.id?3:8),status:'guard',statusTurns:1}:u.id===su.id?{...u,acted:true}:u));add(`${su.skill} 발동`);return}if(su.skill==='간웅의 명령'){setUnits(us=>us.map(u=>u.team==='enemy'&&u.currentHp>0?{...u,atk:Math.max(1,u.atk-6),status:'slow',statusTurns:1}:u.id===su.id?{...u,acted:true}:u));add('적 전체 약화');return}attack(su.skillPower)};
- const endTurn=()=>{setTurn('enemy');setUnits(us=>us.map(u=>u.team==='player'?{...u,acted:false,movePoints:u.move}:u))};
- useEffect(()=>{if(turn!=='enemy'||!units.length)return;const timer=setTimeout(()=>{let next=[...units];for(const e of next.filter(u=>u.team==='enemy'&&u.currentHp>0)){const p=next.filter(u=>u.team==='player'&&u.currentHp>0).sort((a,b)=>dist(e,a)-dist(e,b))[0];if(!p)break;const d=damage(e,p);if(dist(e,p)<=e.range){p.currentHp=Math.max(0,p.currentHp-d);add(`${e.name}의 공격 ${d}`)}else{const nx=e.x+(p.x>e.x?1:p.x<e.x?-1:0),ny=e.y+(p.y>e.y?1:p.y<e.y?-1:0);if(!next.some(u=>u.currentHp>0&&u.x===nx&&u.y===ny))e.x=nx,e.y=ny}}setUnits(next.map(u=>u.team==='player'?{...u,acted:false,movePoints:u.move}:u));setTurn('player')},450);return()=>clearTimeout(timer)},[turn]);
- useEffect(()=>{if(!units.length)return;const p=units.filter(u=>u.team==='player'&&u.currentHp>0),e=units.filter(u=>u.team==='enemy'&&u.currentHp>0);if(!e.length){const i=towerInfo(save.floor);persist({...save,floor:Math.min(100,save.floor+1),gold:save.gold+i.gold,gems:save.gems+i.gems,materials:save.materials+i.materials});add(`천탑 ${save.floor}층 클리어! +${i.gold}금화 +${i.gems}보옥`);setUnits([]);setScreen('tower')}else if(!p.length){add('전투 패배');setUnits([]);setScreen('tower')}},[units]);
- const levelUp=()=>{const c=save.level*300;if(save.gold<c)return add(`금화 부족 · ${c} 금화 필요`);persist({...save,level:save.level+1,gold:save.gold-c});add(`계정 레벨 ${save.level} → ${save.level+1} · 금화 -${c}`)};
- const enhance=(id:string)=>{const g=G.find(x=>x.id===id)||G[0],e=eq(g),cost=(e.level+1)*5;if(e.level>=20)return add('장비는 +20이 최대입니다.');if(save.materials<cost)return add(`강화 재료 부족 · ${cost}개 필요`);const l=e.level+1;persist({...save,materials:save.materials-cost,equipment:{...save.equipment,[g.id]:{...e,level:l,rarity:rarity(l)}}});add(`${g.name} 전용장비 +${e.level} → +${l} · 재료 -${cost}`)};
- const breakthrough=(id:string)=>{const g=G.find(x=>x.id===id)||G[0],s=star(g),need=fragNeed(s),frag=save.fragments[g.id]||0;if(s>=6)return add(`${g.name}은(는) ★6입니다.`);if(frag<need)return add(`${g.name} · 조각 ${need}개 필요`);persist({...save,stars:{...save.stars,[g.id]:s+1},fragments:{...save.fragments,[g.id]:frag-need}});add(`${g.name} ★${s} → ★${s+1} · 조각 -${need}`)};
- const unlockTS=(id:string)=>{const g=G.find(x=>x.id===id)||G[0];if(save.tsSkins[g.id])return add('이미 보유');if(save.gems<100)return add('100 보옥 필요');persist({...save,gems:save.gems-100,tsSkins:{...save.tsSkins,[g.id]:true}});add(`${g.name} TS 스킨 해금 · 보옥 -100`)};
- const toggleForm=(id:string)=>{let f=[...save.formation];if(f.includes(id))f=f.filter(x=>x!==id);else if(f.length<5)f.push(id);else return add('최대 5명');persist({...save,formation:f})};
- const nav=(s:Screen)=>setScreen(s);
- const card:CSSProperties={background:'#141923',border:'1px solid #2a3345',borderRadius:12,padding:12};const btn:CSSProperties={background:'#202a3c',color:'#fff',border:'1px solid #3a4760',borderRadius:8,padding:'9px 12px',cursor:'pointer'};
- return <div style={{minHeight:'100vh',background:'#0b0f16',color:'#edf2f7',fontFamily:'system-ui',padding:16}}><div style={{maxWidth:1100,margin:'auto'}}>
- <header style={{...card,display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}><div><b style={{fontSize:22}}>무한삼국지: 천탑전기</b><div style={{fontSize:12,color:'#9aa6b8'}}>MVP 1.3 · 삼국지 장수 vs 판타지 몬스터 · 1~100층 천탑</div></div><div style={{display:'flex',gap:12}}><span>💰 {save.gold}</span><span><Gem size={15}/> {save.gems}</span><span>🧱 {save.materials}</span></div></header>
- <nav style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>{[['home','홈'],['tower','천탑'],['generals','장수'],['formation','편성'],['inventory','장비'],['summon','소환']].map(([k,v])=><button key={k} style={btn} onClick={()=>nav(k as Screen)}>{v}</button>)}</nav>
- {screen==='home'&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12}}><div style={card}><h2>천탑 {save.floor}/100</h2><p>10층마다 해당 몬스터 지역의 보스가 등장합니다.</p><button style={btn} onClick={start}>전투 시작</button></div><div style={card}><h3>계정 Lv.{save.level}</h3><p>다음 레벨 비용 {save.level*300} 금화</p><button style={btn} onClick={levelUp}>레벨업</button></div><div style={card}><h3>현재 편성</h3>{team.map(g=><div key={g.id}>★{star(g)} {g.name}</div>)}</div><div style={{...card,border:'1px solid #5a2f36'}}><h3><RotateCcw size={17}/> 게임 데이터</h3><p style={{fontSize:13,color:'#9aa6b8'}}>천탑 진행도, 장수, 장비, 성급, 재화와 편성을 초기 상태로 되돌립니다.</p><button style={{...btn,border:'1px solid #8a4650'}} onClick={resetGame}>게임 진행 상태 초기화</button></div></div>}
- {screen==='tower'&&<div style={{...card}}><h2>천탑 1~100층</h2><div style={{display:'grid',gridTemplateColumns:'repeat(10,1fr)',gap:6}}>{Array.from({length:100},(_,i)=>i+1).map(f=><button key={f} disabled={f>save.floor} style={{...btn,padding:8,opacity:f>save.floor?.4:1}} onClick={()=>{if(f===save.floor)start()}}>{f}{f%10===0?' 👑':''}</button>)}</div><p style={{marginTop:12}}>현재 층: {save.floor} · 지역: {getMonsterRegion(save.floor).name} · {getMonsterRegion(save.floor).description} · 패턴: {towerInfo(save.floor).modifier}</p></div>}
- {screen==='generals'&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12}}>{G.filter(g=>save.owned.includes(g.id)).map(g=><div key={g.id} style={card} onClick={()=>setSelected(g.id)}><h3>★{star(g)} {g.name}</h3><p>{g.title} · {g.role}</p><p>HP {stats(g).hp} / ATK {stats(g).atk}</p><p>조각 {save.fragments[g.id]||0}/{star(g)<6?fragNeed(star(g)):0}</p><div style={{marginTop:10,padding:10,borderRadius:9,border:'1px solid #344057',background:'#101621'}}><div style={{fontWeight:800}}>⚔ 장비</div><div style={{fontSize:12,color:'#c4cede'}}>{g.equipment} · {rName(eq(g).rarity)} +{eq(g).level}</div><div style={{fontSize:11,color:'#8f9db2',marginTop:3}}>{optName(eq(g).optionA)} {optVal(eq(g).optionA,eq(g).level)} · {optName(eq(g).optionB)} {optVal(eq(g).optionB,eq(g).level)}</div><button style={{...btn,marginTop:7}} onClick={ev=>{ev.stopPropagation();setScreen('inventory');setSelected(g.id)}}>장비 관리</button></div><button style={btn} onClick={ev=>{ev.stopPropagation();breakthrough(g.id)}}>돌파</button> <button style={btn} onClick={ev=>{ev.stopPropagation();unlockTS(g.id)}}>{save.tsSkins[g.id]?'TS 보유':'TS 100💎'}</button></div>)}</div>}
- {screen==='formation'&&<div style={card}><h2>전투 편성 {save.formation.length}/5</h2>{G.filter(g=>save.owned.includes(g.id)).map(g=><div key={g.id} style={{display:'flex',justifyContent:'space-between',padding:8,borderBottom:'1px solid #252d3b'}}><span>★{star(g)} {g.name}</span><button style={btn} onClick={()=>toggleForm(g.id)}>{save.formation.includes(g.id)?'제외':'편성'}</button></div>)}</div>}
- {screen==='inventory'&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12}}>{G.filter(g=>save.owned.includes(g.id)).map(g=>{const e=eq(g);return <div key={g.id} style={card}><h3>{g.name} · {g.equipment}</h3><b>{rName(e.rarity)} +{e.level}</b><p>{optName(e.optionA)} {optVal(e.optionA,e.level)} / {optName(e.optionB)} {optVal(e.optionB,e.level)}</p><button style={btn} onClick={()=>enhance(g.id)}>강화</button></div>})}</div>}
- {screen==='summon'&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><div style={card}><h2>장수 소환</h2><p>1회 30 보옥 · 10회 300 보옥</p><button style={btn} onClick={()=>recruit(1)}>1회 소환</button> <button style={btn} onClick={()=>recruit(10)}>10회 소환</button></div><div style={card}><h2>전용장비 소환</h2><p>20 보옥 · 기존 장비가 있으면 강화 단계와 옵션이 갱신됩니다.</p><button style={btn} onClick={recruitEquip}><Hammer size={16}/> 장비 소환</button></div></div>}
- {screen==='battle'&&<div><div style={{...card,display:'flex',justifyContent:'space-between'}}><div><b>천탑 {save.floor}층</b> · {getMonsterRegion(save.floor).name} · {towerInfo(save.floor).modifier}</div><span style={{fontSize:13,color:'#9aa6b8'}}>수동 전투</span></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:5,margin:'12px 0'}}>{Array.from({length:42},(_,i)=>{const x=i%7,y=Math.floor(i/7),u=units.find(q=>q.x===x&&q.y===y&&q.currentHp>0);return <button key={i} onClick={()=>u?choose(u):move(x,y)} style={{minHeight:72,border:'1px solid #30394a',borderRadius:8,background:terrain[i]==='water'?'#17263a':terrain[i]==='forest'?'#172a22':terrain[i]==='hill'?'#2a2418':'#151b25',color:'#fff'}}>{u&&<><div>{u.team==='player'?'🟦':'🟥'} {u.name}</div><div style={{fontSize:11}}>HP {u.currentHp}/{u.maxHp}</div>{target===u.id&&<b>🎯</b>}</>}</button>})}</div><div style={{...card,display:'flex',gap:8,flexWrap:'wrap'}}><b>{su?.name||'선택 없음'}</b><button style={btn} onClick={()=>attack()}>기본공격</button><button style={btn} onClick={skill}>스킬</button><button style={btn} onClick={endTurn}>턴 종료</button></div><div style={{...card,marginTop:12}}>{log.map((x,i)=><div key={i}>{x}</div>)}</div></div>}
- </div></div>;
+import { useEffect, useMemo, useState } from "react";
+import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserRound, Zap } from "lucide-react";
+import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
+
+type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
+type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[] };
+type Decision = { action: string; target?: string; detail: string; score: number };
+
+const KEY = "autonomous-dungeon-demo-v1";
+const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
+const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
+const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",boss:"👑"};
+const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",boss:"심층 보스"};
+const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
+
+function load(): Save {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const s = JSON.parse(raw) as Save;
+      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies}})), items:s.items||[]};
+    }
+  } catch {}
+  return {heroes:heroesSeed.map(h=>({...h,tendencies:cloneTendencies(h.tendencies)})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[]};
 }
+const clamp=(n:number)=>Math.max(0,Math.min(100,n));
+const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
+const dist=(a:BattleUnit,b:BattleUnit)=>Math.abs(a.pos-b.pos);
+const live=(u:BattleUnit[],team:"player"|"enemy")=>u.filter(x=>x.team===team&&x.alive);
+const aiT=(t:Tendencies,item?:Item):Tendencies=>{
+  const n={...t}; if(item) (Object.keys(item.aiMods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(item.aiMods[k]||0))); return n;
+};
+
+function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleUnit[] {
+  const ps=heroes.filter(h=>party.includes(h.id)).map((h,i)=>({
+    id:h.id,name:h.name,job:h.job,team:"player" as const,hp:h.hp,maxHp:h.hp,attack:h.attack,defense:h.defense,
+    speed:h.speed,range:h.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
+    actionText:"대기",cooldown:0,guard:0,xp:0
+  }));
+  const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
+  const count=room==="boss"?3:room==="elite"?4:3;
+  const es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
+  if(room==="boss") es[0]={...es[0],id:"uruk-boss",name:"우르크 전쟁대장",species:"Uruk",grade:"Boss",hp:420,maxHp:420,attack:53,defense:30,pos:8.8};
+  return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
+    speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,actionText:"대기",cooldown:0,guard:0,xp:0})));
+}
+
+function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
+  const allies=live(u,a.team), enemies=live(u,a.team==="player"?"enemy":"player");
+  const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
+  const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
+  const ally=allies.slice().sort((x,y)=>pct(x)-pct(y))[0];
+  const t=a.tendencies; const arr:Decision[]=[];
+  const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
+  const mod=a.item?.aiMods||{};
+  if(nearest){
+    let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40;
+    if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
+    arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협과 마무리 가능성을 계산",score:s});
+  }
+  if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8});
+  if(a.job==="Guardian"&&ally) arr.push({action:"아군 보호",target:ally.id,detail:"위험한 아군 쪽으로 접근해 피해를 줄임",score:20+t.protect*.5+t.cooperation*.25+(1-pct(ally))*55+(mod.protect||0)*.8});
+  if(a.job==="Cleric"&&ally) arr.push({action:"회복",target:ally.id,detail:"가장 위험한 아군을 먼저 치료",score:30+t.protect*.35+t.cooperation*.25+(1-pct(ally))*75+(mod.protect||0)*.7-(pct(ally)>.78?35:0)});
+  if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8});
+  if(a.team==="enemy"&&a.species==="Goblin") arr.push({action:"기습 후퇴",target:nearest?.id,detail:"위험해지면 생존을 위해 물러남",score:20+t.greedy?0:0+t.greed*.2+t.caution*.35+(1-pct(a))*60});
+  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25+(pct(a)<.12?20:0)-(a.item?.id==="berserker-heart"?35:0)});
+  arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05});
+  return arr;
+}
+
+function weighted(ds:Decision[]):Decision {
+  const list=ds.filter(d=>d.score>0).sort((a,b)=>b.score-a.score).slice(0,4);
+  const top=list.map((d,i)=>({...d,score:d.score*Math.pow(.82,i)}));
+  const total=top.reduce((n,d)=>n+d.score,0); let r=Math.random()*total;
+  for(const d of top){r-=d.score;if(r<=0)return d;} return top[0];
+}
+
+function hit(a:BattleUnit,b:BattleUnit,m=1){
+  const crit=a.tendencies.focus>82&&Math.random()<.15?1.55:1;
+  return Math.max(4,Math.round((a.attack*m-b.defense*.58)*crit*(.93+Math.random()*.14)));
+}
+
+function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;line:string}{
+  const n=u.map(x=>({...x})); const a=n.find(x=>x.id===id)!; const d=weighted(decisions(a,n));
+  const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
+  const by=(x?:string)=>n.find(q=>q.id===x&&q.alive);
+  const move=(target:BattleUnit)=>{
+    const step=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric")?.65:.9;
+    a.pos+=(target.pos>a.pos?step:-step); a.pos=Math.max(.3,Math.min(9.7,a.pos));
+  };
+  let line="";
+  if(d.action==="일반 공격"){
+    const t=by(d.target)||enemies[0]; if(t){if(dist(a,t)>a.range) move(t),a.actionText="접근 → "+t.name; else {const x=hit(a,t);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="일반 공격 → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="추격"){
+    const t=by(d.target)||enemies[0]; if(t){if(dist(a,t)>a.range)move(t),a.actionText="추격 → "+t.name;else{const x=hit(a,t,1.18);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="추격 공격 → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="아군 보호"){
+    const t=by(d.target)||allies[0]; if(t){a.pos+=(t.pos>a.pos?.5:-.5);a.guard=2;t.guard=Math.max(t.guard,1);a.actionText="아군 보호 → "+t.name;line=a.actionText;}
+  } else if(d.action==="회복"){
+    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*(.18+a.tendencies.cooperation*.001));t.hp=Math.min(t.maxHp,t.hp+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+  } else if(d.action==="광역 마법"){
+    const ts=enemies.filter(x=>dist(a,x)<=5).slice(0,3); if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,.72);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText="광역 마법 → "+bits.join(", ");line=a.actionText;} else if(enemies[0])move(enemies[0]),a.actionText="광역 사거리 확보";
+  } else if(d.action==="기습 후퇴"||d.action==="후퇴"){a.pos=Math.max(.3,a.pos-.95);a.actionText=d.action+" · 생존 우선";line=a.actionText;
+  } else {a.guard=1;a.actionText="대기 · 다음 판단 준비";line=a.actionText;}
+  n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2});
+  return {units:n,decision:d,line:line||a.actionText};
+}
+
+function route(stage:number,floor:number){
+  if(stage>=5)return [{kind:"boss" as RoomKind,title:"심층 관문",summary:"던전 최심부의 지휘관이 길을 막고 있다."}];
+  const rows=[
+    [{kind:"battle" as RoomKind,title:"정찰 통로",summary:"좁은 통로에서 정찰 무리가 다가온다."},{kind:"treasure" as RoomKind,title:"낡은 보급창",summary:"장비 상자와 자원이 남아 있다."},{kind:"rest" as RoomKind,title:"안전한 움푹한 곳",summary:"잠시 숨을 고를 수 있는 공간."}],
+    [{kind:"battle" as RoomKind,title:"수정 동굴",summary:"슬라임과 코볼트가 길을 막는다."},{kind:"elite" as RoomKind,title:"거미 둥지",summary:"정예 아라크네가 통로를 봉쇄했다."},{kind:"treasure" as RoomKind,title:"봉인 상자",summary:"높은 등급 장비가 잠든 상자."}],
+    [{kind:"rest" as RoomKind,title:"폐허 야영지",summary:"남은 모닥불로 상처를 추스를 수 있다."},{kind:"elite" as RoomKind,title:"전쟁 통로",summary:"규율 잡힌 우르크 부대가 기다린다."},{kind:"battle" as RoomKind,title:"검은 균열",summary:"오거의 발걸음이 벽을 흔든다."}]
+  ];
+  return rows[stage%3].map((x,i)=>({...x,title:x.title+" · "+floor+"F"}));
+}
+
+export default function App(){
+  const [save,setSave]=useState<Save>(load);
+  const [screen,setScreen]=useState<Screen>("home");
+  const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;ended:boolean;result?:string;next?:string}>({units:[],log:[],room:"battle",round:0,ended:false});
+  const [paused,setPaused]=useState(false);
+  const [speed,setSpeed]=useState(1);
+  const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
+  const [toast,setToast]=useState("");
+  const party=useMemo(()=>save.heroes.filter(h=>save.party.includes(h.id)),[save.heroes,save.party]);
+  const hero=save.heroes.find(h=>h.id===selectedHero)||save.heroes[0];
+  const active=battle.units.find(u=>u.id===battle.next&&u.alive);
+  const notify=(s:string)=>{setToast(s);window.setTimeout(()=>setToast(""),1800);};
+
+  useEffect(()=>localStorage.setItem(KEY,JSON.stringify(save)),[save]);
+
+  const start=(kind:RoomKind)=>{
+    if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180}));notify("보물: "+item.name+" 획득");return;}
+    if(kind==="rest"){setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...h,experience:h.experience+4}:h)}));notify("휴식: 경험 기록 +4");return;}
+    const units=spawn(save.heroes,save.party,kind,save.floor);
+    setBattle({units,log:[roomKo[kind]+" 시작 · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,ended:false,next:units[0].id});
+    setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
+  };
+
+  useEffect(()=>{
+    if(screen!=="battle"||paused||battle.ended)return;
+    const timer=window.setTimeout(()=>{
+      setBattle(prev=>{
+        if(prev.ended||!prev.units.length)return prev;
+        const alive=prev.units.filter(x=>x.alive);
+        const actor=alive.sort((a,b)=>a.pos-b.pos||b.speed-a.speed)[Math.floor(Math.random()*Math.min(2,alive.length))];
+        const out=doAI(prev.units,actor.id);
+        const p=live(out.units,"player"),e=live(out.units,"enemy");
+        const ended=p.length===0||e.length===0;
+        if(out.decision) setDecision(out.decision.detail+" · 후보점수 "+Math.round(out.decision.score));
+        return {...prev,units:out.units,log:[out.line+(out.decision.detail?" / "+out.decision.detail:"")].concat(prev.log).slice(0,10),round:prev.round+(actor.team==="enemy"?1:0),ended,result:e.length?"": "victory",next:out.units.find(x=>x.id===actor.id&&x.alive)?.id};
+      });
+    },Math.max(150,850/speed));
+    return ()=>window.clearTimeout(timer);
+  },[screen,paused,battle.ended,speed,battle.round]);
+
+  useEffect(()=>{
+    if(screen!=="battle"||!battle.ended)return;
+    const victory=battle.result==="victory";
+    if(victory){
+      const gain=180+battle.units.filter(u=>u.team==="enemy").length*55+(battle.room==="boss"?900:0);
+      const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
+      setSave(s=>({...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:s.stage+1,
+        heroes:s.heroes.map(h=>{
+          if(!s.party.includes(h.id))return h;
+          const unit=battle.units.find(u=>u.id===h.id); const t={...h.tendencies};
+          const action=unit?.actionText||"";
+          if(action.includes("공격")||action.includes("추격"))t.aggression=clamp(t.aggression+.8);
+          if(action.includes("보호")||action.includes("회복")){t.protect=clamp(t.protect+.8);t.cooperation=clamp(t.cooperation+.5);}
+          if(action.includes("후퇴")){t.caution=clamp(t.caution+.6);t.survival=clamp(t.survival+.8);}
+          const xp=h.experience+exp; return {...h,experience:xp>=100?xp-100:xp,level:h.level+(xp>=100?1:0),tendencies:t,history:[action,...h.history].slice(0,6)};
+        })
+      }));
+    }
+  },[battle.ended,battle.result]);
+
+  const toggleParty=(id:string)=>{
+    if(save.party.includes(id)){if(save.party.length===1)return;setSave(s=>({...s,party:s.party.filter(x=>x!==id)}));}
+    else if(save.party.length<4)setSave(s=>({...s,party:s.party.concat(id)}));
+    else notify("데모 파티 최대 4명");
+  };
+  const equip=(item:Item)=>{
+    setSave(s=>({...s,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,item}:h)}));
+    notify(hero.name+" · "+item.name+" 장착");
+  };
+  const randomEquip=()=>{
+    if(save.materials<12){notify("재료가 부족합니다.");return;}
+    const item=randomGeneralItem(hero.level); setSave(s=>({...s,materials:s.materials-12,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,item}:h)}));notify("무작위 장비 옵션을 새로 굴렸습니다.");
+  };
+  const reset=()=>{localStorage.removeItem(KEY);setSave(load());setScreen("home");notify("데모 초기화 완료");};
+
+  return <main className="game-shell">
+    <header className="topbar"><div className="brand" onClick={()=>setScreen("home")}><div className="brand-mark"><Brain size={21}/></div><div><b>무한 던전 : AI Chronicle</b><small>자율 AI 던전 RPG / RTS 프로토타입</small></div></div>
+      <div className="resources"><span><Coins size={15}/> {save.gold}</span><span><Gem size={15}/> {save.gems}</span><span>🧱 {save.materials}</span><span>심도 {save.floor}F</span></div></header>
+    <nav className="main-nav">{([["home","대시보드"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
+    {toast&&<div className="toast">{toast}</div>}
+
+    {screen==="home"&&<section className="page"><div className="hero-panel"><div><span className="eyebrow">AUTONOMOUS DUNGEON</span>
+      <h1>플레이어가 캐릭터를 조종하는 것이 아니라,<br/>캐릭터가 살아온 방식이 미래를 결정한다.</h1>
+      <p>플레이어는 <b>파티와 장비, 다음 경로</b>를 결정한다. 전투에서는 직접 이동하거나 공격 대상을 지정하지 않는다.</p>
+      <div className="hero-actions"><button className="primary-btn" onClick={()=>setScreen("dungeon")}><Map size={18}/> 던전 데모 시작 <ChevronRight size={17}/></button><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={17}/> 파티 준비</button></div>
+    </div><div className="hero-orb"><Swords size={108}/></div></div>
+    <div className="feature-grid"><Feature icon={<Brain/>} title="자율 AI 전투" text="상황 + 성향 10종 + 직업 + 장비 + 경험으로 행동을 결정합니다."/><Feature icon={<Package/>} title="AI 빌드" text="장비의 수치뿐 아니라 추격·후퇴·보호 우선순위도 바뀝니다."/><Feature icon={<Map/>} title="경로 선택" text="직접 이동 명령 대신 다음 방의 위험과 보상을 선택합니다."/><Feature icon={<Sparkles/>} title="행동 기록" text="반복된 행동이 성향에 조금씩 누적되어 캐릭터의 미래가 달라집니다."/></div>
+    <div className="demo-note"><div><b>이번 데모</b><span>던전 / 자동 실시간 전투 / AI 빌드 / 장비 / 성장 기록</span></div><div><b>제외</b><span>멸종 / 번식 / 직접 공격 명령 / 직접 이동 명령 / 수동 스킬 대상 지정</span></div></div></section>}
+
+    {screen==="party"&&<section className="page"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>원정대 구성</h2><p className="muted">전투 전에만 편성과 장비를 변경할 수 있습니다.</p></div><span className="counter">{save.party.length}/4</span></div>
+      <div className="party-grid">{save.heroes.map(h=><HeroCard key={h.id} hero={h} active={save.party.includes(h.id)} onClick={()=>{setSelectedHero(h.id);toggleParty(h.id)}}/>)}</div>
+      <div className="subpanel"><div><b>현재 편성</b><span>{party.map(h=>jobIcon[h.job]+" "+h.name).join(" · ")}</span></div><button className="primary-btn compact" onClick={()=>setScreen("dungeon")}><Swords size={16}/> 던전으로</button></div></section>}
+
+    {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
+      <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
+      <div className="route-grid">{route(save.stage,save.floor).map((r,i)=><button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p></div><ChevronRight size={20}/></button>)}</div>
+      <div className="dungeon-meta"><div><b>현재 파티</b>{party.map(h=><span key={h.id}>{jobIcon[h.job]} {h.name}</span>)}</div><div><b>규칙</b><span>몬스터 번식/멸종 없음 · 성장/진화/AI만 지속</span></div></div></section>}
+
+    {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="boss"?"심층 관문":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
+      <div className="battle-tools"><button className="ghost-btn" onClick={()=>setPaused(x=>!x)}>{paused?<CirclePlay size={17}/>:<CirclePause size={17}/>} {paused?"재생":"일시정지"}</button>{[.5,1,2,4].map(x=><button key={x} className={speed===x?"speed-on":"speed-btn"} onClick={()=>setSpeed(x)}>{x}x</button>)}</div></div>
+      <div className="battle-layout"><div className="cave-panel"><div className="cave-label"><span>입구</span><span>심층</span></div><div className="cave-lane"><div className="cave-floor"/>
+        {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")} style={{left:(u.pos*9.3)+"%"}}>
+          <div className="unit-token">{u.team==="player"?jobIcon[u.job!]:u.grade==="Boss"?"♛":"👹"}</div><b>{u.name}</b><div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
+      </div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
+      <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {hero.item.name}</span><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
+      {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
+
+    {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">EQUIPMENT</span><h2>장비 연구실</h2><p className="muted">직업 제한 없음 · 일반 장비는 무작위 롤 · 고유 장비는 AI 행동까지 바꿉니다.</p></div></div>
+      <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>{jobKo[hero.job]} · {hero.item.name}</span></div><button className="primary-btn compact" onClick={randomEquip} disabled={save.materials<12}><RotateCcw size={16}/> 무작위 재굴림 · 12</button></div>
+      <div className="item-list"><ItemCard item={hero.item} equipped/><div className="unique-title"><Sparkles size={16}/> 대표 고유 장비</div>{uniqueItems.filter(x=>x.id!==hero.item.id).map(i=><ItemCard key={i.id} item={i} onEquip={()=>equip(i)}/>)}{save.items.map(i=><ItemCard key={i.id} item={i} onEquip={()=>{equip(i);setSave(s=>({...s,items:s.items.filter(x=>x.id!==i.id)}));}}/> )}</div></div></section>}
+
+    <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
+  </main>;
+}
+
+function Feature({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <article className="feature-card"><div className="feature-icon">{icon}</div><b>{title}</b><p>{text}</p></article>;}
+function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>void}){return <article className={"hero-card "+(active?"hero-selected":"")} onClick={onClick}><div className="hero-avatar" style={{background:hero.color}}>{jobIcon[hero.job]}</div><div className="hero-card-main"><div className="name-row"><b>{hero.name}</b><span>Lv.{hero.level}</span></div><p>{jobKo[hero.job]} · 경험 {hero.experience}/100</p><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div><small>장비 · {hero.item.name}{hero.item.unique?" · UNIQUE":""}</small></div><ChevronRight size={17}/></article>;}
+function tags(h:Hero){const ks=(Object.keys(tendencyKo) as (keyof Tendencies)[]).sort((a,b)=>(h.tendencies[b]+(h.item.aiMods[b]||0))-(h.tendencies[a]+(h.item.aiMods[a]||0)));return ks.slice(0,3).map(k=>tendencyKo[k]+" "+((h.tendencies[k]+(h.item.aiMods[k]||0))>=80?"높음":(h.tendencies[k]+(h.item.aiMods[k]||0))>=60?"중상":"보통"));}
+function ItemCard({item,equipped,onEquip}:{item:Item;equipped?:boolean;onEquip?:()=>void}){return <article className={"item-card "+(item.unique?"unique-item":"")}><div className="item-top"><span>{item.rarity}</span>{item.unique&&<b>UNIQUE</b>}</div><h3>{item.name}</h3><small>{item.slot} · Lv.{item.level}</small><div className="stat-list">{item.stats.map(s=><span key={s}>{s}</span>)}</div><div className="ai-mod"><Brain size={14}/>{Object.entries(item.aiMods).map(([k,v])=><span key={k}>{tendencyKo[k as keyof Tendencies]} {(v||0)>0?"+":""}{v}</span>)}</div><p>{item.description}</p>{onEquip&&<button className="ghost-btn" onClick={onEquip}>{equipped?"장착 중":"장착"}</button>}</article>;}
