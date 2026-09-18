@@ -1,5 +1,5 @@
 import type { Terrain, Unit } from '../types';
-import { BOARD_WIDTH } from '../data/constants';
+import { BOARD_HEIGHT, BOARD_WIDTH } from '../data/constants';
 import { calculateDamage, isInRange } from './battleRules';
 import { applyBattleDamageReduction, getBattleSkillPowerMultiplier } from './battleModifiers';
 
@@ -63,7 +63,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     for (let step = 1; step <= distance; step += 1) {
       const x = caster.x + dx * step;
       const y = caster.y + dy * step;
-      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= 10) break;
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) break;
       path.push({ x, y });
     }
     if (path.length !== distance) return { units, message: '돌진 경로가 전장을 벗어납니다.', success: false };
@@ -72,7 +72,7 @@ export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: s
     for (let step = distance + 1; ; step += 1) {
       const x = caster.x + dx * step;
       const y = caster.y + dy * step;
-      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= 10) break;
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) break;
       const occupant = next.find((u) => u.currentHp > 0 && u.x === x && u.y === y && u.id !== caster.id);
       if (!occupant) {
         landing = { x, y };
