@@ -135,3 +135,31 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 
 
 .route-intel{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}.route-intel span{padding:4px 6px;border:1px solid #29374e;border-radius:6px;background:#111b2b;color:#91a4c2;font-size:8px}.route-intel span:first-child{color:#c39a9a}.route-intel span:nth-child(2){color:#c9b36d}.route-intel span:nth-child(3){color:#91b99e}
+
+
+/* Adaptive dungeon route memory */
+.route-memory-panel{
+  margin-top:18px;
+  padding:18px 20px;
+  border:1px solid rgba(121,145,174,.2);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(20,28,41,.88),rgba(14,20,30,.88));
+}
+.route-memory-panel>div:first-child{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.route-memory-panel .eyebrow{letter-spacing:.14em;font-size:11px;opacity:.65}
+.route-memory-panel b{font-size:17px}
+.route-memory-panel small{color:rgba(219,228,240,.62)}
+.route-memory-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.route-memory-row{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  min-height:54px;padding:10px 12px;border-radius:12px;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.05);
+  font-size:12px;color:rgba(230,237,247,.72)
+}
+.route-memory-row strong{width:100%;color:#eef4fb;font-size:13px}
+.route-memory-row span{padding:3px 7px;border-radius:999px;background:rgba(120,160,200,.08)}
+.route-intel{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.route-intel span{padding:4px 7px;border-radius:999px}
+@media (max-width:760px){
+  .route-memory-list{grid-template-columns:1fr}
+}
