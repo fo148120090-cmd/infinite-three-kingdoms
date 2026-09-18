@@ -51,3 +51,18 @@ export function bondAfterBattle(heroes:Hero[],partyIds:string[],deadIds:string[]
 }
 
 function clamp(n:number){return Math.max(0,Math.min(100,n));}
+
+export function decayMemories(hero:Hero):Hero{
+  const memories=(hero.memories||[])
+    .map(m=>({...m,weight:m.weight*.94}))
+    .filter(m=>m.weight>=0.35)
+    .slice(0,12);
+  return {...hero,memories};
+}
+
+export function strongestBond(hero:Hero):{id:string;relation:Relationship}|null{
+  const entries=Object.entries(hero.relationships||{});
+  if(!entries.length)return null;
+  entries.sort((a,b)=>(b[1].bond+b[1].trust*.35)-(a[1].bond+a[1].trust*.35));
+  return {id:entries[0][0],relation:entries[0][1]};
+}
