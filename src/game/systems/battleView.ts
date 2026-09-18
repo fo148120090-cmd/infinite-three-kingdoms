@@ -18,6 +18,24 @@ export function getEnemyMovementMap(units: Unit[], terrain: Terrain[]): Map<stri
   return cells;
 }
 
+
+export function getEnemyIntentMap(units: Unit[]): Map<string, string> {
+  const players = units.filter(u=>u.team==='player'&&u.currentHp>0);
+  const map = new Map<string,string>();
+  for(const enemy of units.filter(u=>u.team==='enemy'&&u.currentHp>0)) {
+    if(enemy.status==='stun'&&enemy.statusTurns>0) { map.set(enemy.id, '기절'); continue; }
+    const target = [...players].sort((a,b)=>{
+      const da=Math.abs(enemy.x-a.x)+Math.abs(enemy.y-a.y), db=Math.abs(enemy.x-b.x)+Math.abs(enemy.y-b.y);
+      if(enemy.role==='assassin') return a.currentHp-b.currentHp||da-db;
+      return da-db||a.currentHp-b.currentHp;
+    })[0];
+    if(!target) continue;
+    const inRange=Math.abs(enemy.x-target.x)+Math.abs(enemy.y-target.y)<=enemy.range;
+    map.set(enemy.id, inRange ? (enemy.skill||'공격')+' → '+target.name : '→ '+target.name);
+  }
+  return map;
+}
+
 export function getEnemyMovementCells(units: Unit[], terrain: Terrain[]): Set<string> {
   return new Set(getEnemyMovementMap(units, terrain).keys());
 }
