@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { GENERALS } from './game/data/generals';
 import type { General } from './game/types';
 import { getGeneralImagePaths } from './game/data/generalImages';
+import { getGeneralEffectiveStats } from './game/systems/generalStats';
 import './general-status.css';
 
 const KEY = 'infinite-three-kingdoms-save-v2';
@@ -55,12 +56,8 @@ export default function GeneralStatusModal(){
   const skinMap=(save.tsSkins&&typeof save.tsSkins==='object'?save.tsSkins:{}) as Record<string,boolean>;
   const star=Math.max(1,Math.min(6,Number(starsMap[selected.id])||1)), level=Math.max(1,Number(generalLevelsMap[selected.id])||Number(save.level)||1), levelOwned=Number(generalLevelsMap[selected.id])||0;
   const equipment=equipmentMap[selected.id]??{level:0,rarity:1,equipped:true,optionA:0,optionB:1};
-  const equipLevel=equipment.equipped===false?0:Math.max(0,Number(equipment.level)||0), mult=1+0.05*(star-1);
-  const hp=Math.floor((selected.hp+(level-1)*12+equipLevel*10+((equipment.optionA===1||equipment.optionB===1)?equipLevel*5:0))*mult);
-  const atk=Math.floor((selected.atk+(level-1)*3+equipLevel*4+((equipment.optionA===0||equipment.optionB===0)?equipLevel*2:0))*mult);
-  const defense=Math.floor((selected.defense+(level-1)*1.5+equipLevel*2+((equipment.optionA===1||equipment.optionB===1)?Math.floor(equipLevel*.8):0))*mult);
-  const critChance=equipment.equipped===false?0:(equipment.optionA===2?Math.floor(equipLevel/2):equipment.optionB===2?Math.floor(equipLevel/2):0);
-  const skillPower=selected.skillPower+(equipment.equipped===false?0:(equipment.optionA===3?equipLevel:equipment.optionB===3?equipLevel:0));
+  const effectiveStats=getGeneralEffectiveStats(selected,{level,star,equipment});
+  const {equipLevel,hp,atk,defense,critChance,skillPower}=effectiveStats;
   const tsUnlocked=Boolean(skinMap[selected.id]), refresh=()=>setSave(readSave());
   const levelUp=()=>{
     if(!owned.has(selected.id))return setMessage('먼저 장수를 영입해야 합니다.');
