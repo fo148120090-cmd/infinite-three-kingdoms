@@ -120,7 +120,8 @@ function weighted(ds:Decision[]):Decision {
 }
 
 function hit(a:BattleUnit,b:BattleUnit,m=1){
-  const crit=a.tendencies.focus>82&&Math.random()<.15?1.55:1;
+  const critChance=Math.min(.35,(a.tendencies.focus>82?.15:0)+(a.item?.combatMods?.critPct||0)/100);
+  const crit=Math.random()<critChance?1.55:1;
   return Math.max(4,Math.round((a.attack*m-b.defense*.58)*crit*(.93+Math.random()*.14)));
 }
 
@@ -255,7 +256,13 @@ export default function App(){
       notify(outcome.text);
       return;
     }
-    if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));notify("보물: "+item.name+" 획득");return;}
+    if(kind==="treasure"){
+      const uniqueDrop=Math.random()<.12 ? uniqueItems[Math.floor(Math.random()*uniqueItems.length)] : undefined;
+      const item=uniqueDrop||randomGeneralItem(save.floor+2);
+      setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));
+      notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득");
+      return;
+    }
     if(kind==="rest"){
       setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...grantExperience(h,4).hero,hp:Math.round(h.hp*1.15)}:h),stage:s.stage+1}));
       notify("휴식: 경험 기록 +4 · HP 15% 회복");
