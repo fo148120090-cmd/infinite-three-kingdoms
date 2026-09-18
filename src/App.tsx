@@ -7,7 +7,7 @@ import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } fr
 import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
-import { resolveDungeonEvent } from "./dungeonEvents";
+import { resolveDungeonEvent, resolveHiddenRoom } from "./dungeonEvents";
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
@@ -19,8 +19,8 @@ type Decision = { action: string; target?: string; detail: string; score: number
 const KEY = "autonomous-dungeon-demo-v1";
 const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
 const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
-const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",boss:"👑"};
-const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",event:"던전 이벤트",boss:"심층 보스"};
+const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",hidden:"◇",boss:"👑"};
+const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",event:"던전 이벤트",hidden:"숨은 방",boss:"심층 보스"};
 const defenseObjectiveKo: Record<DefenseObjective,string> = {gate:"성문",relic:"성유물",escort:"호위 대상"};
 const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
 const defenseObjectiveForFloor=(floor:number):DefenseObjective=>floor%3===1?"gate":floor%3===2?"relic":"escort";
@@ -237,14 +237,19 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[]
   return {units:n,decision:d,line:line||a.actionText};
 }
 
-function route(stage:number,floor:number){
+function route(stage:number,floor:number,curiosity=0){
+
   if(stage>=5)return [{kind:"boss" as RoomKind,title:"심층 관문",summary:"던전 최심부의 지휘관이 길을 막고 있다."}];
   const rows=[
     [{kind:"battle" as RoomKind,title:"정찰 통로",summary:"좁은 통로에서 정찰 무리가 다가온다."},{kind:"treasure" as RoomKind,title:"낡은 보급창",summary:"장비 상자와 자원이 남아 있다."},{kind:"event" as RoomKind,title:"붕괴 직전의 갈림길",summary:"탐욕과 신중함에 따라 다른 결과가 열린다."}],
     [{kind:"battle" as RoomKind,title:"수정 동굴",summary:"슬라임과 코볼트가 길을 막는다."},{kind:"elite" as RoomKind,title:"거미 둥지",summary:"정예 아라크네가 통로를 봉쇄했다."},{kind:"event" as RoomKind,title:"봉인된 제단",summary:"호기심이 강한 파티일수록 더 많은 것을 발견한다."}],
     [{kind:"rest" as RoomKind,title:"폐허 야영지",summary:"남은 모닥불로 상처를 추스를 수 있다."},{kind:"elite" as RoomKind,title:"전쟁 통로",summary:"규율 잡힌 우르크 부대가 기다린다."},{kind:"event" as RoomKind,title:"불안정한 지맥",summary:"생존본능과 용맹에 따라 위험을 감수할 수 있다."}]
   ];
-  return rows[stage%3].map((x,i)=>({...x,title:x.title+" · "+floor+"F"}));
+  const base=rows[stage%3].map((x,i)=>({...x,title:x.title+" · "+floor+"F"}));
+  if(curiosity>=72 && (floor+stage)%4===0){
+    base.push({kind:"hidden" as RoomKind,title:"숨은 통로 · "+floor+"F",summary:"높은 호기심을 가진 파티만 존재를 알아차릴 수 있는 비밀 방."});
+  }
+  return base;
 }
 
 export default function App(){
@@ -265,8 +270,25 @@ export default function App(){
   useEffect(()=>localStorage.setItem(KEY,JSON.stringify(save)),[save]);
 
   const start=(kind:RoomKind)=>{
+    if(kind==="hidden"){
+      const env=environmentFor(save.floor,kind,"dungeon");
+      const outcome=resolveHiddenRoom(save.heroes,save.party,save.floor,env);
+      setSave(s=>({...s,
+        heroes:s.heroes.map(h=>{
+          const update=outcome.heroUpdates[h.id];
+          if(!update)return h;
+          const nextT={...h.tendencies,...(update.tendencies||{})};
+          return {...h,hp:Math.min(h.hp,Math.max(1,h.hp+(update.hpDelta||0))),tendencies:nextT};
+        }),
+        gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,
+        items:outcome.item?[...s.items,outcome.item]:s.items,stage:s.stage+1
+      }));
+      notify(outcome.text);
+      return;
+    }
     if(kind==="event"){
-      const outcome=resolveDungeonEvent(save.heroes,save.party,save.floor);
+      const env=environmentFor(save.floor,kind,"dungeon");
+      const outcome=resolveDungeonEvent(save.heroes,save.party,save.floor,env);
       setSave(s=>({...s,
         heroes:s.heroes.map(h=>{
           const update=outcome.heroUpdates[h.id];
@@ -467,7 +489,7 @@ export default function App(){
 
     {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
-      <div className="route-grid">{route(save.stage,save.floor).map((r,i)=><button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p></div><ChevronRight size={20}/></button>)}</div>
+      <div className="route-grid">{route(save.stage,save.floor,party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0).map((r,i)=><button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p></div><ChevronRight size={20}/></button>)}</div>
       <div className="dungeon-meta"><div><b>현재 파티</b>{party.map(h=><span key={h.id}>{jobIcon[h.job]} {h.name}</span>)}</div><div><b>규칙</b><span>몬스터 번식/멸종 없음 · 성장/진화/AI만 지속</span></div></div></section>}
 
     {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="boss"?"심층 관문":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
