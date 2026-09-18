@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from "react";
-import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
+import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map as MapIcon, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
@@ -167,7 +167,7 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
 }
 
 function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new Map(n.map(x=>[x.id,x.hp])); const d=weighted(decisions(a,n,env));
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const d=weighted(decisions(a,n,env));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -467,7 +467,12 @@ export default function App(){
     const buildHero=(h:Hero,unit:BattleUnit|undefined,won:boolean,stats:any)=>{
       if(!unit)return h;
       const base={...h,campaignStats:stats};
-      const behaviorBase=applyBehaviorHistory(base,unit.behaviorCounts||{});
+      const previousProfile=h.combatProfile||{actions:0,damage:0,healing:0,battles:0,topActions:{}};
+      const actionCounts={...previousProfile.topActions};
+      Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>actionCounts[name]=(actionCounts[name]||0)+count);
+      const combatProfile={actions:previousProfile.actions+(unit.battleStats?.actions||0),damage:previousProfile.damage+(unit.battleStats?.damage||0),healing:previousProfile.healing+(unit.battleStats?.healing||0),battles:previousProfile.battles+1,topActions:actionCounts};
+      const withProfile={...base,combatProfile};
+      const behaviorBase=applyBehaviorHistory(withProfile,unit.behaviorCounts||{});
       const behavioral={...behaviorBase,
         ...(isFinal&&won?{statusNote:"악의 동굴 수문장 격파 · 봉인 대기"}:{}),
         history:unit.actionText?[unit.actionText,...behaviorBase.history].slice(0,6):behaviorBase.history};
@@ -489,7 +494,7 @@ export default function App(){
       });
       const scenarioClears={...s.scenarioClears};
       const enemyLineages=[...s.monsterLineages];
-      const lineageMap=new Map(enemyLineages.map(x=>[x.species,x]));
+      const lineageMap=new globalThis.Map(enemyLineages.map(x=>[x.species,x]));
       battle.units.filter(u=>u.team==="enemy"&&u.species&&u.grade!=="Boss").forEach(u=>{
         let lineage=lineageMap.get(u.species!)||emptyLineage(u.species+"-lineage",u.species!);
         for(const [action,count] of Object.entries(u.behaviorCounts||{})){
@@ -612,9 +617,9 @@ export default function App(){
     {screen==="home"&&<section className="page"><div className="hero-panel"><div><span className="eyebrow">AUTONOMOUS DUNGEON</span>
       <h1>플레이어가 캐릭터를 조종하는 것이 아니라,<br/>캐릭터가 살아온 방식이 미래를 결정한다.</h1>
       <p>플레이어는 <b>파티와 장비, 다음 경로</b>를 결정한다. 전투에서는 직접 이동하거나 공격 대상을 지정하지 않는다.</p>
-      <div className="hero-actions"><button className="primary-btn" onClick={()=>setScreen("dungeon")}><Map size={18}/> 던전 데모 시작 <ChevronRight size={17}/></button><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={17}/> 파티 준비</button></div>
+      <div className="hero-actions"><button className="primary-btn" onClick={()=>setScreen("dungeon")}><MapIcon size={18}/> 던전 데모 시작 <ChevronRight size={17}/></button><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={17}/> 파티 준비</button></div>
     </div><div className="hero-orb"><Swords size={108}/></div></div>
-    <div className="feature-grid"><Feature icon={<Brain/>} title="자율 AI 전투" text="상황 + 성향 10종 + 직업 + 장비 + 경험으로 행동을 결정합니다."/><Feature icon={<Package/>} title="AI 빌드" text="장비의 수치뿐 아니라 추격·후퇴·보호 우선순위도 바뀝니다."/><Feature icon={<Map/>} title="경로 선택" text="직접 이동 명령 대신 다음 방의 위험과 보상을 선택합니다."/><Feature icon={<Sparkles/>} title="행동 기록" text="반복된 행동이 성향에 조금씩 누적되어 캐릭터의 미래가 달라집니다."/></div>
+    <div className="feature-grid"><Feature icon={<Brain/>} title="자율 AI 전투" text="상황 + 성향 10종 + 직업 + 장비 + 경험으로 행동을 결정합니다."/><Feature icon={<Package/>} title="AI 빌드" text="장비의 수치뿐 아니라 추격·후퇴·보호 우선순위도 바뀝니다."/><Feature icon={<MapIcon/>} title="경로 선택" text="직접 이동 명령 대신 다음 방의 위험과 보상을 선택합니다."/><Feature icon={<Sparkles/>} title="행동 기록" text="반복된 행동이 성향에 조금씩 누적되어 캐릭터의 미래가 달라집니다."/></div>
     <div className="mode-grid">
       <ModeCard title="DUNGEON" subtitle="던전" text="방을 선택하고 탐색·전투·보상·보스까지 진행합니다." icon="⚔" onClick={()=>{setMode("dungeon");setScreen("dungeon")}} />
       <ModeCard title="DEFENSE" subtitle="방어전" text="30초 동안 웨이브가 계속됩니다. 목표와 파티 생존을 AI가 지킵니다." icon="🛡" onClick={()=>startMode("defense")} />
@@ -633,7 +638,7 @@ export default function App(){
     {screen==="party"&&<section className="page"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>원정대 구성</h2><p className="muted">전투 전에만 편성과 장비를 변경할 수 있습니다.</p></div><span className="counter">{save.party.length}/4</span></div>
       <div className="party-grid">{save.heroes.map(h=><HeroCard key={h.id} hero={h} active={save.party.includes(h.id)} onClick={()=>{setSelectedHero(h.id);toggleParty(h.id)}}/>)}</div>
       <div className="subpanel"><div><b>현재 편성</b><span>{party.map(h=>jobIcon[h.job]+" "+h.name).join(" · ")}</span></div><div className="social-summary"><span>관계는 전투를 함께할수록 강화되고, 동료를 잃으면 기억이 남습니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("dungeon")}><Swords size={16}/> 던전으로</button></div>
-      <div className="status-panel"><div className="status-main"><span className="eyebrow">HERO STATUS</span><h3>{hero.name} · {chronicleLabel(hero)}</h3><p><b>기분</b> · {systemMood(hero)}</p><p><b>상태</b> · {systemStatus(hero)}</p><p><b>시스템 평가</b> · {systemEvaluation(hero)}</p><small>연대기 가산 · 공격 +{chronicleBonus.attack||0} · 방어 +{chronicleBonus.defense||0} · HP +{chronicleBonus.hpPct||0}% · 속도 +{chronicleBonus.speedPct||0}%</small></div><div className="chronicle-list"><b>영웅 연대기</b>{(hero.chronicle||[]).slice().reverse().map((e,i)=><em key={i}><strong>{e.kind==="title"?"칭호":"업적"}</strong> · {e.name} — {e.description}</em>)}</div></div><div className="memory-panel"><div><b>{hero.name}의 최근 기억</b><span>최근 전투에서 강하게 남은 경험이 다음 판단에 영향을 줍니다.</span></div><div className="memory-list">{(hero.memories||[]).slice(0,4).map((m,i)=><em key={i}>{m.text} · 영향 {Math.round(m.weight*10)/10}</em>)}</div></div><div className="costume-panel"><div><b>직업별 코스튬</b><span>{costumeLabel(hero.job,hero.costumeId)}</span></div><div className="costume-grid">{costumesForJob(hero.job).map(c=><button key={c.id} className={"costume-card "+c.tier+(hero.costumeId===c.id?" equipped":"")} onClick={()=>equipCostume(c.id)}><small>{c.tier}</small><b>{c.name.split(" · ")[1]}</b><span>{c.description}</span></button>)}</div></div></section>}
+      <div className="status-panel"><div className="status-main"><span className="eyebrow">HERO STATUS</span><h3>{hero.name} · {chronicleLabel(hero)}</h3><p><b>기분</b> · {systemMood(hero)}</p><p><b>상태</b> · {systemStatus(hero)}</p><p><b>시스템 평가</b> · {systemEvaluation(hero)}</p><small>연대기 가산 · 공격 +{chronicleBonus.attack||0} · 방어 +{chronicleBonus.defense||0} · HP +{chronicleBonus.hpPct||0}% · 속도 +{chronicleBonus.speedPct||0}%</small></div><div className="chronicle-list"><b>영웅 연대기</b>{(hero.chronicle||[]).slice().reverse().map((e,i)=><em key={i}><strong>{e.kind==="title"?"칭호":"업적"}</strong> · {e.name} — {e.description}</em>)}</div><div className="combat-profile"><div><b>장기 전투 프로필</b><span>실제 전투에서 누적된 행동과 전투 기여도입니다.</span></div><div className="profile-metrics"><span><strong>{hero.combatProfile?.battles||0}</strong>전투</span><span><strong>{hero.combatProfile?.actions||0}</strong>행동</span><span><strong>{hero.combatProfile?.damage||0}</strong>피해</span><span><strong>{hero.combatProfile?.healing||0}</strong>회복</span></div><div className="profile-actions">{Object.entries(hero.combatProfile?.topActions||{}).sort((x,y)=>y[1]-x[1]).slice(0,5).map(([name,count])=><em key={name}>{name} · {count}회</em>)}</div></div></div><div className="memory-panel"><div><b>{hero.name}의 최근 기억</b><span>최근 전투에서 강하게 남은 경험이 다음 판단에 영향을 줍니다.</span></div><div className="memory-list">{(hero.memories||[]).slice(0,4).map((m,i)=><em key={i}>{m.text} · 영향 {Math.round(m.weight*10)/10}</em>)}</div></div><div className="costume-panel"><div><b>직업별 코스튬</b><span>{costumeLabel(hero.job,hero.costumeId)}</span></div><div className="costume-grid">{costumesForJob(hero.job).map(c=><button key={c.id} className={"costume-card "+c.tier+(hero.costumeId===c.id?" equipped":"")} onClick={()=>equipCostume(c.id)}><small>{c.tier}</small><b>{c.name.split(" · ")[1]}</b><span>{c.description}</span></button>)}</div></div></section>}
 
     {screen==="recruit"&&<section className="page"><div className="section-head"><div><span className="eyebrow">RECRUITMENT</span><h2>용사 모집란</h2><p className="muted">기초직업 5종의 신규 용사를 지속적으로 모집할 수 있습니다. 모집비 350 골드.</p></div><span className="counter">{save.heroes.length}명</span></div><div className="recruit-panel"><div><b>기초직업 모집</b><span>모집된 용사는 Lv.1에서 시작하며 기본 직업과 서로 다른 초기 성향을 가집니다.</span></div><div className="recruit-grid">{(Object.keys(jobKo) as Job[]).map(j=><article className="recruit-card" key={j}><div className="room-icon">{jobIcon[j]}</div><b>{jobKo[j]}</b><p>기초 직업 · 장기 성향이 성장하며 자동 전직합니다.</p><button className="primary-btn compact" disabled={save.gold<350} onClick={()=>recruit(j)}><UserPlus size={15}/> 모집 350G</button></article>)}</div></div><div className="subpanel"><div><b>모집 원칙</b><span>신규 용사의 미래는 실제 행동과 경험이 결정합니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("party")}><UserRound size={16}/> 캐릭터 보기</button></div></section>}
 
