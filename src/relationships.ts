@@ -4,6 +4,10 @@ export function relationshipOf(hero:Hero, targetId:string):Relationship{
   return hero.relationships?.[targetId]||{trust:50,respect:50,fear:0,bond:0};
 }
 
+export function relationshipFromMap(map:Record<string,Relationship>|undefined,targetId:string):Relationship{
+  return map?.[targetId]||{trust:50,respect:50,fear:0,bond:0};
+}
+
 export function adjustRelationship(hero:Hero,targetId:string,delta:{trust?:number;respect?:number;fear?:number;bond?:number}):Hero{
   const current=relationshipOf(hero,targetId);
   const next:Relationship={
