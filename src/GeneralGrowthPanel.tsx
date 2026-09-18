@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { GENERALS } from './game/data/generals';
 import type { General } from './game/types';
+import { getGeneralEffectiveStats } from './game/systems/generalStats';
 
 const KEY='infinite-three-kingdoms-save-v2';
 type Save={level?:number;gold?:number;materials?:number;owned?:unknown;generalLevels?:unknown;stars?:unknown;fragments?:unknown};
@@ -10,8 +11,7 @@ const starNeed=(star:number)=>star*20;
 function readSave():Save{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}}
 function mapOf(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,number>:{} }
 function GrowthCard({g,level,star,fragments,onLevelUp,onStarUp,disabled}:{g:General;level:number;star:number;fragments:number;onLevelUp:()=>void;onStarUp:()=>void;disabled:boolean}){
- const mult=1+.05*(star-1);
- const hp=Math.floor((g.hp+(level-1)*12)*mult),atk=Math.floor((g.atk+(level-1)*3)*mult),defense=Math.floor(g.defense+(level-1)*1.5);
+ const {hp,atk,defense}=getGeneralEffectiveStats(g,{level,star});
  return <div style={{background:'#141923',border:'1px solid #2a3345',borderRadius:12,padding:14,display:'grid',gap:8}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><b style={{fontSize:18}}>★{star} {g.name}</b><div style={{fontSize:12,color:'#9aa6b8'}}>{g.title} · {g.role}</div></div><b>Lv.{level}</b></div><div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,fontSize:12}}><span>HP <b>{hp}</b></span><span>공격 <b>{atk}</b></span><span>방어 <b>{defense}</b></span></div><div style={{fontSize:12,color:'#b9c7d9'}}>조각 {fragments}/{star>=6?0:starNeed(star)}{star>=6?' · 최대 성급':''}</div><div style={{display:'flex',gap:7,flexWrap:'wrap'}}><button disabled={disabled||level>=60} onClick={onLevelUp} style={{padding:'8px 10px',borderRadius:8,border:'1px solid #3a4760',background:'#202a3c',color:'#fff',cursor:disabled||level>=60?'not-allowed':'pointer'}}>{level>=60?'Lv.60 최대':`레벨업 · ${levelCost(level)}🪙 + ${levelMaterials(level)}🧱`}</button><button disabled={disabled||star>=6||fragments<starNeed(star)} onClick={onStarUp} style={{padding:'8px 10px',borderRadius:8,border:'1px solid #705b2b',background:'#30291b',color:'#fff',cursor:disabled||star>=6||fragments<starNeed(star)?'not-allowed':'pointer'}}>{star>=6?'★6 최대':`성급 돌파 · ${starNeed(star)} 조각`}</button></div></div>;
 }
 export default function GeneralGrowthPanel(){
