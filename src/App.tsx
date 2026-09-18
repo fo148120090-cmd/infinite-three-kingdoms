@@ -328,10 +328,10 @@ export default function App(){
         if(!alive.length)return {...prev,ended:true,result:"defeat"};
         const actor=alive.sort((a,b)=>a.pos-b.pos||b.speed-a.speed)[Math.floor(Math.random()*Math.min(2,alive.length))];
         const out=doAI(prev.units,actor.id,prev.environment);
-        let p=live(out.units,"player"),e=live(out.units,"enemy");
         let wave=prev.wave,objectiveHp=prev.objectiveHp,phase=prev.phase,ended=false,result:string|undefined;
         const now=Date.now();
         const environmentLog=prev.environment?environmentTick(out.units,prev.environment,prev.tick,phase):undefined;
+        let p=live(out.units,"player"),e=live(out.units,"enemy");
 
         if(prev.mode==="defense"){
           e.forEach(x=>{if(x.pos>0.45)x.pos=Math.max(0.45,x.pos-(0.075+wave*.006));});
@@ -477,6 +477,8 @@ export default function App(){
         {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
         {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase} · 종족별 패턴 AI</span></>}
         {battle.environment&&<span>환경 · {environmentInfo[battle.environment].name}</span>}
+      </div>
+      {battle.environment&&<div className="environment-note"><b>{environmentInfo[battle.environment].name}</b><span>{environmentInfo[battle.environment].detail}</span></div>
       </div>
       <div className="battle-layout"><div className="cave-panel"><div className="cave-label"><span>입구</span><span>심층</span></div><div className="cave-lane"><div className="cave-floor"/>
         {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")} style={{left:(u.pos*9.3)+"%"}}>
