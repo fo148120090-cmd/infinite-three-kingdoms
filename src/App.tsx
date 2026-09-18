@@ -326,7 +326,8 @@ export default function App(){
       return;
     }
     if(kind==="treasure"){
-      const uniqueDrop=Math.random()<.12 ? {...uniqueItems[Math.floor(Math.random()*uniqueItems.length)],id:uniqueItems[Math.floor(Math.random()*uniqueItems.length)].id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)} : undefined;
+      const uniqueBase=uniqueItems[Math.floor(Math.random()*uniqueItems.length)];
+      const uniqueDrop=Math.random()<.12 ? {...uniqueBase,id:uniqueBase.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)} : undefined;
       const item=uniqueDrop||randomGeneralItem(save.floor+2,partyPref);
       setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));
       notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득");
