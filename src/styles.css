@@ -252,3 +252,10 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .modal-traits b{font-size:9px;color:#d7e0ee}
 .modal-traits span{font-size:7px;color:#7889a4;line-height:1.4}
 @media(max-width:520px){.modal-traits{grid-template-columns:1fr}}
+
+.modal-event-rewards{display:grid;gap:5px;max-height:180px;overflow:auto;padding-right:2px}
+.modal-event-rewards>div{padding:7px 8px;border:1px solid #27364d;border-radius:8px;background:#101927;display:grid;grid-template-columns:auto 1fr;gap:2px 6px}
+.modal-event-rewards span{font-size:7px;color:#72819a}
+.modal-event-rewards b{font-size:9px;color:#d5deeb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-event-rewards small{grid-column:1/-1;font-size:7px;color:#75849d;line-height:1.35}
+.modal-event-rewards>small{padding:8px;color:#6f7e96;line-height:1.4}
