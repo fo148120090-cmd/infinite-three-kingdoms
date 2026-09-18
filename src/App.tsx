@@ -21,6 +21,7 @@ type RouteMemory = Partial<Record<RoomKind,RouteMemoryEntry>>;
 type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; routeMemory?:RouteMemory; worldSealed?:boolean };
 type Decision = { action: string; target?: string; detail: string; score: number };
 type BattlePlan = { key:"aggressive"|"defensive"|"focused"|"balanced"; label:string; detail:string };
+type BattleContext = { mode:BattleMode; objectiveKind?:DefenseObjective; objectiveHp:number; phase:number };
 
 const KEY = "autonomous-dungeon-demo-v1";
 const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
@@ -148,6 +149,26 @@ function battlePlanBonus(plan:BattlePlan|undefined,action:string,team:"player"|"
   if(plan.key==="focused") return attack.includes(action)?10:action==="광역 마법"?8:action==="대기"?-4:3;
   return action==="아군 보호"||action==="회복"?5:action==="일반 공격"||action==="추격"?5:2;
 }
+function battleObjectiveBonus(a:BattleUnit, enemies:BattleUnit[], action:string, context:BattleContext|undefined){
+  if(!context||a.team!=="player")return 0;
+  const attack=["일반 공격","추격","광폭 돌격","결투 집중","정밀 사격","사냥 본능","원소 폭발","저주 확산","비전 해방","심판"];
+  if(context.mode==="defense"){
+    const pressure=enemies.filter(x=>x.pos<1.8).length;
+    if(attack.includes(action)) return pressure*5;
+    if(action==="아군 보호") return context.objectiveHp<70?10:0;
+    if(action==="회복") return context.objectiveHp<55?12:0;
+    if(action==="후퇴") return pressure>=2?-9:0;
+  }
+  if(context.mode==="raid"){
+    const boss=enemies.find(x=>x.grade==="Boss"&&x.alive);
+    if(boss){
+      if(attack.includes(action)) return 14+(context.phase===3?8:0);
+      if(action==="추격") return context.phase>=2?8:0;
+      if(action==="회복"||action==="아군 보호") return context.phase===3?7:0;
+    }
+  }
+  return 0;
+}
 
 function routeForecast(kind:RoomKind,floor:number,heroes:Hero[],routeMemory?:RouteMemory){
   const avg=(key:keyof Tendencies)=>heroes.length?heroes.reduce((n,h)=>n+h.tendencies[key],0)/heroes.length:50;
@@ -249,10 +270,12 @@ function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
   return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
 }
 
-function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan):Decision[] {
+function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):Decision[] {
   const allies=live(u,a.team), enemies=live(u,a.team==="player"?"enemy":"player");
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
+  const boss=enemies.find(x=>x.grade==="Boss"&&x.alive);
+  const attackTarget=(context?.mode==="raid"&&boss)?boss:weak;
   const ally=allies.slice().sort((x,y)=>pct(x)-pct(y))[0];
   const t=a.tendencies; const arr:Decision[]=[];
   const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
@@ -262,7 +285,8 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   if(a.cooldown<=0) for(const p of promotionActions(a.promotionPath)){
     let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08+envBonus+habitBias(a,p.name)+(a.team==="player"?partyHabitBias(partyMemory,p.name):0)+battlePlanBonus(plan,p.name,a.team);
     if((p.name.includes("대회복")||p.name.includes("수호"))&&ally) score+=Math.max(0,(1-pct(ally))*55);
-    if((p.name.includes("사격")||p.name.includes("사냥")||p.name.includes("심판"))&&weak) score+=Math.max(0,(1-pct(weak))*45);
+    if((p.name.includes("사격")||p.name.includes("사냥")||p.name.includes("심판"))&&attackTarget) score+=Math.max(0,(1-pct(attackTarget))*45);
+    if(context?.mode==="raid"&&boss&&["사격","사냥","심판","폭발","저주","돌격","비전"].some(x=>p.name.includes(x))) score+=18;
     if((p.name.includes("폭발")||p.name.includes("저주"))&&enemies.length>=2) score+=enemies.length*10;
     arr.push({action:p.name,detail:p.detail,score});
   }
@@ -279,18 +303,18 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   if(nearest){
     let s=68+t.aggression*.42+t.bravery*.24+t.focus*.12+(1-pct(weak))*46+envBonus+(a.team==="enemy"?24:0);
     if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
-    arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협·마무리 가능성·기존 공격 습관을 계산",score:s+habitBias(a,"일반 공격")+roleSynergy(a,allies,"일반 공격")+battlePlanBonus(plan,"일반 공격",a.team)});
+    arr.push({action:"일반 공격",target:(context?.mode==="raid"&&boss?boss.id:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id)),detail:"위협·마무리 가능성·기존 공격 습관을 계산",score:s+habitBias(a,"일반 공격")+roleSynergy(a,allies,"일반 공격")+battlePlanBonus(plan,"일반 공격",a.team)+battleObjectiveBonus(a,enemies,"일반 공격",context)});
   }
-  if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8+habitBias(a,"추격")+roleSynergy(a,allies,"추격")+battlePlanBonus(plan,"추격",a.team)});
-  if(a.job==="Guardian"&&ally&&pct(ally)<.82) arr.push({action:"아군 보호",target:ally.id,detail:"부상한 아군을 우선 보호하고 전선을 유지",score:26+t.protect*.5+t.cooperation*.25+(1-pct(ally))*58+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+roleSynergy(a,allies,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)+battlePlanBonus(plan,"아군 보호",a.team)});
-  if(a.job==="Cleric"&&ally&&pct(ally)<.76) arr.push({action:"회복",target:ally.id,detail:"부상한 아군을 즉시 회복",score:32+t.protect*.35+t.cooperation*.25+(1-pct(ally))*82+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+roleSynergy(a,allies,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7+Math.min(8,lossBias*.15)+battlePlanBonus(plan,"회복",a.team)});
-  if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8+habitBias(a,"광역 마법")+roleSynergy(a,allies,"광역 마법")+battlePlanBonus(plan,"광역 마법",a.team)});
+  if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8+habitBias(a,"추격")+roleSynergy(a,allies,"추격")+battlePlanBonus(plan,"추격",a.team)+battleObjectiveBonus(a,enemies,"추격",context)});
+  if(a.job==="Guardian"&&ally&&pct(ally)<.82) arr.push({action:"아군 보호",target:ally.id,detail:"부상한 아군을 우선 보호하고 전선을 유지",score:26+t.protect*.5+t.cooperation*.25+(1-pct(ally))*58+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+roleSynergy(a,allies,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)+battlePlanBonus(plan,"아군 보호",a.team)+battleObjectiveBonus(a,enemies,"아군 보호",context)});
+  if(a.job==="Cleric"&&ally&&pct(ally)<.76) arr.push({action:"회복",target:ally.id,detail:"부상한 아군을 즉시 회복",score:32+t.protect*.35+t.cooperation*.25+(1-pct(ally))*82+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+roleSynergy(a,allies,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7+Math.min(8,lossBias*.15)+battlePlanBonus(plan,"회복",a.team)+battleObjectiveBonus(a,enemies,"회복",context)});
+  if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8+habitBias(a,"광역 마법")+roleSynergy(a,allies,"광역 마법")+battlePlanBonus(plan,"광역 마법",a.team)+battleObjectiveBonus(a,enemies,"광역 마법",context)});
   if(a.team==="enemy"&&a.species==="Goblin") arr.push({action:"기습 후퇴",target:nearest?.id,detail:"위험해지면 생존을 위해 물러남",score:20+t.greed*.2+t.caution*.35+(1-pct(a))*60});
   if(a.team==="enemy"&&a.grade==="Boss"){
     const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
     arr.push({action:"보스 패턴",detail:"페이즈 "+phase+" 패턴을 선택하고 전장을 압박",score:42+t.focus*.25+t.bravery*.25+(phase-1)*18});
   }
-  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+habitBias(a,"후퇴")+partyHabitBias(partyMemory,"후퇴")+(pct(a)<.12?20:0)-(equippedItemsOf(a).some(x=>x.id==="berserker-heart")?35:0)-(a.team==="enemy"?10:0)+battlePlanBonus(plan,"후퇴",a.team)});
+  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+habitBias(a,"후퇴")+partyHabitBias(partyMemory,"후퇴")+(pct(a)<.12?20:0)-(equippedItemsOf(a).some(x=>x.id==="berserker-heart")?35:0)-(a.team==="enemy"?10:0)+battlePlanBonus(plan,"후퇴",a.team)+battleObjectiveBonus(a,enemies,"후퇴",context)});
   arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05+envBonus*.2});
   return arr;
 }
@@ -327,8 +351,8 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
   return Math.max(5,Math.round((a.attack*m-b.defense*.5)*crit*(.94+Math.random()*.12)*guardFactor));
 }
 
-function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const d=weighted(decisions(a,n,env,partyMemory,plan));
+function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):{units:BattleUnit[];decision:Decision;line:string}{
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const d=weighted(decisions(a,n,env,partyMemory,plan,context));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
