@@ -138,12 +138,12 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   if(nearest){
     let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40+envBonus+(a.team==="enemy"?22:0);
     if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
-    arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협·마무리 가능성·기존 공격 습관을 계산",score:s+habitBias(a,"일반 공격")});
+    arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협·마무리 가능성·기존 공격 습관을 계산",score:s+habitBias(a,"일반 공격")+roleSynergy(a,allies,"일반 공격")});
   }
-  if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8+habitBias(a,"추격")});
-  if(a.job==="Guardian"&&ally) arr.push({action:"아군 보호",target:ally.id,detail:"위험한 아군 쪽으로 접근해 피해를 줄임",score:20+t.protect*.5+t.cooperation*.25+(1-pct(ally))*55+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)});
-  if(a.job==="Cleric"&&ally) arr.push({action:"회복",target:ally.id,detail:"가장 위험한 아군을 먼저 치료",score:30+t.protect*.35+t.cooperation*.25+(1-pct(ally))*75+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7-(pct(ally)>.78?35:0)+Math.min(8,lossBias*.15)});
-  if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8+habitBias(a,"광역 마법")});
+  if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8+habitBias(a,"추격")+roleSynergy(a,allies,"추격")});
+  if(a.job==="Guardian"&&ally) arr.push({action:"아군 보호",target:ally.id,detail:"위험한 아군 쪽으로 접근해 피해를 줄임",score:20+t.protect*.5+t.cooperation*.25+(1-pct(ally))*55+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+roleSynergy(a,allies,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)});
+  if(a.job==="Cleric"&&ally) arr.push({action:"회복",target:ally.id,detail:"가장 위험한 아군을 먼저 치료",score:30+t.protect*.35+t.cooperation*.25+(1-pct(ally))*75+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+roleSynergy(a,allies,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7-(pct(ally)>.78?35:0)+Math.min(8,lossBias*.15)});
+  if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8+habitBias(a,"광역 마법")+roleSynergy(a,allies,"광역 마법")});
   if(a.team==="enemy"&&a.species==="Goblin") arr.push({action:"기습 후퇴",target:nearest?.id,detail:"위험해지면 생존을 위해 물러남",score:20+t.greed*.2+t.caution*.35+(1-pct(a))*60});
   if(a.team==="enemy"&&a.grade==="Boss"){
     const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
@@ -152,6 +152,24 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+habitBias(a,"후퇴")+partyHabitBias(partyMemory,"후퇴")+(pct(a)<.12?20:0)-(equippedItemsOf(a).some(x=>x.id==="berserker-heart")?35:0)-(a.team==="enemy"?10:0)});
   arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05+envBonus*.2});
   return arr;
+}
+
+function roleSynergy(a:BattleUnit,allies:BattleUnit[],action:string):number{
+  if(a.team!=="player")return 0;
+  const candidates=allies.filter(x=>x.id!==a.id);
+  if(!candidates.length)return 0;
+  const partner=candidates.slice().sort((x,y)=>{
+    const ry=relationshipFromMap(a.relationships,y.id), rx=relationshipFromMap(a.relationships,x.id);
+    return (ry.bond+ry.trust*.35)-(rx.bond+rx.trust*.35);
+  })[0];
+  const r=relationshipFromMap(a.relationships,partner.id);
+  const link=Math.min(10,r.bond*.07+r.trust*.025);
+  if((action==="아군 보호"||action==="수호 맹세"||action==="철벽 진형")&&partner.team==="player")return link;
+  if((action==="회복"||action==="대회복")&&partner.team==="player")return link*.82;
+  if(action==="추격"&&a.job==="Warrior"&&candidates.some(x=>x.job==="Archer"||x.job==="Mage"))return link*.55;
+  if(action==="일반 공격"&&a.job==="Archer"&&candidates.some(x=>x.job==="Warrior"||x.job==="Guardian"))return link*.45;
+  if(action==="광역 마법"&&a.job==="Mage"&&candidates.length>=2)return link*.35;
+  return 0;
 }
 
 function weighted(ds:Decision[]):Decision {
@@ -702,6 +720,7 @@ function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>vo
       <small>{behaviorSummary(hero)}</small><small>AI 빌드 · {buildProfile(hero).name} · {buildProfile(hero).detail}</small>
       <div className="social-meta">
         {bond&&<span>유대 · {bondName} {Math.round(bond.relation.bond)}</span>}
+        <span>{bond?"전술 링크 · "+(bond.relation.bond>=25?"활성":"형성 중"):"전술 링크 · 미형성"}</span>
         <span>기억 {hero.memories?.length||0}</span>
       </div>
     </div>
