@@ -212,9 +212,22 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
     const minions=live(n,"enemy").filter(x=>x.id!==a.id);
     const boost=phase===1?1.05:phase===2?1.16:1.3;
     minions.forEach(x=>{x.attack=Math.round(x.attack*boost);if(phase>=2)x.speed+=1;});
-    a.guard=phase===3?1:0;
-    a.actionText="보스 패턴 · PHASE "+phase;
-    line=a.actionText+" · 부하 강화";
+    const bossSpecies=a.species;
+    if(bossSpecies==="Arachne"){
+      enemies.filter(x=>dist(a,x)<5).slice(0,3).forEach(x=>x.speed=Math.max(.35,x.speed-(phase===3?.35:.18)));
+      a.actionText="보스 패턴 · 거미줄 지대 · PHASE "+phase;
+      line=a.actionText;
+    }else if(bossSpecies==="Demon"){
+      const target=enemies.slice().sort((x,y)=>(x.job==="Cleric"?-1:1)-(y.job==="Cleric"?-1:1)||pct(x)-pct(y))[0];
+      if(target){const x=hit(a,target,phase===3?1.25:1);target.hp=Math.max(0,target.hp-x);target.alive=target.hp>0;}
+      enemies.forEach(x=>x.tendencies.caution=Math.max(0,x.tendencies.caution-(phase===3?8:4)));
+      a.actionText="보스 패턴 · 지배의 파동 · PHASE "+phase;
+      line=a.actionText;
+    }else{
+      a.guard=phase===3?1:0;
+      a.actionText="보스 패턴 · 전쟁 지휘 · PHASE "+phase;
+      line=a.actionText+" · 부하 강화";
+    }
   } else {a.guard=1;a.actionText="대기 · 다음 판단 준비";line=a.actionText;}
   if(["광폭 돌격","수호 맹세","결투 집중","정밀 사격","사냥 본능","심판","철벽 진형","원소 폭발","저주 확산","비전 해방","대회복","분열","함정 투척","매복 함정","거미줄","무리 사냥","약점 추적","연계 공격","전투 함성","지휘 명령","측면 습격","급강하","굴 파기 기습","독성 압박","매혹","대지 강타","회피 기동","역할 분석","영역 지배","광폭화"].includes(d.action))a.cooldown=2;
   n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2;if(x.id!==a.id&&x.cooldown>0)x.cooldown=Math.max(0,x.cooldown-.25);});
@@ -316,9 +329,12 @@ export default function App(){
 
         if(prev.mode==="defense"){
           const nearGoal=e.filter(x=>x.pos<0.8).length;
-          if(prev.tick%4===0 && nearGoal>0) objectiveHp=Math.max(0,objectiveHp-nearGoal*3);
+          const bossNear=e.filter(x=>x.grade==="Boss"&&x.pos<1.4).length;
+          const pressure=prev.objectiveKind==="gate"?nearGoal*3+bossNear*5:prev.objectiveKind==="relic"?nearGoal*2+bossNear*6:nearGoal*4;
+          if(prev.tick%4===0 && pressure>0) objectiveHp=Math.max(0,objectiveHp-pressure);
+          if(prev.objectiveKind==="escort"&&prev.tick%5===0&&p.some(x=>x.job==="Guardian")) objectiveHp=Math.min(100,objectiveHp+2);
           if(p.length===0||objectiveHp<=0){ended=true;result="defeat";}
-          else if(now>=((prev.deadline||now)+1)){ended=true;result="victory";}
+          else if(now>=(prev.deadline||now)){ended=true;result="victory";}
           else if(e.length===0){
             wave+=1;
             const pool=["Goblin","Kobold","Gnoll","Orc","Uruk","Arachne","Ogre"];
