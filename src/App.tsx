@@ -86,7 +86,7 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const by=(x?:string)=>n.find(q=>q.id===x&&q.alive);
   const move=(target:BattleUnit)=>{
-    const step=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric")?.65:.9;
+    const step=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric") ? .65 : .9;
     a.pos+=(target.pos>a.pos?step:-step); a.pos=Math.max(.3,Math.min(9.7,a.pos));
   };
   let line="";
