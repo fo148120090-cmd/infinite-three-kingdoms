@@ -145,7 +145,7 @@ export function resolveEnemyTurnPhase(state: BattleState, terrain: Terrain[], fl
   const normalizedReset = normalizeDefeatedUnits(reset);
   const enemyMessages = [...bossEffects.map((effect) => effect.message), ...enemyResult.messages];
   const enemyLog = enemyMessages.length ? enemyMessages.join(' / ') : '몬스터가 행동하지 않았습니다.';
-  const log = [...state.log, enemyLog];
+  const log = enemyMessages.length ? [...state.log, ...enemyMessages] : [...state.log, enemyLog];
   const outcome = isBattleOver(normalizedReset);
   if (outcome === 'enemy') {
     return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'defeat', turnNumber: state.turnNumber, targetId: null, log: [...log, '전투 패배...'] }, success: true, message: enemyLog };
