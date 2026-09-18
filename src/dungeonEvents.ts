@@ -98,3 +98,109 @@ export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number
   party.forEach(h=>touch(h.id,{hpDelta:8,tendencies:{curiosity:clamp(h.tendencies.curiosity+.4)}}));
   return {text:"낡은 탐사 흔적: 큰 위험 없이 소량의 보급품을 찾았다.",gold:70,materials:14,heroUpdates};
 }
+
+
+export type DungeonChoice={
+  id:string;
+  label:string;
+  detail:string;
+  tendency:keyof Tendencies;
+  risk:number;
+  reward:number;
+};
+
+export type DungeonChoiceEvent={
+  title:string;
+  text:string;
+  choices:DungeonChoice[];
+};
+
+export function dungeonChoiceEvent(floor:number,environment:EnvironmentKind):DungeonChoiceEvent{
+  if(environment==="dark"){
+    return {
+      title:"어둠 속 기록실",
+      text:"희미한 봉인문 너머에서 오래된 원정 기록과 보급 상자가 보인다. 무엇을 할까?",
+      choices:[
+        {id:"read",label:"기록을 해독한다",detail:"집중력을 요구하지만 숨겨진 정보를 얻을 가능성이 높다.",tendency:"focus",risk:6,reward:170+floor*8},
+        {id:"loot",label:"보급 상자를 연다",detail:"탐욕스럽게 보상을 챙기지만 함정에 노출될 수 있다.",tendency:"greed",risk:14,reward:230+floor*10},
+        {id:"leave",label:"안전하게 지나간다",detail:"보상은 작지만 불필요한 위험을 피한다.",tendency:"caution",risk:0,reward:70+floor*4}
+      ]
+    };
+  }
+  if(environment==="narrow"){
+    return {
+      title:"붕괴 직전의 갈림길",
+      text:"천장이 흔들리고 세 갈래의 통로 중 하나에서 균열음이 들린다.",
+      choices:[
+        {id:"rush",label:"빠르게 돌파한다",detail:"용맹을 믿고 가장 짧은 길을 선택한다.",tendency:"bravery",risk:18,reward:190+floor*8},
+        {id:"secure",label:"안전한 길을 찾는다",detail:"신중하게 지형을 살펴 시간을 들인다.",tendency:"caution",risk:4,reward:130+floor*6},
+        {id:"cooperate",label:"파티가 함께 통로를 보강한다",detail:"협동으로 붕괴 위험을 낮추지만 시간이 걸린다.",tendency:"cooperation",risk:2,reward:155+floor*7}
+      ]
+    };
+  }
+  if(environment==="toxic"){
+    return {
+      title:"독성 저장고",
+      text:"독성 안개 속에 약초와 봉인된 약품 상자가 있다.",
+      choices:[
+        {id:"herbs",label:"약초를 채집한다",detail:"생존본능을 살려 필요한 것만 안전하게 챙긴다.",tendency:"survival",risk:7,reward:145+floor*7},
+        {id:"rare",label:"희귀 약품을 꺼낸다",detail:"더 큰 보상을 노리지만 독성에 노출될 수 있다.",tendency:"greed",risk:15,reward:250+floor*10},
+        {id:"careful",label:"장비 없이 지나간다",detail:"보상을 포기하고 안전을 우선한다.",tendency:"caution",risk:0,reward:55+floor*3}
+      ]
+    };
+  }
+  if(environment==="water"){
+    return {
+      title:"수중 봉인고",
+      text:"물이 차오른 방 아래에 반짝이는 보관함이 잠겨 있다.",
+      choices:[
+        {id:"dive",label:"직접 잠수한다",detail:"호기심을 따라 위험을 감수하고 깊은 곳으로 내려간다.",tendency:"curiosity",risk:16,reward:270+floor*11},
+        {id:"team",label:"함께 끌어올린다",detail:"협동으로 보관함을 들어 올린다.",tendency:"cooperation",risk:5,reward:180+floor*8},
+        {id:"skip",label:"보관함을 포기한다",detail:"안전을 우선하고 통로를 통과한다.",tendency:"caution",risk:0,reward:80+floor*4}
+      ]
+    };
+  }
+  if(environment==="unstable"){
+    return {
+      title:"공명 수정맥",
+      text:"균열 사이에서 귀중한 수정이 맥동한다. 잘못 건드리면 지형이 무너질 수 있다.",
+      choices:[
+        {id:"focus",label:"진동 패턴을 읽는다",detail:"집중력을 사용해 안정 구간을 찾는다.",tendency:"focus",risk:8,reward:210+floor*9},
+        {id:"break",label:"강제로 채굴한다",detail:"용맹하게 수정을 부수어 많은 자원을 노린다.",tendency:"bravery",risk:20,reward:320+floor*12},
+        {id:"mark",label:"위치를 기록하고 철수한다",detail:"다음 원정을 위해 정보를 남긴다.",tendency:"caution",risk:0,reward:95+floor*4}
+      ]
+    };
+  }
+  return {
+    title:"봉인된 제단",
+    text:"오래된 제단 위에 손대지 않은 보급품과 이상한 문양이 남아 있다.",
+    choices:[
+      {id:"study",label:"문양을 조사한다",detail:"호기심으로 숨겨진 의미를 찾는다.",tendency:"curiosity",risk:8,reward:190+floor*8},
+      {id:"take",label:"보급품을 챙긴다",detail:"탐욕을 따라 즉시 보상을 가져간다.",tendency:"greed",risk:12,reward:240+floor*10},
+      {id:"observe",label:"주변을 살핀다",detail:"신중하게 함정 여부를 확인한다.",tendency:"caution",risk:2,reward:110+floor*5}
+    ]
+  };
+}
+
+export function resolveDungeonChoice(heroes:Hero[],partyIds:string[],floor:number,environment:EnvironmentKind,choice:DungeonChoice):DungeonEventOutcome{
+  const party=heroes.filter(h=>partyIds.includes(h.id));
+  const heroUpdates:Record<string,EventUpdate>={};
+  const bonusByTendency:Partial<Tendencies>={curiosity:.6,focus:.5,greed:.8,caution:.7,bravery:.8,cooperation:.8,survival:.7};
+  const baseDamage=Math.max(0,Math.round(choice.risk-(party.reduce((n,h)=>n+h.tendencies[choice.tendency],0)/(party.length||1))*0.05));
+  const hpDelta=-baseDamage;
+  party.forEach(h=>{
+    heroUpdates[h.id]={
+      hpDelta,
+      tendencies:{
+        [choice.tendency]:clamp(h.tendencies[choice.tendency]+(bonusByTendency[choice.tendency]||.5))
+      }
+    };
+  });
+  const threshold=party.length?party.reduce((n,h)=>n+h.tendencies[choice.tendency],0)/party.length:0;
+  const reward=Math.max(20,choice.reward+Math.round((threshold-50)*1.2));
+  const materials=Math.max(4,Math.round(reward*.05));
+  const text=baseDamage>0
+    ? `${choice.label} · ${choice.detail} · 피해 ${baseDamage}`
+    : `${choice.label} · ${choice.detail} · 안전하게 성공`;
+  return {text,gold:reward,materials,heroUpdates};
+}
