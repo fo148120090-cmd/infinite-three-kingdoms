@@ -34,20 +34,38 @@ function load(): Save {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies} })), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
+      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies},equipment:(h.equipment??(h.item?[h.item]:[])).slice(0,3) as [Item?,Item?,Item?]})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
     }
   } catch {}
-  return {heroes:heroesSeed.map(h=>({...h,tendencies:cloneTendencies(h.tendencies)})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},worldSealed:false};
+  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[]})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},worldSealed:false};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
 const dist=(a:BattleUnit,b:BattleUnit)=>Math.abs(a.pos-b.pos);
 const live=(u:BattleUnit[],team:"player"|"enemy")=>u.filter(x=>x.team===team&&x.alive);
-const aiT=(t:Tendencies,item?:Item):Tendencies=>{
-  const n={...t}; if(item) (Object.keys(item.aiMods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(item.aiMods[k]||0))); return n;
+const equipmentSlotsOf=(hero:Hero|BattleUnit):[Item?,Item?,Item?]=>{
+  const raw=hero.equipment ?? (hero.item?[hero.item]:[]);
+  return [raw[0],raw[1],raw[2]];
 };
+const equippedItemsOf=(hero:Hero|BattleUnit)=>equipmentSlotsOf(hero).filter((x):x is Item=>!!x);
+const combinedAiMods=(items:Item[])=>{
+  const mods:Partial<Tendencies>={};
+  for(const item of items) for(const [k,v] of Object.entries(item.aiMods)) mods[k as keyof Tendencies]=(mods[k as keyof Tendencies]||0)+(v||0);
+  return mods;
+};
+const combinedCombatMods=(items:Item[])=>{
+  const mods:Record<string,number>={};
+  for(const item of items) for(const [k,v] of Object.entries(item.combatMods||{})) mods[k]=(mods[k]||0)+(v||0);
+  return mods;
+};
+const aiT=(t:Tendencies,items:Item[]=[]):Tendencies=>{
+  const n={...t}; const mods=combinedAiMods(items);
+  (Object.keys(mods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(mods[k]||0)));
+  return n;
+};
+const equipmentNames=(hero:Hero)=>equipmentSlotsOf(hero).map(x=>x?.name||"장비 없음");
 const combatStats=(hero:Hero)=>{
-  const m=hero.item?.combatMods||{};
+  const m=combinedCombatMods(equippedItemsOf(hero));
   const bonus=chronicleBonuses(hero);
   const hp=Math.round(hero.hp*(1+((m.hpPct||0)+(bonus.hpPct||0))/100));
   return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)};
@@ -57,7 +75,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleU
   const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>{
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
-      speed:s.speed,range:s.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
+      speed:s.speed,range:s.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h)),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
       relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
@@ -84,7 +102,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
   const ally=allies.slice().sort((x,y)=>pct(x)-pct(y))[0];
   const t=a.tendencies; const arr:Decision[]=[];
   const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
-  const mod=a.item?.aiMods||{};
+  const mod=combinedAiMods(equippedItemsOf(a));
   const lossBias=(a.memories||[]).filter(m=>m.text.includes("전사")).reduce((n,m)=>n+m.weight,0);
   const envBonus=env?environmentDecisionBonus(a,env):0;
   if(a.cooldown<=0) for(const p of promotionActions(a.promotionPath)){
@@ -118,7 +136,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
     const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
     arr.push({action:"보스 패턴",detail:"페이즈 "+phase+" 패턴을 선택하고 전장을 압박",score:42+t.focus*.25+t.bravery*.25+(phase-1)*18});
   }
-  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+(pct(a)<.12?20:0)-(a.item?.id==="berserker-heart"?35:0)-(a.team==="enemy"?10:0)});
+  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+(pct(a)<.12?20:0)-(equippedItemsOf(a).some(x=>x.id==="berserker-heart")?35:0)-(a.team==="enemy"?10:0)});
   arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05+envBonus*.2});
   return arr;
 }
@@ -131,7 +149,7 @@ function weighted(ds:Decision[]):Decision {
 }
 
 function hit(a:BattleUnit,b:BattleUnit,m=1){
-  const critChance=Math.min(.35,(a.tendencies.focus>82?.15:0)+(a.item?.combatMods?.critPct||0)/100);
+  const critChance=Math.min(.35,(a.tendencies.focus>82?.15:0)+(combinedCombatMods(equippedItemsOf(a)).critPct||0)/100);
   const crit=Math.random()<critChance?1.55:1;
   return Math.max(4,Math.round((a.attack*m-b.defense*.58)*crit*(.93+Math.random()*.14)));
 }
@@ -162,7 +180,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[]
   } else if(d.action==="비전 해방"){
     const t=weak||nearest; if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.45);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="비전 해방 → "+t.name+" (-"+x+")";line=a.actionText;}}
   } else if(d.action==="대회복"){
-    const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+(a.item?.combatMods?.healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+    const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+(combinedCombatMods(equippedItemsOf(a)).healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="분열"){
     if(pct(a)>.55 && n.filter(x=>x.team==="enemy").length<8){
       const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true};
@@ -258,6 +276,7 @@ export default function App(){
   const [screen,setScreen]=useState<Screen>("home");
   const [mode,setMode]=useState<BattleMode>("dungeon");
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
+  const [selectedEquipSlot,setSelectedEquipSlot]=useState(0);
   const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
@@ -460,13 +479,32 @@ export default function App(){
     else if(save.party.length<4)setSave(s=>({...s,party:s.party.concat(id)}));
     else notify("데모 파티 최대 4명");
   };
-  const equip=(item:Item)=>{
-    setSave(s=>({...s,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,item}:h)}));
-    notify(hero.name+" · "+item.name+" 장착");
+  const equip=(item:Item,slot=selectedEquipSlot,fromInventory=false)=>{
+    setSave(s=>{
+      let replaced:Item|undefined;
+      const heroes=s.heroes.map(h=>{
+        if(h.id!==selectedHero)return h;
+        const slots=equipmentSlotsOf(h);
+        replaced=slots[slot];
+        slots[slot]=item;
+        return {...h,equipment:slots,item:slots[0]};
+      });
+      const inventory=fromInventory
+        ? s.items.filter(x=>x.id!==item.id).concat(replaced&&!replaced.unique?[replaced]:[])
+        : s.items;
+      return {...s,heroes,items:inventory};
+    });
+    notify(hero.name+" · "+item.name+" 장착 (슬롯 "+(slot+1)+")");
   };
   const randomEquip=()=>{
     if(save.materials<12){notify("재료가 부족합니다.");return;}
-    const item=randomGeneralItem(hero.level,hero.tendencies); setSave(s=>({...s,materials:s.materials-12,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,item}:h)}));notify("장기 성향에 맞춰 장비 옵션을 새로 굴렸습니다.");
+    const item=randomGeneralItem(hero.level,hero.tendencies);
+    setSave(s=>({...s,materials:s.materials-12,heroes:s.heroes.map(h=>{
+      if(h.id!==selectedHero)return h;
+      const slots=equipmentSlotsOf(h); slots[selectedEquipSlot]=item;
+      return {...h,equipment:slots,item:slots[0]};
+    })}));
+    notify("슬롯 "+(selectedEquipSlot+1)+"의 장비 옵션을 새로 굴렸습니다.");
   };
   const recruit=(job:Job)=>{
     if(save.gold<350){notify("모집 자금이 부족합니다.");return;}
@@ -574,7 +612,7 @@ function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>vo
     <ChevronRight size={17}/>
   </article>;
 }
-function tags(h:Hero){const ks=(Object.keys(tendencyKo) as (keyof Tendencies)[]).sort((a,b)=>(h.tendencies[b]+(h.item?.aiMods[b]||0))-(h.tendencies[a]+(h.item?.aiMods[a]||0)));return ks.slice(0,3).map(k=>tendencyKo[k]+" "+((h.tendencies[k]+(h.item?.aiMods[k]||0))>=80?"높음":(h.tendencies[k]+(h.item.aiMods[k]||0))>=60?"중상":"보통"));}
+function tags(h:Hero){const mod=combinedAiMods(equippedItemsOf(h));const ks=(Object.keys(tendencyKo) as (keyof Tendencies)[]).sort((a,b)=>(h.tendencies[b]+(mod[b]||0))-(h.tendencies[a]+(mod[a]||0)));return ks.slice(0,3).map(k=>tendencyKo[k]+" "+((h.tendencies[k]+(mod[k]||0))>=80?"높음":(h.tendencies[k]+(mod[k]||0))>=60?"중상":"보통"));}
 function ItemCard({item,equipped,onEquip}:{item:Item;equipped?:boolean;onEquip?:()=>void}){return <article className={"item-card "+(item.unique?"unique-item":"")}><div className="item-top"><span>{item.rarity}</span>{item.unique&&<b>UNIQUE</b>}</div><h3>{item.name}</h3><small>{item.slot} · Lv.{item.level}</small><div className="stat-list">{item.stats.map(s=><span key={s}>{s}</span>)}</div><div className="ai-mod"><Brain size={14}/>{Object.entries(item.aiMods).map(([k,v])=><span key={k}>{tendencyKo[k as keyof Tendencies]} {(v||0)>0?"+":""}{v}</span>)}</div><p>{item.description}</p>{onEquip&&<button className="ghost-btn" onClick={onEquip}>{equipped?"장착 중":"장착"}</button>}</article>;}
 
 
