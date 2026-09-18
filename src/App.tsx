@@ -41,7 +41,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>({
     id:h.id,name:h.name,job:h.job,team:"player" as const,hp:h.hp,maxHp:h.hp,attack:h.attack,defense:h.defense,
     speed:h.speed,range:h.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
-    relationships:h.relationships,memories:h.memories,actionText:"대기",cooldown:0,guard:0,xp:0
+    relationships:h.relationships,memories:h.memories,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}
   }));
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"?3:room==="elite"?4:3;
@@ -101,8 +101,9 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
 }
 
 function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x})); const a=n.find(x=>x.id===id)!; const d=weighted(decisions(a,n));
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})}})); const a=n.find(x=>x.id===id)!; const d=weighted(decisions(a,n));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
+  a.behaviorCounts![d.action]=(a.behaviorCounts![d.action]||0)+1;
   const by=(x?:string)=>n.find(q=>q.id===x&&q.alive);
   const move=(target:BattleUnit)=>{
     const step=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric") ? .65 : .9;
@@ -237,7 +238,16 @@ export default function App(){
     const victory=battle.result==="victory";
     const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
     if(!victory){
-      setSave(s=>({...s,heroes:bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories)}));
+      setSave(s=>{
+        const boss=battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss");
+        let monsterLineages=s.monsterLineages;
+        if(boss){
+          let lineage=s.monsterLineages.find(x=>x.id==="uruk-boss") || emptyLineage("uruk-boss","Uruk");
+          for(const [action,count] of Object.entries(boss.behaviorCounts||{})) for(let i=0;i<count;i++) lineage=recordLineage(lineage,action,false);
+          monsterLineages=s.monsterLineages.filter(x=>x.id!=="uruk-boss").concat(lineage);
+        }
+        return {...s,monsterLineages,heroes:bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories)};
+      });
       return;
     }
     if(victory){
@@ -245,7 +255,15 @@ export default function App(){
       const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
       setSave(s=>{
         const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
-        return {...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
+        const boss=battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss");
+        const nextLineages=boss ? (() => {
+          let lineage=s.monsterLineages.find(x=>x.id==="uruk-boss") || emptyLineage("uruk-boss","Uruk");
+          for(const [action,count] of Object.entries(boss.behaviorCounts||{})){
+            for(let i=0;i<count;i++) lineage=recordLineage(lineage,action,victory);
+          }
+          return s.monsterLineages.filter(x=>x.id!=="uruk-boss").concat(lineage);
+        })() : s.monsterLineages;
+        return {...s,monsterLineages:nextLineages,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
           const base=bonded.find(x=>x.id===h.id)||h;
