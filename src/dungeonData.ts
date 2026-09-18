@@ -44,7 +44,7 @@ export const heroesSeed: Hero[] = [
     id:"iron-greatsword",name:"정련된 대검",slot:"weapon",level:6,rarity:"희귀",stats:["공격력 +14","치명타 +4%"],aiMods:{aggression:8,pursuit:6},description:"공격적인 전투를 돕는 고성능 일반 장비."
   },experience:62,history:["돌진을 자주 선택","약한 적 추격"],color:"#d65a5a"},
   {id:"seren",name:"세린",job:"Guardian",level:6,hp:218,attack:24,defense:32,speed:.82,range:1.3,tendencies:{...defaultTendencies.Guardian},item:{
-    id:"guardian-wall",name:"수호자의 성벽",slot:"shield",level:6,rarity:"전설",stats:["방어력 +18","최대 HP +12%"],aiMods:{protect:50,cooperation:18,survival:18},unique:true,description:"부상당한 아군 쪽으로 이동하고 보호 행동을 우선한다."
+    id:"guardian-wall",name:"수호자의 성벽",slot:"accessory",level:6,rarity:"전설",stats:["방어력 +18","최대 HP +12%"],aiMods:{protect:50,cooperation:18,survival:18},unique:true,description:"부상당한 아군 쪽으로 이동하고 보호 행동을 우선한다."
   } as Item,experience:88,history:["전투마다 아군 보호","후퇴 명령을 거의 하지 않음"],color:"#5b8bd9"},
   {id:"lyra",name:"리라",job:"Archer",level:7,hp:134,attack:30,defense:14,speed:1.16,range:5.2,tendencies:{...defaultTendencies.Archer},item:{
     id:"hunter-eye",name:"사냥꾼의 눈",slot:"ring",level:7,rarity:"전설",stats:["명중 +8%","치명타 +6%"],aiMods:{focus:20,pursuit:16},unique:true,description:"HP가 낮은 적을 발견하면 마무리 공격을 강하게 선호한다."
