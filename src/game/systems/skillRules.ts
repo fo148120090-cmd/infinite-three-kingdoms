@@ -39,7 +39,8 @@ export function getGeneralSkillAvailability(units: Unit[], casterId: string, ter
   const name = caster.skill;
   if (name === '인덕의 격려' || name === '강동의 결의' || name === '간웅의 명령') return { ready: true, needsTarget: false, targetIds: [], message: '즉시 사용할 수 있습니다.' };
   const targetIds = getGeneralSkillTargetIds(units, casterId, terrain);
-  if (!targetIds.length) return { ready: false, needsTarget: true, targetIds, message: name === '맹격' || name === '호통' ? '인접한 적이 필요합니다.' : name === '용진' ? '사거리 내 직선 방향의 적이 필요합니다.' : '사거리 내 적이 필요합니다.' };
+  if (!targetIds.length) return { ready: false, needsTarget: name !== '맹격' && name !== '호통', targetIds, message: name === '맹격' || name === '호통' ? '인접한 적이 필요합니다.' : name === '용진' ? '사거리 내 직선 방향의 적이 필요합니다.' : '사거리 내 적이 필요합니다.' };
+  if (name === '맹격' || name === '호통') return { ready: true, needsTarget: false, targetIds, message: '인접한 적에게 사용할 수 있습니다.' };
   return { ready: true, needsTarget: true, targetIds, message: '대상을 선택하세요.' };
 }
 
