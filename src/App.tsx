@@ -75,14 +75,14 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
   const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
   const mod=a.item?.aiMods||{};
   const lossBias=(a.memories||[]).filter(m=>m.text.includes("전사")).reduce((n,m)=>n+m.weight,0);
-  for(const p of promotionActions(a.promotionPath)){
+  if(a.cooldown<=0) for(const p of promotionActions(a.promotionPath)){
     let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08;
     if((p.name.includes("대회복")||p.name.includes("수호"))&&ally) score+=Math.max(0,(1-pct(ally))*55);
     if((p.name.includes("사격")||p.name.includes("사냥")||p.name.includes("심판"))&&weak) score+=Math.max(0,(1-pct(weak))*45);
     if((p.name.includes("폭발")||p.name.includes("저주"))&&enemies.length>=2) score+=enemies.length*10;
     arr.push({action:p.name,detail:p.detail,score});
   }
-  if(a.team==="enemy"&&a.species){
+  if(a.team==="enemy"&&a.species&&a.cooldown<=0){
     for(const m of monsterActions(a.species,a.grade,a.mutation)){
       let score=m.bonus+t.focus*.08;
       if((m.name==="대지 강타"||m.name==="분열"||m.name==="영역 지배")&&enemies.length>=2)score+=18;
@@ -206,7 +206,8 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
     a.actionText="보스 패턴 · PHASE "+phase;
     line=a.actionText+" · 부하 강화";
   } else {a.guard=1;a.actionText="대기 · 다음 판단 준비";line=a.actionText;}
-  n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2});
+  if(["광폭 돌격","수호 맹세","결투 집중","정밀 사격","사냥 본능","심판","철벽 진형","원소 폭발","저주 확산","비전 해방","대회복","분열","함정 투척","매복 함정","거미줄","무리 사냥","약점 추적","연계 공격","전투 함성","지휘 명령","측면 습격","급강하","굴 파기 기습","독성 압박","매혹","대지 강타","회피 기동","역할 분석","영역 지배","광폭화"].includes(d.action))a.cooldown=2;
+  n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2;if(x.id!==a.id&&x.cooldown>0)x.cooldown=Math.max(0,x.cooldown-.25);});
   return {units:n,decision:d,line:line||a.actionText};
 }
 
