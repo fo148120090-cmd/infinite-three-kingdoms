@@ -96,6 +96,37 @@ const combatStats=(hero:Hero)=>{
   const hp=Math.round(hero.hp*(1+((m.hpPct||0)+(bonus.hpPct||0))/100));
   return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)};
 };
+function autoFormation(heroes:Hero[],mode:BattleMode):Hero[]{
+  const rank=(h:Hero)=>{
+    if(h.job==="Guardian")return 0;
+    if(h.job==="Warrior")return h.tendencies.aggression>=h.tendencies.caution?1:2;
+    if(h.job==="Archer"||h.job==="Mage")return 3;
+    return 4;
+  };
+  return heroes.slice().sort((a,b)=>{
+    const r=rank(a)-rank(b);
+    if(r!==0)return r;
+    return (b.tendencies.aggression+b.tendencies.bravery+b.tendencies.pursuit)-(a.tendencies.aggression+a.tendencies.bravery+a.tendencies.pursuit);
+  });
+}
+function formationPosition(hero:Hero,index:number,total:number,mode:BattleMode){
+  const crowd=Math.max(0,total-1)*.16;
+  const aggressive=hero.tendencies.aggression*.45+hero.tendencies.bravery*.3+hero.tendencies.pursuit*.25;
+  const defensive=hero.tendencies.caution*.45+hero.tendencies.survival*.55;
+  let base=hero.job==="Guardian"?1.0:hero.job==="Warrior"?1.45:hero.job==="Cleric"?3.4:2.65;
+  if(mode==="defense"&&(hero.job==="Guardian"||hero.job==="Warrior"))base-=.2;
+  if(mode==="raid"&&(hero.job==="Cleric"||hero.job==="Mage"))base+=.18;
+  base+=(defensive-aggressive)*.006;
+  return Math.max(.55,Math.min(4.6,base+index*.28-crowd));
+}
+function formationLabel(heroes:Hero[],mode:BattleMode){
+  const ordered=autoFormation(heroes,mode);
+  const front=ordered.filter(h=>h.job==="Guardian"||h.job==="Warrior").length;
+  const rear=ordered.filter(h=>h.job==="Archer"||h.job==="Mage"||h.job==="Cleric").length;
+  if(!front)return "원거리 집중";
+  if(!rear)return "전면 압박";
+  return mode==="defense"?"자동 방어 진형":"자동 전열·후열 진형";
+}
 
 function routeForecast(kind:RoomKind,floor:number,heroes:Hero[],routeMemory?:RouteMemory){
   const avg=(key:keyof Tendencies)=>heroes.length?heroes.reduce((n,h)=>n+h.tendencies[key],0)/heroes.length:50;
@@ -171,11 +202,13 @@ function equipmentPreview(hero:Hero,item:Item,slot:number){
   };
 }
 
-function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[]): BattleUnit[] {
-  const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>{
+function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[],mode:BattleMode="dungeon"): BattleUnit[] {
+  const selected=heroes.filter(h=>party.includes(h.id));
+  const ordered=autoFormation(selected,mode);
+  const ps: BattleUnit[] = ordered.map((h,i)=>{
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
-      speed:s.speed,range:s.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h)),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
+      speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h)),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
       relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
