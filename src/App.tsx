@@ -59,8 +59,12 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   const count=room==="boss"?3:room==="elite"?4:3;
   let es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
   if(room==="boss"){
-    const lineage=lineages.find(x=>x.id==="uruk-boss")||emptyLineage("uruk-boss","Uruk");
-    es[0]=applyLineage({...es[0],id:"uruk-boss",name:"우르크 전쟁대장",species:"Uruk",grade:"Boss",hp:420,maxHp:420,attack:53,defense:30,pos:8.8},lineage);
+    const bossSpecies=raidBossForFloor(floor);
+    const bossId=bossSpecies.toLowerCase()+"-boss";
+    const base=createMonster(bossSpecies,Math.max(8,floor+5),"Boss",0);
+    const lineage=bossSpecies==="Uruk" ? (lineages.find(x=>x.id==="uruk-boss")||emptyLineage("uruk-boss","Uruk")) : undefined;
+    const bossName=bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
+    es[0]=applyLineage({...base,id:bossId,name:bossName,pos:8.8},lineage);
   }
   return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
     speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0})));
