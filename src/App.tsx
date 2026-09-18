@@ -99,7 +99,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
 }
 
 function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
-  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
+  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
 }
 
 function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] {
@@ -121,7 +121,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
   }
   if(a.team==="enemy"&&a.species&&a.cooldown<=0){
     for(const m of monsterActions(a.species,a.grade,a.mutation)){
-      let score=m.bonus+t.focus*.08+envBonus+evolutionActionBonus({id:"runtime",species:a.species!,level:1,experience:0,focus:{},evolutionStage:a.evolutionStage||0,evolutionPath:a.evolutionPath||[]},m.name);
+      let score=m.bonus+t.focus*.08+envBonus+evolutionActionBonus({id:"runtime",species:a.species!,level:1,experience:0,focus:{},evolutionStage:a.evolutionStage||0,evolutionPath:a.evolutionPath||[],focus:a.evolutionFocus?{[a.evolutionFocus]:1}:{}},m.name);
       if((m.name==="대지 강타"||m.name==="분열"||m.name==="영역 지배")&&enemies.length>=2)score+=18;
       if((m.name==="무리 사냥"||m.name==="약점 추적"||m.name==="역할 분석")&&weak)score+=Math.max(0,(1-pct(weak))*35);
       if(m.name==="회피 기동"&&pct(a)<.5)score+=35;
