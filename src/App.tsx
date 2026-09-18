@@ -183,7 +183,7 @@ export default function App(){
         const now=Date.now();
 
         if(prev.mode==="defense"){
-          const nearGoal=e.filter(x=>x.pos>8.7).length;
+          const nearGoal=e.filter(x=>x.pos<0.8).length;
           if(prev.tick%4===0 && nearGoal>0) objectiveHp=Math.max(0,objectiveHp-nearGoal*3);
           if(p.length===0||objectiveHp<=0){ended=true;result="defeat";}
           else if(now>=((prev.deadline||now)+1)){ended=true;result="victory";}
