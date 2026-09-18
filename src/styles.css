@@ -195,3 +195,42 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .character-status-overview+.party-memory-panel{margin-top:10px}
 @media(max-width:980px){.character-status-overview{grid-template-columns:1fr 1fr}.character-status-summary{grid-column:1/-1}}
 @media(max-width:650px){.character-status-overview{grid-template-columns:1fr}.character-status-summary{grid-column:auto}.character-status-notes{grid-template-columns:1fr}.character-stat-grid{grid-template-columns:repeat(3,1fr)}}
+
+.hero-status-btn{margin-top:7px;padding:6px 9px;font-size:9px;width:max-content}
+.status-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(4,7,13,.78);backdrop-filter:blur(5px);display:grid;place-items:center;padding:24px}
+.status-modal{width:min(980px,94vw);border:1px solid #394866;border-radius:20px;background:linear-gradient(145deg,#121b2b,#0b121d);box-shadow:0 24px 80px rgba(0,0,0,.48);padding:18px}
+.status-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:12px;border-bottom:1px solid #25334a}
+.status-modal-head h2{margin:5px 0 2px;font-size:22px}
+.status-modal-head p{margin:0;color:#8f9db4;font-size:10px}
+.status-modal-grid{display:grid;grid-template-columns:1.05fr 1.2fr 1fr;gap:10px;margin-top:12px}
+.status-modal-card{min-width:0;padding:12px;border:1px solid #27354d;background:#0c141f;border-radius:12px}
+.modal-card-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+.modal-card-title b{font-size:11px;color:#d1dbea}
+.modal-card-title span{font-size:8px;color:#697993}
+.modal-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.modal-stat-grid div{padding:8px 5px;border-radius:8px;background:#111b2a;border:1px solid #25344b;text-align:center}
+.modal-stat-grid small{display:block;color:#72819b;font-size:8px}
+.modal-stat-grid b{display:block;color:#e1e8f2;font-size:14px;margin-top:2px}
+.modal-stat-grid span{display:block;color:#88a8df;font-size:8px;margin-top:2px}
+.modal-note{margin-top:8px;color:#7f8da6;font-size:8px;line-height:1.45}
+.modal-tendency-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.modal-tendency-grid>div{display:grid;grid-template-columns:58px 24px 1fr;align-items:center;gap:5px}
+.modal-tendency-grid span{font-size:8px;color:#9ba8bc;white-space:nowrap}
+.modal-tendency-grid b{font-size:9px;color:#d9e1ed;text-align:right}
+.modal-tendency-grid i{height:6px;border-radius:99px;background:#182337;border:1px solid #273750;overflow:hidden}
+.modal-tendency-grid i em{display:block;height:100%;background:linear-gradient(90deg,#506b9e,#8a9fc8)}
+.modal-equipment{display:grid;gap:6px}
+.modal-equipment>div{padding:7px 8px;border:1px solid #26344b;border-radius:8px;background:#101927;display:grid;grid-template-columns:52px 1fr auto;gap:6px;align-items:center}
+.modal-equipment small{font-size:7px;color:#6f7e97}
+.modal-equipment b{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-equipment span{font-size:7px;color:#7787a0}
+.modal-state-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:7px}
+.modal-state-grid span{padding:6px;border-radius:7px;background:#111b29;color:#8997ad;font-size:7px;line-height:1.35}
+.modal-state-grid b{display:block;color:#cbd5e3;font-size:8px;margin-bottom:2px}
+.status-modal-bottom{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.modal-bottom-card{padding:10px;border:1px solid #27344b;border-radius:10px;background:#0c141f;display:grid;gap:4px}
+.modal-bottom-card b{font-size:10px;color:#cdd8e8}
+.modal-bottom-card span{font-size:8px;color:#8997ad;line-height:1.45}
+.modal-bottom-card small{font-size:8px;color:#6f7e97}
+@media(max-width:780px){.status-modal{max-height:calc(100vh - 32px);overflow:auto}.status-modal-grid{grid-template-columns:1fr 1fr}.status-modal-card:last-child{grid-column:1/-1}.status-modal-bottom{grid-template-columns:1fr}}
+@media(max-width:520px){.status-modal-backdrop{padding:10px}.status-modal{padding:13px}.status-modal-grid{grid-template-columns:1fr}.status-modal-card:last-child{grid-column:auto}.modal-tendency-grid{grid-template-columns:1fr}.status-modal-bottom{grid-template-columns:1fr}}
