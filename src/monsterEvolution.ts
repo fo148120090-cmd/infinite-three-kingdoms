@@ -19,17 +19,29 @@ export const monsterEvolutionTrees:Record<string,Branch[]>={
 };
 
 const focusForAction=(action:string,species?:string):string=>{
-  if(action.includes("보스 패턴")||action.includes("지휘"))return species==="Uruk"?"command":"command";
+  if(action.includes("분열"))return "split";
+  if(action.includes("흡수"))return "absorb";
+  if(action.includes("함정"))return species==="Kobold"?"trap":"greed";
+  if(action.includes("거미줄"))return "web";
+  if(action.includes("무리 사냥"))return "hunt";
   if(action.includes("공격")||action.includes("추격")){
     if(species==="Uruk")return "soldier";
     if(species==="Ogre")return "strength";
     return "combat";
   }
-  if(action.includes("보호"))return "command";
-  if(action.includes("후퇴"))return "survival";
+  if(action.includes("전투 함성"))return "command";
+  if(action.includes("측면 습격"))return "hunt";
+  if(action.includes("급강하"))return "speed";
+  if(action.includes("독성 압박"))return "poison";
+  if(action.includes("매혹"))return "charm";
+  if(action.includes("대지 강타"))return "strength";
+  if(action.includes("회피 기동")||action.includes("후퇴"))return "survival";
+  if(action.includes("역할 분석"))return species==="Demon"?"domination":"officer";
+  if(action.includes("지휘")||action.includes("보스 패턴")||action.includes("영역 지배"))return "command";
   if(action.includes("광역"))return "magic";
-  if(action.includes("기습"))return "ambush";
+  if(action.includes("광폭화"))return "berserk";
   if(action.includes("대기"))return "defense";
+  if(action.includes("사격"))return "combat";
   return "combat";
 };
 
