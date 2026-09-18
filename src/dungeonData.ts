@@ -23,7 +23,7 @@ export type Hero = {
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
   mood?:string; statusNote?:string; evaluation?:string;
-  campaignStats?:{wins:number;losses:number;eliteWins:number;bossWins:number;repeatWins:number;finalWins:number};
+  campaignStats?:{wins:number;losses:number;eliteWins:number;bossWins:number;repeatWins:number;finalWins:number}; combatProfile?:{actions:number;damage:number;healing:number;battles:number;topActions?:Record<string,number>};
   costumeId?:string;
 };
 
