@@ -1,7 +1,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
-import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
+import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 import { evolutionHint, monsterEvolutionTrees } from "./monsterEvolution";
@@ -239,7 +239,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[]
 }
 
 function route(stage:number,floor:number,curiosity=0){
-
+  if(floor>=6 && stage>=4)return [{kind:"evilCave" as RoomKind,title:"악의 동굴",summary:"마계와 이어진 세계의 구멍. 강력한 수문장을 쓰러뜨리고 봉인해야 한다."}];
   if(stage>=5)return [{kind:"boss" as RoomKind,title:"심층 관문",summary:"던전 최심부의 지휘관이 길을 막고 있다."}];
   const rows=[
     [{kind:"battle" as RoomKind,title:"정찰 통로",summary:"좁은 통로에서 정찰 무리가 다가온다."},{kind:"treasure" as RoomKind,title:"낡은 보급창",summary:"장비 상자와 자원이 남아 있다."},{kind:"event" as RoomKind,title:"붕괴 직전의 갈림길",summary:"탐욕과 신중함에 따라 다른 결과가 열린다."}],
@@ -258,7 +258,7 @@ export default function App(){
   const [screen,setScreen]=useState<Screen>("home");
   const [mode,setMode]=useState<BattleMode>("dungeon");
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
-  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
@@ -321,6 +321,18 @@ export default function App(){
     setMode("dungeon");
     setBattle({units,log:[roomKo[kind]+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
+  };
+
+  const startRepeat=(scenarioFloor:number)=>{
+    if(save.worldSealed){notify("세계의 구멍이 이미 봉인되었습니다.");return;}
+    const repeatCount=(save.scenarioClears[String(scenarioFloor)]||1);
+    const elitePack=Math.random()<.25;
+    const room:RoomKind=elitePack?"elite":"battle";
+    const env=environmentFor(scenarioFloor,room,"dungeon");
+    const units=spawn(save.heroes,save.party,room,scenarioFloor);
+    const rewardMultiplier=Math.max(.3,.6-.1*Math.max(0,repeatCount-1));
+    setBattle({units,log:[scenarioFloor+"F 완료 시나리오 재도전 · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
+    setPaused(false);setScreen("battle");setDecision(elitePack?"재도전 중 정예 무리의 전투 성향을 분석 중...":"완료 시나리오의 적 행동을 다시 분석 중...");
   };
 
   const startMode=(nextMode:BattleMode)=>{
@@ -441,6 +453,22 @@ export default function App(){
     if(save.materials<12){notify("재료가 부족합니다.");return;}
     const item=randomGeneralItem(hero.level,hero.tendencies); setSave(s=>({...s,materials:s.materials-12,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,item}:h)}));notify("장기 성향에 맞춰 장비 옵션을 새로 굴렸습니다.");
   };
+  const recruit=(job:Job)=>{
+    if(save.gold<350){notify("모집 자금이 부족합니다.");return;}
+    const newHero=createRecruitHero(job);
+    setSave(s=>({...s,gold:s.gold-350,heroes:[...s.heroes,newHero]}));
+    setSelectedHero(newHero.id);
+    notify(newHero.name+" · "+jobKo[job]+" 신규 용사 모집");
+  };
+  const equipCostume=(costumeId:string)=>{
+    setSave(s=>({...s,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,costumeId}:h)}));
+    notify(hero.name+" · "+costumeLabel(hero.job,costumeId)+" 착용");
+  };
+  const sealWorld=()=>{
+    setSave(s=>({...s,worldSealed:true,heroes:s.heroes.map(h=>awardChronicle({...h,statusNote:"세계의 구멍 봉인 완료"}))}));
+    setScreen("home");
+    notify("세계의 구멍을 봉인했습니다. 악의 침입이 차단되었습니다.");
+  };
   const reset=()=>{localStorage.removeItem(KEY);setSave(load());setScreen("home");notify("데모 초기화 완료");};
 
   return <main className="game-shell">
@@ -478,12 +506,12 @@ export default function App(){
     {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
       <div className="route-grid">{route(save.stage,save.floor,party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0).map((r,i)=><button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p></div><ChevronRight size={20}/></button>)}</div>
-      <div className="dungeon-meta"><div><b>현재 파티</b>{party.map(h=><span key={h.id}>{jobIcon[h.job]} {h.name}</span>)}</div><div><b>규칙</b><span>몬스터 번식/멸종 없음 · 성장/진화/AI만 지속</span></div></div></section>}
+      <div className="dungeon-meta"><div><b>현재 파티</b>{party.map(h=><span key={h.id}>{jobIcon[h.job]} {h.name}</span>)}</div><div><b>대서사의 목표</b><span>{save.worldSealed?"세계의 구멍 봉인 완료":"동굴을 돌파해 악의 동굴을 찾고 세계의 구멍을 봉인하세요."}</span></div></div></section>}
 
-    {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="boss"?"심층 관문":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
+    {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="evilCave"?"악의 동굴 · 세계의 구멍":battle.room==="boss"?"심층 관문":battle.repeatScenarioFloor!==undefined?"시나리오 재도전":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
       <div className="battle-tools"><button className="ghost-btn" onClick={()=>setPaused(x=>!x)}>{paused?<CirclePlay size={17}/>:<CirclePause size={17}/>} {paused?"재생":"일시정지"}</button>{[.5,1,2,4].map(x=><button key={x} className={speed===x?"speed-on":"speed-btn"} onClick={()=>setSpeed(x)}>{x}x</button>)}</div></div>
       <div className="battle-summary-strip">
-        <span>MODE · {battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span>
+        <span>MODE · {battle.repeatScenarioFloor!==undefined?"SCENARIO REPLAY":battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span>{battle.repeatScenarioFloor!==undefined&&<><span>재도전 · {battle.repeatScenarioFloor}F</span><span>반복 {battle.repeatCount}회</span><span>보상 {Math.round((battle.rewardMultiplier||1)*100)}%</span>{battle.elitePack&&<span>정예 무리 출현</span>}</span>}
         {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
         {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase} · 종족별 패턴 AI</span></>}
         {battle.environment&&<span>환경 · {environmentInfo[battle.environment].name}</span>}
@@ -494,7 +522,7 @@ export default function App(){
           <div className="unit-token">{u.team==="player"?jobIcon[u.job!]:u.grade==="Boss"?"♛":"👹"}</div><b>{u.name}</b>{u.mutation&&<small className="mutation-label">{u.mutation}</small>}<div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
       </div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
       <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · {hero.item.name}</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>{behaviorSummary(hero)}</small><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
-      {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
+      {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
     {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">EQUIPMENT</span><h2>장비 연구실</h2><p className="muted">직업 제한 없음 · 일반 장비는 무작위 롤 · 고유 장비는 AI 행동까지 바꿉니다.</p></div></div>
       <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>{jobKo[hero.job]} · {hero.item.name}</span><small>자동 빌드 · {buildProfile(hero).name}</small></div><button className="primary-btn compact" onClick={randomEquip} disabled={save.materials<12}><RotateCcw size={16}/> 무작위 재굴림 · 12</button></div>
