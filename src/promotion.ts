@@ -66,8 +66,12 @@ export function grantExperience(hero:Hero,gain:number){
   while(next.experience>=100){
     next.experience-=100;
     next.level+=1;
+    next.hp=Math.round(next.hp*1.04);
+    next.attack=Math.max(next.attack+1,Math.round(next.attack*1.025));
+    next.defense=Math.max(next.defense+1,Math.round(next.defense*1.02));
     leveled=true;
     next=applyPromotion(next,next.level);
+    next.history=["레벨 업 · Lv."+next.level,...next.history].slice(0,6);
   }
   return {hero:next,leveled};
 }
