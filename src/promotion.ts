@@ -81,6 +81,28 @@ export function promotionLabel(hero:Hero){
   return path.length?path.join(" → "):"초급";
 }
 
+export function promotionForecast(hero:Hero){
+  const tier=hero.promotionTier||0;
+  const path=hero.promotionPath||[];
+  if(tier>=3)return {next:"최종 전직 완료",level:30,progress:100,reason:"최종 전직까지 도달한 상태입니다."};
+  if(tier===0){
+    const choices=firstTier[hero.job]||[];
+    const best=pick(hero,choices);
+    const ranked=choices.slice().sort((a,b)=>score(hero,b)-score(hero,a));
+    return {next:"Lv.10 · "+(best||"자동 전직"),level:10,progress:Math.min(100,Math.round(hero.level/10*100)),reason:ranked.slice(0,2).map(x=>x.name).join(" / ")+" 후보 중 현재 성향이 높은 쪽으로 자동 결정됩니다."};
+  }
+  if(tier===1){
+    const branch=path[0]||"";
+    const choices=secondTier[branch]||[];
+    const best=pick(hero,choices);
+    const ranked=choices.slice().sort((a,b)=>score(hero,b)-score(hero,a));
+    return {next:"Lv.20 · "+(best||"2차 전직"),level:20,progress:Math.min(100,Math.round(hero.level/20*100)),reason:ranked.slice(0,2).map(x=>x.name).join(" / ")+" 후보 중 현재 성향이 높은 쪽으로 자동 결정됩니다."};
+  }
+  const values=Object.values(hero.tendencies).sort((a,b)=>b-a);
+  const ready=values[0]>=85&&values[1]>=75;
+  return {next:ready?"Lv.30 · 최종 전직 가능":"Lv.30 · 최종 전직 조건 확인",level:30,progress:Math.min(100,Math.round(hero.level/30*100)),reason:ready?"상위 두 성향이 최종 전직 기준을 충족할 수 있는 상태입니다.":"Lv.30에서 상위 두 성향이 기준을 충족하면 최종 전직합니다."};
+}
+
 
 export function promotionActions(heroPath:string[]|undefined):{name:string;detail:string;bonus:number}[]{
   const path=heroPath||[];
