@@ -10,12 +10,15 @@ export type BattleModifiers = {
   damageReductionPct: number;
   rageGain: number;
   critPct: number;
+  labels: string[];
+  label: string;
 };
 
 export function getBattleModifiers(generals: General[]): BattleModifiers {
   const formation = getFormationBonus(generals);
   const relationship = getRelationshipBonus(generals);
 
+  const labels = [...formation.labels, ...getActiveRelationships(generals).map((item) => item.label)];
   return {
     attackPct: formation.attackPct + relationship.attackPct,
     hpPct: formation.hpPct + relationship.hpPct,
@@ -23,6 +26,8 @@ export function getBattleModifiers(generals: General[]): BattleModifiers {
     critPct: formation.critPct + relationship.critPct,
     damageReductionPct: 0,
     rageGain: 0,
+    labels,
+    label: labels.join(' / ') || '기본 진형',
   };
 }
 
@@ -37,6 +42,8 @@ export function getUnitBattleModifiers(unit: Pick<Unit, 'id'>, generals: General
     critPct: team.critPct,
     damageReductionPct: passive.damageReductionPct ?? 0,
     rageGain: team.rageGain + (passive.rageGain ?? 0),
+    labels: team.labels,
+    label: team.label,
   };
 }
 
