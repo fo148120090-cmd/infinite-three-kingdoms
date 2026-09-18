@@ -42,3 +42,5 @@
 .be-skill-mode{margin:7px 0;padding:7px 9px;border:1px solid #7651a5;border-radius:8px;background:#171126;color:#d9c6ff;font-size:10px;font-weight:800}.be-skill-cancel{background:#302b38!important;color:#ddd!important}
 
 .be-actions button:disabled{cursor:not-allowed;opacity:.48}.be-actions button:not(:disabled):active{transform:translateY(1px)}
+
+.be-cell.move-path{box-shadow:inset 0 0 0 3px #d7c25f, inset 0 0 18px #8c7a3555;z-index:1}.be-cell.move-path .be-cell-hint.move{background:#8b792f;color:#fff9d7}.be-cell.reachable.move-path{background-image:linear-gradient(#6e612855,#6e612855)}
