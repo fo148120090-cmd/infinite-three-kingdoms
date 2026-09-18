@@ -277,6 +277,7 @@ export default function App(){
   const [mode,setMode]=useState<BattleMode>("dungeon");
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
   const [selectedEquipSlot,setSelectedEquipSlot]=useState(0);
+  const [lastLoot,setLastLoot]=useState<Item[]>([]);
   const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
@@ -461,6 +462,7 @@ export default function App(){
       const baseMaterials=isFinal?100:isBoss?60:18;
       const exp=Math.max(8,Math.round((22+(isElite?15:0)+(isBoss?70:0)+(isFinal?110:0))*(isRepeat?.85:1)));
       const loot=victory?rollBattleLoot(Math.max(1,s.floor+(isBoss?2:0)),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
+      if(victory) setLastLoot(loot);
       if(victory&&loot.length) window.setTimeout(()=>notify("전리품 획득 · "+loot.map(x=>x.name).join(" · ")),0);
       return {...s,
         gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier):0),
@@ -483,11 +485,19 @@ export default function App(){
     else notify("데모 파티 최대 4명");
   };
   const equip=(item:Item,slot=selectedEquipSlot)=>{
-    setSave(s=>({...s,heroes:s.heroes.map(h=>{
-      if(h.id!==selectedHero)return h;
-      const slots=equipmentSlotsOf(h); slots[slot]=item;
-      return {...h,equipment:slots,item:slots[0]};
-    })}));
+    setSave(s=>{
+      let replaced:Item|undefined;
+      const heroes=s.heroes.map(h=>{
+        if(h.id!==selectedHero)return h;
+        const slots=equipmentSlotsOf(h);
+        replaced=slots[slot];
+        slots[slot]=item;
+        return {...h,equipment:slots,item:slots[0]};
+      });
+      const warehouse=s.items.filter(x=>x.id!==item.id);
+      if(replaced&&!replaced.unique) warehouse.push(replaced);
+      return {...s,heroes,items:warehouse};
+    });
     notify(hero.name+" · "+item.name+" 장착 (슬롯 "+(slot+1)+")");
   };
   const unequip=(slot:number)=>{
@@ -582,7 +592,7 @@ export default function App(){
           <div className="unit-token">{u.team==="player"?jobIcon[u.job!]:u.grade==="Boss"?"♛":"👹"}</div><b>{u.name}</b>{u.mutation&&<small className="mutation-label">{u.mutation}</small>}<div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
       </div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
       <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · 장비 {equippedItemsOf(hero).length}/3</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>{behaviorSummary(hero)}</small><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
-      {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
+      {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p>{battle.result==="victory"&&lastLoot.length>0&&<div className="loot-summary"><b>획득 전리품</b><span>{lastLoot.map(x=>x.name).join(" · ")}</span></div>}</div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
     {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">GUILD WAREHOUSE</span><h2>용사단 창고</h2><p className="muted">장비 획득은 전투 전리품과 보물방으로만 이루어집니다. 창고에서 보관, 장착, 해제가 가능하며 필요 없는 장비는 판매할 수 있습니다.</p></div><span className="counter">{save.items.length}개</span></div>
       <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>장착 {equippedItemsOf(hero).length}/3 · 슬롯 {selectedEquipSlot+1}</span><small>장비 옵션은 캐릭터의 전투 행동과 AI 성향에 영향을 줍니다.</small></div></div>
