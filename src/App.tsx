@@ -243,7 +243,12 @@ export default function App(){
     if(kind==="event"){
       const outcome=resolveDungeonEvent(save.heroes,save.party,save.floor);
       setSave(s=>({...s,
-        heroes:s.heroes.map(h=>outcome.heroUpdates[h.id]?{...h,...outcome.heroUpdates[h.id]}:h),
+        heroes:s.heroes.map(h=>{
+          const update=outcome.heroUpdates[h.id];
+          if(!update)return h;
+          const nextT={...h.tendencies,...Object.fromEntries(Object.entries(update.tendencies||{}).map(([k,v])=>[k,clamp(v as number)]))};
+          return {...h,hp:Math.max(1,h.hp+(update.hpDelta||0)),tendencies:nextT};
+        }),
         gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,
         items:outcome.item?[...s.items,outcome.item]:s.items,stage:s.stage+1
       }));
