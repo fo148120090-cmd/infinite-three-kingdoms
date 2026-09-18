@@ -18,7 +18,7 @@ export type Memory = {text:string; weight:number; createdAt:number};
 
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
-  speed:number; range:number; tendencies:Tendencies; item:Item; experience:number;
+  speed:number; range:number; tendencies:Tendencies; item?:Item; experience:number;
   history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
@@ -222,7 +222,7 @@ export function createRecruitHero(job:Job):Hero{
   return {
     id:"recruit-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
     name,job,level:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
-    tendencies,item,experience:0,history:["모집된 신규 용사"],color:"#6f819b",
+    tendencies,item:undefined,experience:0,history:["모집된 신규 용사"],color:"#6f819b",
     campaignStats:{wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0},
     chronicle:[]
   };
