@@ -18,7 +18,7 @@ export type Memory = {text:string; weight:number; createdAt:number};
 
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
-  speed:number; range:number; tendencies:Tendencies; item?:Item; experience:number;
+  speed:number; range:number; tendencies:Tendencies; item?:Item; equipment?:[Item?,Item?,Item?]; experience:number;
   history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
@@ -41,7 +41,7 @@ export type Monster = {
 export type BattleUnit = {
   id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade;
   hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
-  pos:number; alive:boolean; tendencies:Tendencies; item?:Item; actionText:string;
+  pos:number; alive:boolean; tendencies:Tendencies; item?:Item; equipment?:Item[]; actionText:string;
   cooldown:number; guard:number; xp:number; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>; promotionPath?:string[];
 };
 
@@ -218,11 +218,10 @@ export function createRecruitHero(job:Job):Hero{
   const keys=(Object.keys(tendencies) as (keyof Tendencies)[]).sort(()=>Math.random()-.5).slice(0,3);
   keys.forEach(k=>tendencies[k]=Math.max(0,Math.min(100,tendencies[k]+Math.floor(Math.random()*19)-9)));
   const name=recruitNames[Math.floor(Math.random()*recruitNames.length)]+" "+String(Math.floor(Math.random()*90)+10);
-  const item=randomGeneralItem(1,tendencies);
-  return {
+    return {
     id:"recruit-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
     name,job,level:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
-    tendencies,item:undefined,experience:0,history:["모집된 신규 용사"],color:"#6f819b",
+    tendencies,equipment:[],experience:0,history:["모집된 신규 용사"],color:"#6f819b",
     campaignStats:{wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0},
     chronicle:[]
   };
