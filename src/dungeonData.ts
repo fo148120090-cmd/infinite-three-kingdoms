@@ -1,5 +1,5 @@
 export type Job = "Warrior" | "Guardian" | "Archer" | "Mage" | "Cleric";
-export type RoomKind = "battle" | "elite" | "treasure" | "rest" | "event" | "hidden" | "boss";
+export type RoomKind = "battle" | "elite" | "treasure" | "rest" | "event" | "hidden" | "boss" | "evilCave";
 export type Grade = "Normal" | "Elite" | "Named" | "Boss";
 
 export type Tendencies = {
@@ -21,6 +21,10 @@ export type Hero = {
   speed:number; range:number; tendencies:Tendencies; item:Item; experience:number;
   history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
+  chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
+  mood?:string; statusNote?:string; evaluation?:string;
+  campaignStats?:{wins:number;losses:number;eliteWins:number;bossWins:number;repeatWins:number;finalWins:number};
+  costumeId?:string;
 };
 
 export type MonsterLineage = {
@@ -203,3 +207,22 @@ export function chooseMonsterSpecies(floor:number): string {
 }
 
 export function cloneTendencies(t:Tendencies):Tendencies { return {...t}; }
+
+
+const recruitNames=["아르노","벨라","카린","도렌","에이든","마레","루카스","세아","테오","리엔","노아","엘린"];
+
+export function createRecruitHero(job:Job):Hero{
+  const base=defaultTendencies[job];
+  const tendencies={...base} as Tendencies;
+  const keys=(Object.keys(tendencies) as (keyof Tendencies)[]).sort(()=>Math.random()-.5).slice(0,3);
+  keys.forEach(k=>tendencies[k]=Math.max(0,Math.min(100,tendencies[k]+Math.floor(Math.random()*19)-9)));
+  const name=recruitNames[Math.floor(Math.random()*recruitNames.length)]+" "+String(Math.floor(Math.random()*90)+10);
+  const item=randomGeneralItem(1,tendencies);
+  return {
+    id:"recruit-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
+    name,job,level:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
+    tendencies,item,experience:0,history:["모집된 신규 용사"],color:"#6f819b",
+    campaignStats:{wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0},
+    chronicle:[]
+  };
+}
