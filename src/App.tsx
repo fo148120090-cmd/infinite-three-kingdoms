@@ -105,7 +105,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
   }
 
   if(nearest){
-    let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40+envBonus;
+    let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40+envBonus+(a.team==="enemy"?22:0);
     if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
     arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협과 마무리 가능성을 계산",score:s});
   }
@@ -118,7 +118,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
     const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
     arr.push({action:"보스 패턴",detail:"페이즈 "+phase+" 패턴을 선택하고 전장을 압박",score:42+t.focus*.25+t.bravery*.25+(phase-1)*18});
   }
-  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25+envBonus+(pct(a)<.12?20:0)-(a.item?.id==="berserker-heart"?35:0)});
+  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+(pct(a)<.12?20:0)-(a.item?.id==="berserker-heart"?35:0)-(a.team==="enemy"?10:0)});
   arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05+envBonus*.2});
   return arr;
 }
