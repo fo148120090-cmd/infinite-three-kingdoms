@@ -146,7 +146,7 @@ export const uniqueItems: Item[] = [
   heroesSeed[1].item,heroesSeed[2].item,heroesSeed[4].item,...extraUniqueItems
 ];
 
-export function randomGeneralItem(level:number=6): Item {
+export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies>): Item {
   const names=[
     ["철검","weapon"],["전투도끼","weapon"],["장궁","weapon"],["마도서","weapon"],
     ["정찰자의 반지","ring"],["수호 흉갑","armor"],["주술 목걸이","accessory"],["기민한 장화","armor"]
@@ -179,9 +179,16 @@ export function randomGeneralItem(level:number=6): Item {
     else if(r.text==="사거리 +")stats.push(r.text+String(m.range));
     else stats.push(r.text+String(Object.values(m)[0])+(r.text.includes("HP")||r.text.includes("속도")||r.text.includes("치유")||r.text.includes("감소")?"%":""));
   }
-  const aiKeys=(Object.keys(defaultTendencies.Warrior) as (keyof Tendencies)[]).sort(()=>Math.random()-.5).slice(0,2+Math.floor(Math.random()*2));
+  const allKeys=(Object.keys(defaultTendencies.Warrior) as (keyof Tendencies)[]);
+  const preferredKeys=preference
+    ? allKeys.slice().sort((a,b)=>(preference[b]||0)-(preference[a]||0)).slice(0,4)
+    : [];
+  const aiKeys=allKeys.slice().sort(()=>Math.random()-.5).filter(k=>!preferredKeys.includes(k)).slice(0,1+Math.floor(Math.random()*2)).concat(preferredKeys.slice(0,1+Math.floor(Math.random()*2)));
   const aiMods:Partial<Tendencies>={};
-  for(const key of aiKeys)aiMods[key]=Math.floor(Math.random()*17)-5;
+  for(const key of aiKeys){
+    const base=preference?.[key]||50;
+    aiMods[key]=Math.round((base>=70?3:base>=55?1:-1)+(Math.random()*9-4));
+  }
   const roll=Math.random();
   const rarity=roll<.06?"전설":roll<.24?"영웅":roll<.58?"희귀":"고급";
   return {
