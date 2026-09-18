@@ -16,7 +16,9 @@ import { environmentDecisionBonus, environmentFor, environmentInfo, environmentT
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit";
 type BattleMode = "dungeon" | "defense" | "raid";
 type DefenseObjective = "gate" | "relic" | "escort";
-type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; worldSealed?:boolean };
+type RouteMemoryEntry = { attempts:number; clears:number; failures:number; rewardSamples:number; rewardGold:number };
+type RouteMemory = Partial<Record<RoomKind,RouteMemoryEntry>>;
+type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; routeMemory?:RouteMemory; worldSealed?:boolean };
 type Decision = { action: string; target?: string; detail: string; score: number };
 
 const KEY = "autonomous-dungeon-demo-v1";
@@ -42,15 +44,26 @@ const createLinedMonster=(species:string,level:number,grade:ReturnType<typeof cr
 };
 
 const defaultPartyMemory:PartyMemory={battles:0,protection:0,recovery:0,losses:0};
+const recordRouteMemory=(memory:RouteMemory|undefined,kind:RoomKind,success:boolean,gold:number):RouteMemory=>{
+  const prev=memory?.[kind]||{attempts:0,clears:0,failures:0,rewardSamples:0,rewardGold:0};
+  const sample=gold>0?1:0;
+  return {...(memory||{}),[kind]:{
+    attempts:prev.attempts+1,
+    clears:prev.clears+(success?1:0),
+    failures:prev.failures+(success?0:1),
+    rewardSamples:prev.rewardSamples+sample,
+    rewardGold:prev.rewardGold+(sample?gold:0)
+  }};
+};
 function load(): Save {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      return {...s, partyMemory:s.partyMemory||defaultPartyMemory, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies},equipment:(h.equipment??(h.item?[h.item]:[])).slice(0,3) as [Item?,Item?,Item?]})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
+      return {...s, partyMemory:s.partyMemory||defaultPartyMemory, routeMemory:s.routeMemory||{}, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies},equipment:(h.equipment??(h.item?[h.item]:[])).slice(0,3) as [Item?,Item?,Item?]})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
     }
   } catch {}
-  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[]})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,worldSealed:false};
+  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[]})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
@@ -84,7 +97,7 @@ const combatStats=(hero:Hero)=>{
   return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)};
 };
 
-function routeForecast(kind:RoomKind,floor:number,heroes:Hero[]){
+function routeForecast(kind:RoomKind,floor:number,heroes:Hero[],routeMemory?:RouteMemory){
   const avg=(key:keyof Tendencies)=>heroes.length?heroes.reduce((n,h)=>n+h.tendencies[key],0)/heroes.length:50;
   const jobs=new Set(heroes.map(h=>h.job));
   let risk=30, reward=40, fit=60;
@@ -106,7 +119,19 @@ function routeForecast(kind:RoomKind,floor:number,heroes:Hero[]){
   if(env==="toxic")fit+=avg("survival")*.2+avg("caution")*.1;
   if(env==="water")fit+=jobs.has("Warrior")||jobs.has("Guardian")?4:0;
   if(env==="unstable")fit+=avg("focus")*.16;
-  return {risk:Math.max(0,Math.min(100,Math.round(risk))),reward:Math.max(0,Math.round(reward)),fit:Math.max(0,Math.min(100,Math.round(fit))),environment:env};
+  const memory=routeMemory?.[kind];
+  if(memory&&memory.attempts>0){
+    const successRate=memory.clears/memory.attempts;
+    risk+=memory.failures*4-memory.clears*.8;
+    fit+=(successRate-.5)*12;
+    if(memory.rewardSamples>=2){
+      const observed=memory.rewardGold/memory.rewardSamples;
+      reward=reward*.7+observed*.3;
+    }
+  }
+  const experience=memory?.attempts||0;
+  const successRate=memory&&memory.attempts?Math.round(memory.clears/memory.attempts*100):0;
+  return {risk:Math.max(0,Math.min(100,Math.round(risk))),reward:Math.max(0,Math.round(reward)),fit:Math.max(0,Math.min(100,Math.round(fit))),environment:env,experience,successRate};
 }
 
 function actionForecast(hero:Hero,partyHeroes:Hero[],partyMemory?:PartyMemory):{action:string;score:number;detail:string}[]{
