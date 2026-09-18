@@ -9,7 +9,7 @@ export type Tendencies = {
 
 export type Item = {
   id:string; name:string; slot:"weapon"|"armor"|"ring"|"accessory"; level:number; rarity:string;
-  stats:string[]; aiMods:Partial<Tendencies>; combatMods?:{attack?:number;defense?:number;hpPct?:number;speedPct?:number;range?:number;healPct?:number};
+  stats:string[]; aiMods:Partial<Tendencies>; combatMods?:{attack?:number;defense?:number;hpPct?:number;speedPct?:number;range?:number;healPct?:number;critPct?:number};
   unique?:boolean; description:string;
 };
 
@@ -171,7 +171,11 @@ export function randomGeneralItem(level:number=6): Item {
   for(const r of picked){
     const m=r.mod();
     for(const [key,value] of Object.entries(m)) combatMods[key as keyof typeof combatMods]=(combatMods[key as keyof typeof combatMods]||0)+value;
-    if(r.text==="치명타 +")stats.push("치명타 +"+(2+Math.floor(Math.random()*8))+"%");
+    if(r.text==="치명타 +"){
+      const crit=2+Math.floor(Math.random()*8);
+      combatMods.critPct=crit;
+      stats.push("치명타 +"+crit+"%");
+    }
     else if(r.text==="사거리 +")stats.push(r.text+String(m.range));
     else stats.push(r.text+String(Object.values(m)[0])+(r.text.includes("HP")||r.text.includes("속도")||r.text.includes("치유")||r.text.includes("감소")?"%":""));
   }
