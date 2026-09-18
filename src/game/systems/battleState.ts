@@ -101,10 +101,12 @@ export function attackBattleTarget(state: BattleState, terrain: Terrain[]): Batt
   if (!attacker || !target || !canAct(attacker) || !canTargetEnemy(attacker, target)) return { state, success: false, message: attacker?.status === 'stun' ? '기절 상태라 공격할 수 없습니다.' : '공격 가능한 적을 선택하세요.' };
   const tile = terrain[target.y * BOARD_WIDTH + target.x];
   if (!tile) return { state, success: false, message: '전장 지형 정보를 찾을 수 없습니다.' };
-  const rawDamage = calculateDamage(attacker, target, tile);
+  const critical = Math.random() * 100 < Math.max(0, Math.min(100, attacker.critChance ?? 0));
+  const rawDamage = calculateDamage(attacker, target, tile, 0) * (critical ? 2 : 1);
   const damage = applyBattleDamageReduction(target, rawDamage);
   const units = cloneUnits(state.units).map((unit) => unit.id === attacker.id ? { ...unit, acted: true } : unit.id === target.id ? { ...unit, currentHp: Math.max(0, unit.currentHp - damage) } : unit);
-  return { state: finalize({ ...state, units, targetId: null }, `${attacker.name}의 공격 → ${target.name} ${damage} 피해`), success: true, message: '공격 완료' };
+  const criticalLabel = critical ? ' · 치명타!' : '';
+  return { state: finalize({ ...state, units, targetId: null }, `${attacker.name}의 공격 → ${target.name} ${damage} 피해${criticalLabel}`), success: true, message: critical ? '치명타 공격 성공' : '공격 완료' };
 }
 
 export function useBattleSkill(state: BattleState, terrain: Terrain[]): BattleActionResult {
