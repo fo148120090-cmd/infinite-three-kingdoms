@@ -9,6 +9,25 @@ const alivePlayers = (units: Unit[]) => units.filter((u) => u.team === 'player' 
 const allPlayers = (units: Unit[]) => units.filter((u) => u.team === 'player');
 const adjacentEnemies = (caster: Unit, units: Unit[]) => aliveEnemies(units).filter((u) => Math.abs(u.x - caster.x) + Math.abs(u.y - caster.y) <= 1);
 
+export type SkillDescription = { name: string; summary: string; detail: string; targeting: string; powerText: string };
+
+export function getSkillDescription(unit: Pick<Unit, 'skill' | 'skillPower' | 'range'>): SkillDescription {
+  const name = unit.skill;
+  const descriptions: Record<string, Omit<SkillDescription, 'name' | 'powerText'>> = {
+    '인덕의 격려': { summary: '아군 전체를 격려해 전투력을 높입니다.', detail: '생존한 모든 아군의 공격력을 +8 높이고 방어 태세(가드)를 2턴 부여합니다.', targeting: '대상: 아군 전체' },
+    '강동의 결의': { summary: '아군 전체를 회복하고 방어 태세를 갖춥니다.', detail: '생존한 모든 아군의 HP를 12 회복하고 공격력 +5, 방어 태세(가드) 2턴을 부여합니다.', targeting: '대상: 아군 전체' },
+    '간웅의 명령': { summary: '모든 적의 움직임을 둔화시킵니다.', detail: '생존한 모든 적에게 감속을 2턴 부여합니다.', targeting: '대상: 적 전체' },
+    '맹격': { summary: '주변의 적을 동시에 강하게 공격합니다.', detail: '자신에게 인접한 적을 모두 공격합니다. 별도의 적 대상 선택은 필요하지 않습니다.', targeting: '범위: 자신 주변 1칸' },
+    '호통': { summary: '주변의 적을 공격하고 기절시킵니다.', detail: '자신에게 인접한 적을 모두 공격하고 기절을 2턴 부여합니다.', targeting: '범위: 자신 주변 1칸' },
+    '청룡참': { summary: '사거리 내 적 하나를 베어 화상을 입힙니다.', detail: '지정한 적 1명에게 스킬 위력 기반 피해를 주고 화상 2턴을 부여합니다.', targeting: '대상: 사거리 내 적 1명' },
+    '용진': { summary: '직선상의 적을 관통하며 돌진합니다.', detail: '사거리 내 가로 또는 세로 직선의 적을 관통해 모두 공격한 뒤, 경로 끝의 빈 칸에 착지합니다.', targeting: '대상: 사거리 내 직선 방향의 적' },
+    '천뢰': { summary: '지정 지점에 번개를 내려 주변 적까지 공격합니다.', detail: '지정한 적과 그 주변 1칸의 적에게 피해를 주고 모두 기절 2턴을 부여합니다.', targeting: '대상: 사거리 내 적 1명 · 범위: 대상 주변 1칸' },
+    '매혹': { summary: '적 하나를 매혹해 행동을 봉쇄합니다.', detail: '사거리 내 적 1명에게 기절을 2턴 부여합니다.', targeting: '대상: 사거리 내 적 1명' },
+  };
+  const base = descriptions[name] ?? { summary: '지정한 적에게 피해를 줍니다.', detail: '사거리 내 적 1명에게 스킬 위력 기반 피해를 줍니다.', targeting: '대상: 사거리 내 적 1명' };
+  return { name, ...base, powerText: unit.skillPower > 0 ? `기본 위력: ${unit.skillPower} · 실제 전투 위력은 패시브/편성 보정이 적용됩니다.` : '위력: 지원형 효과' };
+}
+
 export type SkillAvailability = { ready: boolean; needsTarget: boolean; targetIds: string[]; message: string };
 
 export function getGeneralSkillTargetIds(units: Unit[], casterId: string, terrain: Terrain[] = []): string[] {
