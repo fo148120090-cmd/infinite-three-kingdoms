@@ -240,7 +240,11 @@ export default function App(){
 
   const start=(kind:RoomKind)=>{
     if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));notify("보물: "+item.name+" 획득");return;}
-    if(kind==="rest"){setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?grantExperience(h,4).hero:h),stage:s.stage+1}));notify("휴식: 경험 기록 +4");return;}
+    if(kind==="rest"){
+      setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...grantExperience(h,4).hero,hp:Math.round(h.hp*1.15)}:h),stage:s.stage+1}));
+      notify("휴식: 경험 기록 +4 · HP 15% 회복");
+      return;
+    }
     let lineages=save.monsterLineages;
     if(kind==="boss" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
     if(kind==="boss" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
