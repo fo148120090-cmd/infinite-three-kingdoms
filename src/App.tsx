@@ -280,7 +280,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[]
       line=a.actionText+" · 부하 강화";
     }
   } else {a.guard=1;a.actionText="대기 · 다음 판단 준비";line=a.actionText;}
-  if(["광폭 돌격","수호 맹세","결투 집중","정밀 사격","사냥 본능","심판","철벽 진형","원소 폭발","저주 확산","비전 해방","대회복","분열","함정 투척","매복 함정","거미줄","무리 사냥","약점 추적","연계 공격","전투 함성","지휘 명령","측면 습격","급강하","굴 파기 기습","독성 압박","매혹","대지 강타","회피 기동","역할 분석","영역 지배","광폭화"].includes(d.action))a.cooldown=2;
+  if(["광폭 돌격","수호 맹세","결투 집중","정밀 사격","사냥 본능","심판","철벽 진형","원소 폭발","저주 확산","비전 해방","대회복","분열","함정 투척","매복 함정","거미줄","무리 사냥","약점 추적","연계 공격","전투 함성","지휘 명령","측면 습격","급강하","굴 파기 기습","독성 압박","매혹","대지 강타","회피 기동","역할 분석","전선 재편","둥지 확장","공포의 심문","영역 지배","광폭화"].includes(d.action))a.cooldown=2;
   n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2;if(x.id!==a.id&&x.cooldown>0)x.cooldown=Math.max(0,x.cooldown-.25);});
   return {units:n,decision:d,line:line||a.actionText};
 }
@@ -408,9 +408,13 @@ export default function App(){
           e.forEach(x=>{if(x.pos>0.45)x.pos=Math.max(0.45,x.pos-(0.075+wave*.006));});
           const nearGoal=e.filter(x=>x.pos<0.8).length;
           const bossNear=e.filter(x=>x.grade==="Boss"&&x.pos<1.4).length;
-          const pressure=prev.objectiveKind==="gate"?nearGoal*3+bossNear*5:prev.objectiveKind==="relic"?nearGoal*2+bossNear*6:nearGoal*4;
+          const basePressure=prev.objectiveKind==="gate"?nearGoal*3+bossNear*5:prev.objectiveKind==="relic"?nearGoal*2+bossNear*6:nearGoal*4;
+          const gateShield=prev.objectiveKind==="gate"&&p.some(x=>x.job==="Guardian")?2:0;
+          const relicShield=prev.objectiveKind==="relic"&&p.some(x=>x.job==="Mage")?Math.max(1,Math.floor(p.filter(x=>x.job==="Mage").length)):0;
+          const pressure=Math.max(0,basePressure-gateShield-relicShield);
           if(prev.tick%4===0 && pressure>0) objectiveHp=Math.max(0,objectiveHp-pressure);
-          if(prev.objectiveKind==="escort"&&prev.tick%5===0&&p.some(x=>x.job==="Guardian")) objectiveHp=Math.min(100,objectiveHp+2);
+          if(prev.objectiveKind==="escort"&&prev.tick%5===0&&p.some(x=>x.job==="Guardian")) objectiveHp=Math.min(100,objectiveHp+3);
+          if(prev.objectiveKind==="relic"&&prev.tick%6===0&&p.some(x=>x.job==="Cleric")) objectiveHp=Math.min(100,objectiveHp+2);
           if(p.length===0||objectiveHp<=0){ended=true;result="defeat";}
           else if(now>=(prev.deadline||now)){ended=true;result="victory";}
           else if(e.length===0){
@@ -418,7 +422,8 @@ export default function App(){
             const pool=["Goblin","Kobold","Gnoll","Orc","Uruk","Arachne","Ogre"];
             const count=Math.min(7,2+wave);
             const nextEnemies=Array.from({length:count},(_,i)=>{
-              const m=createLinedMonster(pool[(i+wave+save.floor)%pool.length],Math.max(1,save.floor+wave-1),wave>=4?"Elite":"Normal",i,save.monsterLineages);
+              const waveGrade=wave>=6?"Named":wave>=4?"Elite":"Normal";
+              const m=createLinedMonster(pool[(i+wave+save.floor)%pool.length],Math.max(1,save.floor+wave-1),waveGrade,i,save.monsterLineages);
               return asEnemy({...m,pos:8.2+i*.55},"-w"+wave);
             });
             out.units=out.units.concat(nextEnemies);
