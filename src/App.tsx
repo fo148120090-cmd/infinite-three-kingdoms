@@ -87,7 +87,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
   const lossBias=(a.memories||[]).filter(m=>m.text.includes("전사")).reduce((n,m)=>n+m.weight,0);
   const envBonus=env?environmentDecisionBonus(a,env):0;
   if(a.cooldown<=0) for(const p of promotionActions(a.promotionPath)){
-    let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08;
+    let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08+envBonus;
     if((p.name.includes("대회복")||p.name.includes("수호"))&&ally) score+=Math.max(0,(1-pct(ally))*55);
     if((p.name.includes("사격")||p.name.includes("사냥")||p.name.includes("심판"))&&weak) score+=Math.max(0,(1-pct(weak))*45);
     if((p.name.includes("폭발")||p.name.includes("저주"))&&enemies.length>=2) score+=enemies.length*10;
@@ -95,7 +95,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
   }
   if(a.team==="enemy"&&a.species&&a.cooldown<=0){
     for(const m of monsterActions(a.species,a.grade,a.mutation)){
-      let score=m.bonus+t.focus*.08;
+      let score=m.bonus+t.focus*.08+envBonus;
       if((m.name==="대지 강타"||m.name==="분열"||m.name==="영역 지배")&&enemies.length>=2)score+=18;
       if((m.name==="무리 사냥"||m.name==="약점 추적"||m.name==="역할 분석")&&weak)score+=Math.max(0,(1-pct(weak))*35);
       if(m.name==="회피 기동"&&pct(a)<.5)score+=35;
