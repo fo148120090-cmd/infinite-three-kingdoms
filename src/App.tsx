@@ -223,13 +223,13 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   }
 
   if(nearest){
-    let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40+envBonus+(a.team==="enemy"?22:0);
+    let s=68+t.aggression*.42+t.bravery*.24+t.focus*.12+(1-pct(weak))*46+envBonus+(a.team==="enemy"?24:0);
     if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
     arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협·마무리 가능성·기존 공격 습관을 계산",score:s+habitBias(a,"일반 공격")+roleSynergy(a,allies,"일반 공격")});
   }
   if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8+habitBias(a,"추격")+roleSynergy(a,allies,"추격")});
-  if(a.job==="Guardian"&&ally) arr.push({action:"아군 보호",target:ally.id,detail:"위험한 아군 쪽으로 접근해 피해를 줄임",score:20+t.protect*.5+t.cooperation*.25+(1-pct(ally))*55+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+roleSynergy(a,allies,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)});
-  if(a.job==="Cleric"&&ally) arr.push({action:"회복",target:ally.id,detail:"가장 위험한 아군을 먼저 치료",score:30+t.protect*.35+t.cooperation*.25+(1-pct(ally))*75+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+roleSynergy(a,allies,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7-(pct(ally)>.78?35:0)+Math.min(8,lossBias*.15)});
+  if(a.job==="Guardian"&&ally&&pct(ally)<.82) arr.push({action:"아군 보호",target:ally.id,detail:"부상한 아군을 우선 보호하고 전선을 유지",score:26+t.protect*.5+t.cooperation*.25+(1-pct(ally))*58+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+roleSynergy(a,allies,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)});
+  if(a.job==="Cleric"&&ally&&pct(ally)<.76) arr.push({action:"회복",target:ally.id,detail:"부상한 아군을 즉시 회복",score:32+t.protect*.35+t.cooperation*.25+(1-pct(ally))*82+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+roleSynergy(a,allies,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7+Math.min(8,lossBias*.15)});
   if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8+habitBias(a,"광역 마법")+roleSynergy(a,allies,"광역 마법")});
   if(a.team==="enemy"&&a.species==="Goblin") arr.push({action:"기습 후퇴",target:nearest?.id,detail:"위험해지면 생존을 위해 물러남",score:20+t.greed*.2+t.caution*.35+(1-pct(a))*60});
   if(a.team==="enemy"&&a.grade==="Boss"){
@@ -260,16 +260,17 @@ function roleSynergy(a:BattleUnit,allies:BattleUnit[],action:string):number{
 }
 
 function weighted(ds:Decision[]):Decision {
-  const list=ds.filter(d=>d.score>0).sort((a,b)=>b.score-a.score).slice(0,4);
-  const top=list.map((d,i)=>({...d,score:d.score*Math.pow(.82,i)}));
+  const list=ds.filter(d=>d.score>0).sort((a,b)=>b.score-a.score).slice(0,5);
+  const top=list.map((d,i)=>({...d,score:d.score*Math.pow(.88,i)}));
   const total=top.reduce((n,d)=>n+d.score,0); let r=Math.random()*total;
   for(const d of top){r-=d.score;if(r<=0)return d;} return top[0];
 }
 
 function hit(a:BattleUnit,b:BattleUnit,m=1){
-  const critChance=Math.min(.35,(a.tendencies.focus>82?.15:0)+(combinedCombatMods(equippedItemsOf(a)).critPct||0)/100);
+  const critChance=Math.min(.4,(a.tendencies.focus>82?.16:0)+(combinedCombatMods(equippedItemsOf(a)).critPct||0)/100);
   const crit=Math.random()<critChance?1.55:1;
-  return Math.max(4,Math.round((a.attack*m-b.defense*.58)*crit*(.93+Math.random()*.14)));
+  const guardFactor=b.guard>0?.62:1;
+  return Math.max(5,Math.round((a.attack*m-b.defense*.5)*crit*(.94+Math.random()*.12)*guardFactor));
 }
 
 function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory):{units:BattleUnit[];decision:Decision;line:string}{
@@ -280,7 +281,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
   a.behaviorCounts![d.action]=(a.behaviorCounts![d.action]||0)+1; a.battleStats!.actions+=1;
   const by=(x?:string)=>n.find(q=>q.id===x&&q.alive);
   const move=(target:BattleUnit)=>{
-    const baseStep=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric") ? .65 : .9;
+    const baseStep=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric") ? .8 : 1.05;
     const step=env==="narrow"?baseStep*.72:env==="water"&&a.species!=="Lizardman"?baseStep*.86:baseStep;
     a.pos+=(target.pos>a.pos?step:-step); a.pos=Math.max(.3,Math.min(9.7,a.pos));
   };
@@ -511,7 +512,11 @@ export default function App(){
         if(prev.ended||!prev.units.length)return prev;
         const alive=prev.units.filter(x=>x.alive);
         if(!alive.length)return {...prev,ended:true,result:"defeat"};
-        const actor=alive.sort((a,b)=>a.pos-b.pos||b.speed-a.speed)[Math.floor(Math.random()*Math.min(2,alive.length))];
+        const actorPool=alive.slice().sort((a,b)=>b.speed-a.speed).slice(0,Math.min(8,alive.length));
+        const actorTotalSpeed=actorPool.reduce((n,x)=>n+Math.max(.25,x.speed),0);
+        let actorRoll=Math.random()*actorTotalSpeed;
+        let actor=actorPool[actorPool.length-1];
+        for(const candidate of actorPool){actorRoll-=Math.max(.25,candidate.speed);if(actorRoll<=0){actor=candidate;break;}}
         const out=doAI(prev.units,actor.id,prev.environment,prev.partyMemory);
         let wave=prev.wave,objectiveHp=prev.objectiveHp,phase=prev.phase,ended=false,result:string|undefined;
         const now=Date.now();
@@ -558,7 +563,7 @@ export default function App(){
         const waveLine=prev.mode==="defense"&&wave>prev.wave?" / WAVE "+wave+" 증원":"";
         return {...prev,units:out.units,log:[(environmentLog?environmentLog+" / ":"")+logLine+waveLine].concat(prev.log).slice(0,12),round:prev.round+(actor.team==="enemy"?1:0),tick:prev.tick+1,ended,result,next:out.units.find(x=>x.id===actor.id&&x.alive)?.id,wave,objectiveHp,phase,phaseNotice:prev.mode==="raid"&&phase!==prev.phase?"PHASE "+phase+" · 보스 전투 패턴 강화":undefined};
       });
-    },Math.max(150,850/speed));
+    },Math.max(110,520/speed));
     return ()=>window.clearTimeout(timer);
   },[screen,paused,battle.ended,speed,battle.tick,battle.mode,save.floor]);
 
@@ -571,7 +576,7 @@ export default function App(){
     const isBoss=battle.room==="boss";
     const isFinal=battle.room==="evilCave";
     const baseStats={wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0};
-    const buildHero=(h:Hero,unit:BattleUnit|undefined,won:boolean,stats:any)=>{
+    const buildHero=(h:Hero,unit:BattleUnit|undefined,won:boolean,stats:any,experienceGain:number)=>{
       if(!unit)return h;
       const base={...h,campaignStats:stats};
       const previousProfile=h.combatProfile||{actions:0,damage:0,healing:0,battles:0,topActions:{}};
@@ -579,7 +584,8 @@ export default function App(){
       Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>{const before=h.behaviorCounts?.[name]||0;const gained=Math.max(0,count-before);if(gained)actionCounts[name]=(actionCounts[name]||0)+gained;});
       const combatProfile={actions:previousProfile.actions+(unit.battleStats?.actions||0),damage:previousProfile.damage+(unit.battleStats?.damage||0),healing:previousProfile.healing+(unit.battleStats?.healing||0),battles:previousProfile.battles+1,topActions:actionCounts};
       const withProfile={...base,combatProfile};
-      const behaviorBase=applyBehaviorHistory(withProfile,unit.behaviorCounts||{});
+      const progressed=grantExperience(withProfile,experienceGain);
+      const behaviorBase=applyBehaviorHistory(progressed.hero,unit.behaviorCounts||{});
       const behavioral={...behaviorBase,
         ...(isFinal&&won?{statusNote:"악의 동굴 수문장 격파 · 봉인 대기"}:{}),
         history:unit.actionText?[unit.actionText,...behaviorBase.history].slice(0,6):behaviorBase.history};
@@ -629,7 +635,8 @@ export default function App(){
       const rewardMultiplier=isRepeat?(battle.rewardMultiplier||.6):1;
       const baseGold=180+battle.units.filter(u=>u.team==="enemy").length*55+(isBoss?900:0)+(isFinal?1800:0);
       const baseMaterials=isFinal?100:isBoss?60:18;
-      const exp=Math.max(8,Math.round((22+(isElite?15:0)+(isBoss?70:0)+(isFinal?110:0))*(isRepeat?.85:1)));
+      const exp=Math.max(8,Math.round((30+(isElite?20:0)+(isBoss?80:0)+(isFinal?120:0))*(isRepeat?.9:1)));
+      const experienceGain=victory?exp:Math.max(8,Math.round(exp*.7));
       const loot=victory?rollBattleLoot(Math.max(1,s.floor+(isBoss?2:0)),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
       const routeLearning=battle.mode==="dungeon"&&!isRepeat&&(battle.room==="battle"||battle.room==="elite"||battle.room==="boss"||battle.room==="evilCave");
       if(victory) setLastLoot(loot);
@@ -645,7 +652,7 @@ export default function App(){
         routeMemory:routeLearning?recordRouteMemory(s.routeMemory,battle.room,victory,victory?Math.round(baseGold*rewardMultiplier):0):s.routeMemory,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
-          return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id]);
+          return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id],experienceGain);
         })
       };
     });
