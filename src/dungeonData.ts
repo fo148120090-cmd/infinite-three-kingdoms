@@ -203,6 +203,10 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
   };
 }
 
+function uniqueLootCopy(item:Item):Item {
+  return {...item,id:item.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)};
+}
+
 export function rollBattleLoot(level:number, room:RoomKind, preference?:Partial<Tendencies>, rewardMultiplier=1): Item[] {
   const general=randomGeneralItem(Math.max(1,level),preference);
   const bossLike=room==="boss"||room==="evilCave";
@@ -212,7 +216,7 @@ export function rollBattleLoot(level:number, room:RoomKind, preference?:Partial<
   const loot=[general];
   if(bossLike||eliteLike||Math.random()<uniqueChance){
     if(Math.random()<uniqueChance){
-      loot.push(uniqueItems[Math.floor(Math.random()*uniqueItems.length)]);
+      loot.push(uniqueLootCopy(uniqueItems[Math.floor(Math.random()*uniqueItems.length)]));
     } else if(bossLike||eliteLike){
       loot.push(randomGeneralItem(Math.max(1,level+1),preference));
     }
