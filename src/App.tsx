@@ -8,6 +8,7 @@ import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recor
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
 import { resolveDungeonEvent, resolveHiddenRoom } from "./dungeonEvents";
+import { applyBehaviorHistory, behaviorSummary } from "./progression";
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
@@ -54,7 +55,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
       speed:s.speed,range:s.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
-      relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
+      relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"?3:room==="elite"?4:3;
@@ -406,7 +407,13 @@ export default function App(){
           for(const [action,count] of Object.entries(boss.behaviorCounts||{})) for(let i=0;i<count;i++) lineage=recordLineage(lineage,action,false);
           monsterLineages=s.monsterLineages.filter(x=>x.id!=="uruk-boss").concat(lineage);
         }
-        return {...s,monsterLineages,heroes:bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories)};
+        const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
+        const updatedHeroes=s.heroes.map(h=>{
+          if(!s.party.includes(h.id))return h;
+          const unit=battle.units.find(u=>u.id===h.id);
+          return unit?applyBehaviorHistory(bonded.find(x=>x.id===h.id)||h,unit.behaviorCounts||{}):h;
+        });
+        return {...s,monsterLineages,heroes:updatedHeroes};
       });
       return;
     }
@@ -427,12 +434,12 @@ export default function App(){
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
           const base=bonded.find(x=>x.id===h.id)||h;
-          const unit=battle.units.find(u=>u.id===h.id); const t={...base.tendencies};
+          const unit=battle.units.find(u=>u.id===h.id);
           const action=unit?.actionText||"";
-          if(action.includes("공격")||action.includes("추격"))t.aggression=clamp(t.aggression+.8);
-          if(action.includes("보호")||action.includes("회복")){t.protect=clamp(t.protect+.8);t.cooperation=clamp(t.cooperation+.5);}
-          if(action.includes("후퇴")){t.caution=clamp(t.caution+.6);t.survival=clamp(t.survival+.8);}
-          const behavioral={...base,tendencies:t,history:[action,...base.history].slice(0,6)};
+          const behaviorBase=applyBehaviorHistory(base,unit?.behaviorCounts||{});
+          const behavioral=action
+            ? {...behaviorBase,history:[action,...behaviorBase.history].slice(0,6)}
+            : behaviorBase;
           return grantExperience(behavioral,exp).hero;
         })
         };
@@ -505,7 +512,7 @@ export default function App(){
         {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")} style={{left:(u.pos*9.3)+"%"}}>
           <div className="unit-token">{u.team==="player"?jobIcon[u.job!]:u.grade==="Boss"?"♛":"👹"}</div><b>{u.name}</b>{u.mutation&&<small className="mutation-label">{u.mutation}</small>}<div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
       </div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
-      <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · {hero.item.name}</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
+      <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · {hero.item.name}</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>{behaviorSummary(hero)}</small><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
       {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
     {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">EQUIPMENT</span><h2>장비 연구실</h2><p className="muted">직업 제한 없음 · 일반 장비는 무작위 롤 · 고유 장비는 AI 행동까지 바꿉니다.</p></div></div>
