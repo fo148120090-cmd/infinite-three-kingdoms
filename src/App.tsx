@@ -506,9 +506,9 @@ export default function App(){
       return;
     }
     const env=environmentFor(save.floor,kind,"dungeon");
-    const units=spawn(save.heroes,save.party,kind,save.floor,save.monsterLineages);
+    const units=spawn(save.heroes,save.party,kind,save.floor,save.monsterLineages,"dungeon");
     setMode("dungeon");
-    setBattle({units,log:[roomKo[kind]+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
+    setBattle({units,log:[roomKo[kind]+" · "+formationLabel(party,"dungeon")+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
   };
 
@@ -518,9 +518,9 @@ export default function App(){
     const elitePack=Math.random()<.25;
     const room:RoomKind=elitePack?"elite":"battle";
     const env=environmentFor(scenarioFloor,room,"dungeon");
-    const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages);
+    const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages,"dungeon");
     const rewardMultiplier=Math.max(.3,.6-.1*Math.max(0,repeatCount-1));
-    setBattle({units,log:[scenarioFloor+"F 완료 시나리오 재도전 · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
+    setBattle({units,log:[scenarioFloor+"F 완료 시나리오 재도전 · "+formationLabel(party,"dungeon")+" · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
     setPaused(false);setScreen("battle");setDecision(elitePack?"재도전 중 정예 무리의 전투 성향을 분석 중...":"완료 시나리오의 적 행동을 다시 분석 중...");
   };
 
@@ -528,11 +528,11 @@ export default function App(){
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
     const env=environmentFor(save.floor,room,nextMode);
-    const units=spawn(save.heroes,save.party,room,save.floor,save.monsterLineages);
+    const units=spawn(save.heroes,save.party,room,save.floor,save.monsterLineages,nextMode);
     const objectiveKind=defenseObjectiveForFloor(save.floor);
     const label=nextMode==="defense"
-      ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · 30초 동안 웨이브가 계속됩니다.`
-      : `보스 레이드 시작 · ${raidBossForFloor(save.floor)} 보스 · 페이즈는 AI가 자동 전환됩니다.`;
+      ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · ${formationLabel(party,nextMode)} · 30초 동안 웨이브가 계속됩니다.`
+      : `보스 레이드 시작 · ${raidBossForFloor(save.floor)} 보스 · ${formationLabel(party,nextMode)} · 페이즈는 AI가 자동 전환됩니다.`;
     setBattle({units,log:[label+" · "+environmentInfo[env].name],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1,objectiveKind,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
     setPaused(false);setScreen("battle");
     setDecision(nextMode==="defense"?"방어 목표와 생존 경로를 계산 중...":"보스 패턴과 페이즈 전환을 분석 중...");
@@ -819,7 +819,7 @@ export default function App(){
     {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="evilCave"?"악의 동굴 · 세계의 구멍":battle.room==="boss"?"심층 관문":battle.repeatScenarioFloor!==undefined?"시나리오 재도전":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
       <div className="battle-tools"><button className="ghost-btn" onClick={()=>setPaused(x=>!x)}>{paused?<CirclePlay size={17}/>:<CirclePause size={17}/>} {paused?"재생":"일시정지"}</button>{[.5,1,2,4].map(x=><button key={x} className={speed===x?"speed-on":"speed-btn"} onClick={()=>setSpeed(x)}>{x}x</button>)}</div></div>
       <div className="battle-summary-strip">
-        <span>MODE · {battle.repeatScenarioFloor!==undefined?"SCENARIO REPLAY":battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span>{battle.repeatScenarioFloor!==undefined&&<><span>재도전 · {battle.repeatScenarioFloor}F</span><span>반복 {battle.repeatCount}회</span><span>보상 {Math.round((battle.rewardMultiplier||1)*100)}%</span>{battle.elitePack&&<span>정예 무리 출현</span>}</>}
+        <span>MODE · {battle.repeatScenarioFloor!==undefined?"SCENARIO REPLAY":battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span><span>진형 · {formationLabel(party,battle.mode)}</span>{battle.repeatScenarioFloor!==undefined&&<><span>재도전 · {battle.repeatScenarioFloor}F</span><span>반복 {battle.repeatCount}회</span><span>보상 {Math.round((battle.rewardMultiplier||1)*100)}%</span>{battle.elitePack&&<span>정예 무리 출현</span>}</>}
         {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>{defenseObjectiveDetail[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
         {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase}</span><span>종족 전용 패턴 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.species||"—"}</span></>}
         {battle.environment&&<span>환경 · {environmentInfo[battle.environment].name}</span>}
