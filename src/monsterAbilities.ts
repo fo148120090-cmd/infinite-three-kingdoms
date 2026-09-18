@@ -17,7 +17,12 @@ export function monsterActions(species:string,grade?:string,mutation?:string):Mo
   if(species==="Siren")add("매혹","가장 집중력이 낮은 적의 판단을 흔든다",28);
   if(species==="Darkworm")add("굴 파기 기습","거리를 무시하고 약한 적에게 갑자기 접근한다",31);
   if(species==="Demon")add("역할 분석","지원 역할을 가진 적을 우선해서 압박한다",34);
-  if(grade==="Boss")add("영역 지배","현재 페이즈에 맞는 전장 압박 행동을 선택한다",36);
+  if(grade==="Boss"){
+    add("영역 지배","현재 페이즈에 맞는 전장 압박 행동을 선택한다",36);
+    if(species==="Uruk"){add("전선 재편","아군의 방어선을 다시 세우고 집중 공격 대상을 바꾼다",38);}
+    if(species==="Arachne"){add("둥지 확장","전장을 거미줄로 넓혀 이동 경로를 압박한다",38);}
+    if(species==="Demon"){add("공포의 심문","취약한 역할을 골라 지속적으로 압박한다",40);}
+  }
   if(mutation==="광폭")add("광폭화","공격력을 끌어올리고 후퇴 성향을 줄인다",24);
   if(mutation==="기민")add("회피 기동","위험할 때 빠르게 거리를 벌린다",22);
   if(mutation==="무리")add("연계 공격","같은 편과 함께 행동할 때 추가 압박을 만든다",24);
