@@ -7,7 +7,7 @@ import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } fr
 import { applyLineage, emptyLineage, evolutionActionBonus, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
-import { resolveDungeonEvent, resolveHiddenRoom } from "./dungeonEvents";
+import { dungeonChoiceEvent, resolveDungeonChoice, resolveDungeonEvent, resolveHiddenRoom, type DungeonChoiceEvent } from "./dungeonEvents";
 import { applyBehaviorHistory, behaviorSummary, buildProfile, partyPreference } from "./progression";
 import { awardChronicle, chronicleBonuses, chronicleLabel, systemEvaluation, systemMood, systemStatus } from "./chronicle";
 import { costumeLabel, costumesForJob } from "./costumes";
@@ -285,6 +285,7 @@ export default function App(){
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
   const [selectedEquipSlot,setSelectedEquipSlot]=useState(0);
   const [lastLoot,setLastLoot]=useState<Item[]>([]);
+  const [pendingEvent,setPendingEvent]=useState<DungeonChoiceEvent|undefined>();
   const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
@@ -318,18 +319,7 @@ export default function App(){
     }
     if(kind==="event"){
       const env=environmentFor(save.floor,kind,"dungeon");
-      const outcome=resolveDungeonEvent(save.heroes,save.party,save.floor,env);
-      setSave(s=>({...s,
-        heroes:s.heroes.map(h=>{
-          const update=outcome.heroUpdates[h.id];
-          if(!update)return h;
-          const nextT={...h.tendencies,...Object.fromEntries(Object.entries(update.tendencies||{}).map(([k,v])=>[k,clamp(v as number)]))};
-          return {...h,hp:Math.max(1,h.hp+(update.hpDelta||0)),tendencies:nextT};
-        }),
-        gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,
-        items:outcome.item?[...s.items,outcome.item]:s.items,stage:s.stage+1
-      }));
-      notify(outcome.text);
+      setPendingEvent(dungeonChoiceEvent(save.floor,env));
       return;
     }
     if(kind==="treasure"){
@@ -547,6 +537,25 @@ export default function App(){
     setSave(s=>({...s,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,costumeId}:h)}));
     notify(hero.name+" · "+costumeLabel(hero.job,costumeId)+" 착용");
   };
+  const chooseDungeonEvent=(choiceId:string)=>{
+    if(!pendingEvent)return;
+    const env=environmentFor(save.floor,"event","dungeon");
+    const choice=pendingEvent.choices.find(x=>x.id===choiceId);
+    if(!choice)return;
+    const outcome=resolveDungeonChoice(save.heroes,save.party,save.floor,env,choice);
+    setSave(s=>({...s,
+      heroes:s.heroes.map(h=>{
+        const update=outcome.heroUpdates[h.id];
+        if(!update)return h;
+        const nextT={...h.tendencies,...Object.fromEntries(Object.entries(update.tendencies||{}).map(([k,v])=>[k,clamp(v as number)]))};
+        return {...h,hp:Math.max(1,h.hp+(update.hpDelta||0)),tendencies:nextT};
+      }),
+      gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,stage:s.stage+1
+    }));
+    setPendingEvent(undefined);
+    notify(outcome.text+" · +"+outcome.gold+"G");
+  };
+
   const sealWorld=()=>{
     setSave(s=>({...s,worldSealed:true,heroes:s.heroes.map(h=>{
       const next={...h,statusNote:"세계의 구멍 봉인 완료"};
@@ -563,6 +572,7 @@ export default function App(){
       <div className="resources"><span><Coins size={15}/> {save.gold}</span><span><Gem size={15}/> {save.gems}</span><span>🧱 {save.materials}</span><span>심도 {save.floor}F</span></div></header>
     <nav className="main-nav">{([["home","대시보드"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"],["recruit","모집"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
     {toast&&<div className="toast">{toast}</div>}
+    {pendingEvent&&<div className="event-overlay"><div className="event-dialog"><span className="eyebrow">DUNGEON EVENT</span><h2>{pendingEvent.title}</h2><p>{pendingEvent.text}</p><div className="event-choice-list">{pendingEvent.choices.map(ch=><button key={ch.id} className="event-choice" onClick={()=>chooseDungeonEvent(ch.id)}><div><b>{ch.label}</b><small>{ch.detail}</small></div><span>{ch.risk>0?"위험 "+ch.risk:"안전"} · 예상 {ch.reward}G</span></button>)}</div><small className="event-note">선택한 방식이 파티의 해당 성향과 이후 행동 기록에 누적됩니다.</small></div></div>
 
     {screen==="home"&&<section className="page"><div className="hero-panel"><div><span className="eyebrow">AUTONOMOUS DUNGEON</span>
       <h1>플레이어가 캐릭터를 조종하는 것이 아니라,<br/>캐릭터가 살아온 방식이 미래를 결정한다.</h1>
