@@ -69,3 +69,19 @@ export function profileInsight(hero:Hero):string{
   if(!entries.length)return "아직 뚜렷한 전투 습관이 없습니다.";
   return entries.map(([action,count])=>action+" "+count+"회").join(" · ");
 }
+
+
+export type PartyMemory = {battles:number;protection:number;recovery:number;losses:number};
+
+export function partyHabitBias(memory:PartyMemory|undefined,action:string):number{
+  if(!memory)return 0;
+  if(action==="아군 보호"||action==="수호 맹세"||action==="철벽 진형") return Math.min(9,memory.protection*.32);
+  if(action==="회복"||action==="대회복") return Math.min(8,memory.recovery*.28);
+  if(action==="후퇴") return Math.min(6,memory.losses*.35);
+  return 0;
+}
+
+export function partyMemorySummary(memory:PartyMemory|undefined):string{
+  if(!memory||memory.battles<=0)return "아직 함께 쌓인 집단 전투 기억이 없습니다.";
+  return "협동 "+memory.battles+"전 · 보호 "+memory.protection+"회 · 회복 "+memory.recovery+"회 · 전멸 경험 "+memory.losses+"회";
+}
