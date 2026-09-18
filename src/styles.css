@@ -70,3 +70,25 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .event-choice small{font-size:12px;color:#93a0b7;line-height:1.45}
 .event-choice>span{flex:0 0 auto;font-size:11px;color:#d2b978}
 .event-note{display:block;margin-top:15px;color:#707d94;font-size:11px;line-height:1.5}
+
+
+.phase-banner{margin:10px 0 14px;padding:13px 16px;border:1px solid #765b34;border-radius:14px;background:linear-gradient(90deg,#231a12,#171521,#231a12);text-align:center;font-weight:800;letter-spacing:.08em;font-size:14px;animation:phaseIn .7s ease-out}
+@keyframes phaseIn{0%{opacity:0;transform:translateY(-8px) scale(.98)}45%{opacity:1;transform:translateY(0) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.battle-unit{transition:left .35s ease,transform .2s ease,filter .2s ease}
+.battle-unit.active-unit .unit-token{animation:unitPulse .8s ease-in-out infinite alternate}
+@keyframes unitPulse{from{transform:translateY(0) scale(1)}to{transform:translateY(-2px) scale(1.06)}}
+.battle-unit.fx-damage{animation:damageShake .32s ease-out}
+.battle-unit.fx-heal{animation:healPulse .5s ease-out}
+.battle-unit.fx-critical{animation:criticalFlash .45s ease-out}
+.battle-unit.fx-status{animation:statusPulse .5s ease-out}
+@keyframes damageShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+@keyframes healPulse{0%{filter:brightness(1)}45%{filter:brightness(1.65)}100%{filter:brightness(1)}}
+@keyframes criticalFlash{0%{filter:brightness(1)}30%{filter:brightness(1.9)}60%{filter:brightness(1.25)}100%{filter:brightness(1)}}
+@keyframes statusPulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+.combat-fx{position:absolute;left:50%;top:-18px;transform:translateX(-50%);font-weight:900;font-size:12px;white-space:nowrap;pointer-events:none;animation:floatFx .85s ease-out forwards}
+.fx-damage .combat-fx{font-size:14px}
+.fx-heal .combat-fx{font-size:14px}
+.fx-critical .combat-fx{font-size:15px}
+@keyframes floatFx{0%{opacity:0;transform:translate(-50%,8px) scale(.8)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-24px) scale(1.08)}}
+.battle-unit.dead .unit-token{filter:grayscale(1);opacity:.35}
+.battle-unit.dead b{opacity:.45;text-decoration:line-through}
