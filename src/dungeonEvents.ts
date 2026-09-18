@@ -28,7 +28,7 @@ function environmentInfoName(environment:EnvironmentKind){return environment==="
 export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number,environment?:EnvironmentKind):DungeonEventOutcome{
   const party=heroes.filter(h=>partyIds.includes(h.id));
   const avg=(key:keyof Tendencies)=>party.length?party.reduce((n,h)=>n+h.tendencies[key],0)/party.length:0;
-  const curiosity=avg("curiosity"), caution=avg("caution"), greed=avg("greed"), bravery=avg("bravery"), survival=avg("survival"), cooperation=avg("cooperation");
+  const curiosity=avg("curiosity"), caution=avg("caution"), greed=avg("greed"), bravery=avg("bravery"), survival=avg("survival"), focus=avg("focus"), cooperation=avg("cooperation");
   const roll=Math.random();
   const heroUpdates:Record<string,EventUpdate>={};
 
