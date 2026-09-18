@@ -32,6 +32,12 @@ export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number
   const roll=Math.random();
   const heroUpdates:Record<string,EventUpdate>={};
 
+  party.forEach(h=>heroUpdates[h.id]={});
+  const touch=(id:string,update:EventUpdate)=>{
+    const prev=heroUpdates[id]||{};
+    heroUpdates[id]={...prev,hpDelta:(prev.hpDelta||0)+(update.hpDelta||0),tendencies:{...(prev.tendencies||{}),...(update.tendencies||{})}};
+  };
+
   if(environment==="dark" && curiosity>=62 && roll<.52){
     const item=randomGeneralItem(floor+4);
     party.forEach(h=>touch(h.id,{tendencies:{curiosity:clamp(h.tendencies.curiosity+1),focus:clamp(h.tendencies.focus+.6)}}));
@@ -58,11 +64,6 @@ export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number
     return {text:"공명 수정맥: 불안정한 결정을 제어해 많은 자원을 추출했다.",gold:130,materials:gain,heroUpdates};
   }
 
-  party.forEach(h=>heroUpdates[h.id]={});
-  const touch=(id:string,update:EventUpdate)=>{
-    const prev=heroUpdates[id]||{};
-    heroUpdates[id]={...prev,hpDelta:(prev.hpDelta||0)+(update.hpDelta||0),tendencies:{...(prev.tendencies||{}),...(update.tendencies||{})}};
-  };
 
   if(curiosity>=70 && roll<.42){
     const item=randomGeneralItem(floor+3);
