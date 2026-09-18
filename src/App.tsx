@@ -4,7 +4,7 @@ import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, P
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
-import { applyLineage, emptyLineage, evolutionHint, evolveLineage, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
+import { applyLineage, emptyLineage, evolutionActionBonus, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
 import { resolveDungeonEvent, resolveHiddenRoom } from "./dungeonEvents";
@@ -121,7 +121,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
   }
   if(a.team==="enemy"&&a.species&&a.cooldown<=0){
     for(const m of monsterActions(a.species,a.grade,a.mutation)){
-      let score=m.bonus+t.focus*.08+envBonus;
+      let score=m.bonus+t.focus*.08+envBonus+evolutionActionBonus({id:"runtime",species:a.species!,level:1,experience:0,focus:{},evolutionStage:a.evolutionStage||0,evolutionPath:a.evolutionPath||[]},m.name);
       if((m.name==="대지 강타"||m.name==="분열"||m.name==="영역 지배")&&enemies.length>=2)score+=18;
       if((m.name==="무리 사냥"||m.name==="약점 추적"||m.name==="역할 분석")&&weak)score+=Math.max(0,(1-pct(weak))*35);
       if(m.name==="회피 기동"&&pct(a)<.5)score+=35;
