@@ -889,31 +889,28 @@ export default function App(){
       <div className="equipment-slots">{equipmentSlotsOf(hero).map((item,slot)=><div key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")}><button onClick={()=>setSelectedEquipSlot(slot)} className="slot-main"><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"창고에서 장비를 선택해 장착"}</span></button>{item&&<button className="ghost-btn slot-action" onClick={()=>unequip(slot)}>해제</button>}</div>)}</div>
       <div className="item-list">{save.items.length===0?<div className="subpanel empty-warehouse"><b>창고가 비어 있습니다.</b><span>첫 전투의 승리 전리품이나 보물방에서 장비를 획득하세요.</span></div>:save.items.map((i,idx)=><ItemCard key={i.id+"-"+idx} item={i} onEquip={()=>equip(i,selectedEquipSlot)} onSell={()=>sellItem(i)}/> )}</div></div></section>}
 
-    {statusHeroId&&save.heroes.find(h=>h.id===statusHeroId)&&<CharacterStatusModal hero={save.heroes.find(h=>h.id===statusHeroId)!} onClose={()=>setStatusHeroId(undefined)}/>}
+    {statusHeroId&&save.heroes.find(h=>h.id===statusHeroId)&&<CharacterStatusModal heroes={save.heroes} hero={save.heroes.find(h=>h.id===statusHeroId)!} onClose={()=>setStatusHeroId(undefined)} onNavigate={id=>setStatusHeroId(id)}/>}
     <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
   </main>;
 }
 
-function CharacterStatusModal({hero,onClose}:{hero:Hero;onClose:()=>void}){
+function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes:Hero[];onClose:()=>void;onNavigate:(id:string)=>void}){
   const stats=combatStats(hero);
   const bonus=chronicleBonuses(hero);
   const growth=promotionForecast(hero);
   const items=equippedItemsOf(hero);
   const aiMods=combinedAiMods(items);
+  const index=Math.max(0,heroes.findIndex(h=>h.id===hero.id));
+  const prev=heroes[index-1];
+  const next=heroes[index+1];
   return <div className="status-modal-backdrop" onClick={onClose}>
     <section className="status-modal" role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}>
-      <div className="status-modal-head"><div><span className="eyebrow">CHARACTER STATUS</span><h2>{hero.name}</h2><p>{jobKo[hero.job]} · {promotionLabel(hero)} · Lv.{hero.level} · {buildProfile(hero).name}</p></div><button className="ghost-btn" onClick={onClose}>닫기</button></div>
+      <div className="status-modal-head"><div className="status-modal-title-row"><button className="status-nav-btn" disabled={!prev} onClick={()=>prev&&onNavigate(prev.id)} aria-label="이전 캐릭터">‹</button><div><span className="eyebrow">CHARACTER STATUS</span><h2>{hero.name}</h2><p>{jobKo[hero.job]} · {promotionLabel(hero)} · Lv.{hero.level} · {buildProfile(hero).name}</p></div><button className="status-nav-btn" disabled={!next} onClick={()=>next&&onNavigate(next.id)} aria-label="다음 캐릭터">›</button></div><div className="status-modal-actions"><span>{index+1} / {heroes.length}</span><button className="ghost-btn" onClick={onClose}>닫기</button></div></div>
       <div className="status-modal-grid">
-        <div className="status-modal-card"><div className="modal-card-title"><b>기본 스탯</b><span>기본값 → 적용값</span></div><div className="modal-stat-grid">
-          {([["HP",Math.round(hero.hp),Math.round(stats.maxHp)],["공격",Math.round(hero.attack),Math.round(stats.attack)],["방어",Math.round(hero.defense),Math.round(stats.defense)],["속도",Math.round(hero.speed*100)/100,Math.round(stats.speed*100)/100],["사거리",Math.round(hero.range*100)/100,Math.round(stats.range*100)/100],["경험",hero.experience+"/100",hero.experience+"/100"]] as [string,string|number,string|number][]).map(x=><div key={x[0]}><small>{x[0]}</small><b>{x[1]}</b>{String(x[1])!==String(x[2])&&<span>→ {x[2]}</span>}</div>)}
-        </div><div className="modal-note">연대기 가산 · 공격 +{bonus.attack||0} · 방어 +{bonus.defense||0} · HP +{bonus.hpPct||0}% · 속도 +{bonus.speedPct||0}%</div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>AI 성향</b><span>{buildProfile(hero).name}</span></div><div className="modal-tendency-grid">
-          {(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>{const value=clamp(hero.tendencies[k]+(aiMods[k]||0));return <div key={k}><span>{tendencyKo[k]}</span><b>{Math.round(value)}</b><i><em style={{width:value+"%"}}/></i></div>})}
-        </div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>기본 스탯</b><span>기본값 → 적용값</span></div><div className="modal-stat-grid">{([["HP",Math.round(hero.hp),Math.round(stats.maxHp)],["공격",Math.round(hero.attack),Math.round(stats.attack)],["방어",Math.round(hero.defense),Math.round(stats.defense)],["속도",Math.round(hero.speed*100)/100,Math.round(stats.speed*100)/100],["사거리",Math.round(hero.range*100)/100,Math.round(stats.range*100)/100],["경험",hero.experience+"/100",hero.experience+"/100"]] as [string,string|number,string|number][]).map(x=><div key={x[0]}><small>{x[0]}</small><b>{x[1]}</b>{String(x[1])!==String(x[2])&&<span>→ {x[2]}</span>}</div>)}</div><div className="modal-note">연대기 가산 · 공격 +{bonus.attack||0} · 방어 +{bonus.defense||0} · HP +{bonus.hpPct||0}% · 속도 +{bonus.speedPct||0}%</div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>AI 성향</b><span>{buildProfile(hero).name}</span></div><div className="modal-tendency-grid">{(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>{const value=clamp(hero.tendencies[k]+(aiMods[k]||0));return <div key={k}><span>{tendencyKo[k]}</span><b>{Math.round(value)}</b><i><em style={{width:value+"%"}}/></i></div>)}</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div><div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div><p className="growth-reason">{growth.reason}</p><div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>주요 성향</b>{(Object.entries(hero.tendencies) as [keyof Tendencies,number][]).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>tendencyKo[x[0]]+" "+Math.round(x[1])).join(" · ")}</span></div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 상태</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">
-          {[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}
-        </div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 상태</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
       </div>
       <div className="status-modal-bottom"><div className="modal-bottom-card"><b>장기 전투 기록</b><span>{hero.combatProfile?.battles||0}전투 · {hero.combatProfile?.actions||0}행동 · {hero.combatProfile?.damage||0}피해 · {hero.combatProfile?.healing||0}회복</span><small>{Object.entries(hero.combatProfile?.topActions||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+" · "+x[1]+"회").join("  /  ")||"기록 없음"}</small></div><div className="modal-bottom-card"><b>최근 기억</b><span>{(hero.memories||[]).slice(0,2).map(m=>m.text+" · 영향 "+Math.round(m.weight*10)/10).join("  /  ")||"강하게 남은 기억 없음"}</span><small>칭호 · {chronicleLabel(hero)}</small></div></div>
     </section>
