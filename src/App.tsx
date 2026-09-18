@@ -4,7 +4,7 @@ import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, P
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
-import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
+import { evolutionHint, monsterEvolutionTrees } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
 import { resolveDungeonEvent, resolveHiddenRoom } from "./dungeonEvents";
@@ -26,14 +26,13 @@ const defenseObjectiveKo: Record<DefenseObjective,string> = {gate:"성문",relic
 const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
 const defenseObjectiveForFloor=(floor:number):DefenseObjective=>floor%3===1?"gate":floor%3===2?"relic":"escort";
 const raidBossForFloor=(floor:number)=>floor%3===1?"Uruk":floor%3===2?"Arachne":"Demon";
-const bossLineageId=(species:string)=>species.toLowerCase()+"-boss";
 
 function load(): Save {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies}})), items:s.items||[], monsterLineages:s.monsterLineages||[]};
+      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies}})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss"))};
     }
   } catch {}
   return {heroes:heroesSeed.map(h=>({...h,tendencies:cloneTendencies(h.tendencies)})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[]};
@@ -51,7 +50,7 @@ const combatStats=(hero:Hero)=>{
   return {hp,maxHp:hp,attack:hero.attack+(m.attack||0),defense:hero.defense+(m.defense||0),speed:hero.speed*(1+(m.speedPct||0)/100),range:hero.range+(m.range||0)};
 };
 
-function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[]): BattleUnit[] {
+function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleUnit[] {
   const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>{
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
@@ -63,11 +62,9 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   let es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
   if(room==="boss"){
     const bossSpecies=raidBossForFloor(floor);
-    const bossId=bossLineageId(bossSpecies);
     const base=createMonster(bossSpecies,Math.max(8,floor+5),"Boss",0);
-    const lineage=lineages.find(x=>x.id===bossId)||emptyLineage(bossId,bossSpecies);
     const bossName=bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
-    es[0]=applyLineage({...base,id:bossId,name:bossName,pos:8.8},lineage);
+    es[0]={...base,name:bossName,pos:8.8};
   }
   return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
     speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0})));
@@ -317,15 +314,8 @@ export default function App(){
       notify("휴식: 경험 기록 +4 · HP 15% 회복");
       return;
     }
-    let lineages=save.monsterLineages;
-    if(kind==="boss"){
-      const species=raidBossForFloor(save.floor);
-      const id=bossLineageId(species);
-      if(!lineages.some(x=>x.id===id))lineages=lineages.concat(emptyLineage(id,species));
-    }
-    if(kind==="boss" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
     const env=environmentFor(save.floor,kind,"dungeon");
-    const units=spawn(save.heroes,save.party,kind,save.floor,lineages);
+    const units=spawn(save.heroes,save.party,kind,save.floor);
     setMode("dungeon");
     setBattle({units,log:[roomKo[kind]+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
@@ -334,14 +324,8 @@ export default function App(){
   const startMode=(nextMode:BattleMode)=>{
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
-    let lineages=save.monsterLineages;
-    if(nextMode==="raid"){
-      const species=raidBossForFloor(save.floor),id=bossLineageId(species);
-      if(!lineages.some(x=>x.id===id))lineages=lineages.concat(emptyLineage(id,species));
-      if(lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
-    }
     const env=environmentFor(save.floor,room,nextMode);
-    const units=spawn(save.heroes,save.party,room,save.floor,lineages);
+    const units=spawn(save.heroes,save.party,room,save.floor);
     const objectiveKind=defenseObjectiveForFloor(save.floor);
     const label=nextMode==="defense"
       ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · 30초 동안 웨이브가 계속됩니다.`
@@ -409,21 +393,13 @@ export default function App(){
     const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
     if(!victory){
       setSave(s=>{
-        const boss=battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss");
-        let monsterLineages=s.monsterLineages;
-        if(boss&&boss.species){
-          const id=bossLineageId(boss.species);
-          let lineage=s.monsterLineages.find(x=>x.id===id) || emptyLineage(id,boss.species);
-          for(const [action,count] of Object.entries(boss.behaviorCounts||{})) for(let i=0;i<count;i++) lineage=recordLineage(lineage,action,false);
-          monsterLineages=s.monsterLineages.filter(x=>x.id!==id).concat(lineage);
-        }
         const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
         const updatedHeroes=s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
           const unit=battle.units.find(u=>u.id===h.id);
           return unit?applyBehaviorHistory(bonded.find(x=>x.id===h.id)||h,unit.behaviorCounts||{}):h;
         });
-        return {...s,monsterLineages,heroes:updatedHeroes};
+        return {...s,heroes:updatedHeroes};
       });
       return;
     }
@@ -432,16 +408,8 @@ export default function App(){
       const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
       setSave(s=>{
         const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
-        const boss=battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss");
-        const nextLineages=boss&&boss.species ? (() => {
-          const id=bossLineageId(boss.species);
-          let lineage=s.monsterLineages.find(x=>x.id===id) || emptyLineage(id,boss.species);
-          for(const [action,count] of Object.entries(boss.behaviorCounts||{})){
-            for(let i=0;i<count;i++) lineage=recordLineage(lineage,action,victory);
-          }
-          return s.monsterLineages.filter(x=>x.id!==id).concat(lineage);
-        })() : s.monsterLineages;
-        return {...s,monsterLineages:nextLineages,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
+
+        return {...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
           const base=bonded.find(x=>x.id===h.id)||h;
@@ -491,7 +459,7 @@ export default function App(){
       <ModeCard title="BOSS RAID" subtitle="보스 레이드" text="보스의 체력에 따라 3페이즈 패턴이 자동 전환됩니다." icon="♛" onClick={()=>startMode("raid")} />
     </div>
     <div className="evolution-section">
-      <div className="section-mini-head"><div><span className="eyebrow">MONSTER EVOLUTION</span><h3>14종 종족의 진화 계통</h3><p>번식으로 개체 수를 늘리지 않고, 반복 전투를 겪은 네임드·보스 계보가 행동 편향에 따라 진화합니다.</p></div></div>
+      <div className="section-mini-head"><div><span className="eyebrow">MONSTER EVOLUTION</span><h3>14종 종족의 진화 계통</h3><p>번식으로 개체 수를 늘리지 않고, 장기적으로 기록되는 종족·개체 계보만 행동 편향에 따라 진화합니다. 보스는 매번 별도의 전투 경험 없이 새 개체로 등장합니다.</p></div></div>
       <div className="evolution-grid">{Object.entries(monsterEvolutionTrees).map(([species,branches])=>{
         const lineage=save.monsterLineages.find(x=>x.species===species);
         const activeLine=lineage?evolutionHint(lineage):"아직 계보 기억 없음";
