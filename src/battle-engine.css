@@ -6,3 +6,5 @@
 .be-unit-image{position:relative;overflow:hidden;background:#263148}.be-unit-image img{width:100%;height:100%;object-fit:contain;display:block}.be-unit-image img[style*="display: none"] + span{display:grid}.be-unit-image span{position:absolute;inset:0;display:none;place-items:center}.general-portrait-wrap img{width:100%;height:100%;object-fit:cover;display:block}
 
 .be-cell-hint.attack-range-label{right:3px;bottom:3px}.be-cell-hint.skill-range-label{left:3px;bottom:3px}
+
+.be-turn-indicator{display:inline-block;margin-right:8px;padding:4px 8px;border-radius:7px;background:#263653;color:#eef4ff;font-size:12px}.be-turn-count{display:inline-block;padding:4px 8px;border-radius:7px;background:#171f30;color:#cbd6ea;font-size:12px;font-weight:800}.be-cell.enemy-move-range{background-image:linear-gradient(#8a603344,#8a603344);box-shadow:inset 0 0 0 2px #b4864d66}.be-cell-hint.enemy-move{background:#79562f;color:#fff0d4;top:4px;left:4px;transform:none;font-size:6px;padding:2px 3px}
