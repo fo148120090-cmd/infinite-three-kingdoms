@@ -1,0 +1,125 @@
+export type Job = "Warrior" | "Guardian" | "Archer" | "Mage" | "Cleric";
+export type RoomKind = "battle" | "elite" | "treasure" | "rest" | "boss";
+export type Grade = "Normal" | "Elite" | "Named" | "Boss";
+
+export type Tendencies = {
+  aggression:number;bravery:number;caution:number;survival:number;protect:number;
+  pursuit:number;focus:number;greed:number;curiosity:number;cooperation:number;
+};
+
+export type Item = {
+  id:string; name:string; slot:"weapon"|"armor"|"ring"|"accessory"; level:number; rarity:string;
+  stats:string[]; aiMods:Partial<Tendencies>; unique?:boolean; description:string;
+};
+
+export type Hero = {
+  id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
+  speed:number; range:number; tendencies:Tendencies; item:Item; experience:number;
+  history:string[]; color:string;
+};
+
+export type Monster = {
+  id:string; name:string; species:string; grade:Grade; level:number; hp:number; attack:number;
+  defense:number; speed:number; range:number; tendencies:Tendencies; pos:number; maxHp:number;
+  behavior:string[];
+};
+
+export type BattleUnit = {
+  id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade;
+  hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
+  pos:number; alive:boolean; tendencies:Tendencies; item?:Item; actionText:string;
+  cooldown:number; guard:number; xp:number;
+};
+
+export const defaultTendencies: Record<Job,Tendencies> = {
+  Warrior:{aggression:82,bravery:74,caution:32,survival:28,protect:34,pursuit:80,focus:58,greed:40,curiosity:38,cooperation:45},
+  Guardian:{aggression:46,bravery:68,caution:64,survival:58,protect:94,pursuit:28,focus:76,greed:18,curiosity:22,cooperation:88},
+  Archer:{aggression:58,bravery:46,caution:64,survival:62,protect:35,pursuit:50,focus:90,greed:34,curiosity:54,cooperation:62},
+  Mage:{aggression:62,bravery:38,caution:68,survival:58,protect:44,pursuit:26,focus:88,greed:30,curiosity:82,cooperation:58},
+  Cleric:{aggression:30,bravery:42,caution:72,survival:76,protect:96,pursuit:18,focus:74,greed:14,curiosity:46,cooperation:94}
+};
+
+export const heroesSeed: Hero[] = [
+  {id:"kael",name:"카엘",job:"Warrior",level:6,hp:172,attack:34,defense:18,speed:1.05,range:1.4,tendencies:{...defaultTendencies.Warrior},item:{
+    id:"iron-greatsword",name:"정련된 대검",slot:"weapon",level:6,rarity:"희귀",stats:["공격력 +14","치명타 +4%"],aiMods:{aggression:8,pursuit:6},description:"공격적인 전투를 돕는 고성능 일반 장비."
+  },experience:62,history:["돌진을 자주 선택","약한 적 추격"],color:"#d65a5a"},
+  {id:"seren",name:"세린",job:"Guardian",level:6,hp:218,attack:24,defense:32,speed:.82,range:1.3,tendencies:{...defaultTendencies.Guardian},item:{
+    id:"guardian-wall",name:"수호자의 성벽",slot:"shield",level:6,rarity:"전설",stats:["방어력 +18","최대 HP +12%"],aiMods:{protect:50,cooperation:18,survival:18},unique:true,description:"부상당한 아군 쪽으로 이동하고 보호 행동을 우선한다."
+  } as Item,experience:88,history:["전투마다 아군 보호","후퇴 명령을 거의 하지 않음"],color:"#5b8bd9"},
+  {id:"lyra",name:"리라",job:"Archer",level:7,hp:134,attack:30,defense:14,speed:1.16,range:5.2,tendencies:{...defaultTendencies.Archer},item:{
+    id:"hunter-eye",name:"사냥꾼의 눈",slot:"ring",level:7,rarity:"전설",stats:["명중 +8%","치명타 +6%"],aiMods:{focus:20,pursuit:16},unique:true,description:"HP가 낮은 적을 발견하면 마무리 공격을 강하게 선호한다."
+  } as Item,experience:94,history:["마무리 사격 12회","거리 유지 성공률 높음"],color:"#d1a252"},
+  {id:"orion",name:"오리온",job:"Mage",level:7,hp:118,attack:39,defense:10,speed:.94,range:4.8,tendencies:{...defaultTendencies.Mage},item:{
+    id:"sage-staff",name:"현자의 지팡이",slot:"weapon",level:7,rarity:"영웅",stats:["마법 공격 +18","관통 +7%"],aiMods:{focus:14,curiosity:10},description:"광역 마법과 제어 마법의 사용 빈도를 높인다."
+  } as Item,experience:71,history:["광역 마법을 선호","다수 적에게 집중"],color:"#8b70cf"},
+  {id:"mira",name:"미라",job:"Cleric",level:5,hp:142,attack:18,defense:15,speed:.90,range:4.5,tendencies:{...defaultTendencies.Cleric},item:{
+    id:"saints-cup",name:"성자의 성배",slot:"accessory",level:5,rarity:"영웅",stats:["치유량 +22%","상태이상 저항 +10%"],aiMods:{protect:34,cooperation:22},unique:true,description:"위험한 아군을 먼저 회복하고 보호한다."
+  } as Item,experience:40,history:["카엘을 8회 회복","후퇴 판단으로 생존"],color:"#70b6ad"}
+];
+
+export const speciesDefaults: Record<string,{tendencies:Tendencies;behavior:string[];attack:number;defense:number}> = {
+  Slime:{tendencies:{aggression:44,bravery:65,caution:30,survival:45,protect:0,pursuit:35,focus:35,greed:10,curiosity:72,cooperation:35},behavior:["분열","흡수","환경 적응"],attack:18,defense:10},
+  Goblin:{tendencies:{aggression:60,bravery:42,caution:70,survival:72,protect:25,pursuit:58,focus:50,greed:86,curiosity:82,cooperation:66},behavior:["기습","약자 집중","도주"],attack:22,defense:9},
+  Kobold:{tendencies:{aggression:48,bravery:40,caution:82,survival:76,protect:42,pursuit:34,focus:70,greed:62,curiosity:76,cooperation:74},behavior:["함정","매복","협공"],attack:20,defense:12},
+  Gnoll:{tendencies:{aggression:78,bravery:72,caution:36,survival:44,protect:18,pursuit:92,focus:68,greed:46,curiosity:38,cooperation:78},behavior:["추격","무리사냥","마무리"],attack:26,defense:13},
+  Orc:{tendencies:{aggression:82,bravery:88,caution:24,survival:30,protect:22,pursuit:62,focus:54,greed:34,curiosity:20,cooperation:58},behavior:["정면전","돌파","낮은 후퇴"],attack:31,defense:18},
+  Lizardman:{tendencies:{aggression:64,bravery:58,caution:58,survival:48,protect:22,pursuit:54,focus:68,greed:28,curiosity:48,cooperation:68},behavior:["측면공격","매복","수중적응"],attack:25,defense:16},
+  Naga:{tendencies:{aggression:55,bravery:56,caution:70,survival:62,protect:26,pursuit:31,focus:86,greed:30,curiosity:72,cooperation:66},behavior:["상태이상","전술","중거리 압박"],attack:28,defense:15},
+  Harpy:{tendencies:{aggression:66,bravery:50,caution:68,survival:70,protect:14,pursuit:76,focus:72,greed:38,curiosity:60,cooperation:48},behavior:["기동","후방 습격","고립"],attack:24,defense:11},
+  Uruk:{tendencies:{aggression:70,bravery:80,caution:62,survival:52,protect:54,pursuit:42,focus:84,greed:18,curiosity:22,cooperation:92},behavior:["집중사격","지휘","규율"],attack:30,defense:20},
+  Ogre:{tendencies:{aggression:95,bravery:92,caution:12,survival:22,protect:0,pursuit:64,focus:32,greed:46,curiosity:14,cooperation:26},behavior:["광역타격","넉백","환경파괴"],attack:48,defense:25},
+  Arachne:{tendencies:{aggression:62,bravery:55,caution:72,survival:58,protect:0,pursuit:38,focus:74,greed:52,curiosity:70,cooperation:40},behavior:["거미줄","함정","영역방어"],attack:29,defense:14},
+  Siren:{tendencies:{aggression:44,bravery:32,caution:84,survival:78,protect:0,pursuit:18,focus:88,greed:48,curiosity:90,cooperation:30},behavior:["매혹","환각","회피"],attack:27,defense:10},
+  Darkworm:{tendencies:{aggression:76,bravery:70,caution:40,survival:50,protect:0,pursuit:44,focus:60,greed:30,curiosity:48,cooperation:12},behavior:["잠복","기습","굴 파기"],attack:36,defense:22},
+  Demon:{tendencies:{aggression:72,bravery:68,caution:78,survival:74,protect:34,pursuit:46,focus:96,greed:64,curiosity:88,cooperation:70},behavior:["역할 분석","힐러 우선","재교전"],attack:42,defense:24}
+};
+
+const scale = (n:number,level:number,grade:Grade) => {
+  const g = grade==="Normal"?1:grade==="Elite"?1.25:grade==="Named"?1.55:1.95;
+  return Math.round(n*(1+(level-1)*.075)*g);
+};
+
+export function createMonster(species:string, level:number, grade:Grade, index:number): Monster {
+  const b=speciesDefaults[species] ?? speciesDefaults.Goblin;
+  return {
+    id:`${species}-${index}`, name:grade==="Boss"?`${species} 군주`:grade==="Named"?`${species} 사냥꾼`:species,
+    species,grade,level,hp:scale(95,level,grade),maxHp:scale(95,level,grade),
+    attack:scale(b.attack,level,grade),defense:scale(b.defense,level,grade),
+    speed:grade==="Boss"?1.08:.9+Math.random()*.25,range:species==="Harpy"||species==="Siren"?4:species==="Darkworm"?2.2:1.5,
+    tendencies:{...b.tendencies},pos:7-index*0.65,behavior:b.behavior
+  };
+}
+
+export const dungeonStages = [
+  {id:"r1",title:"갈림길",kind:"battle" as RoomKind,summary:"고블린 정찰대가 통로를 지키고 있다.",species:["Goblin","Kobold"]},
+  {id:"r2",title:"젖은 동굴",kind:"battle" as RoomKind,summary:"슬라임과 리자드맨의 흔적이 남아 있다.",species:["Slime","Lizardman"]},
+  {id:"r3",title:"거미 둥지",kind:"elite" as RoomKind,summary:"거미줄로 막힌 좁은 방. 정예가 기다린다.",species:["Arachne","Goblin"]},
+  {id:"r4",title:"버려진 제단",kind:"treasure" as RoomKind,summary:"오래된 장비 상자와 작은 제단.",species:[]},
+  {id:"r5",title:"휴식처",kind:"rest" as RoomKind,summary:"불이 꺼지지 않은 야영지. 잠시 숨을 고를 수 있다.",species:[]},
+  {id:"r6",title:"심층 관문",kind:"boss" as RoomKind,summary:"오크와 우르크를 거느리는 네임드가 길을 막는다.",species:["Orc","Uruk"]}
+];
+
+export const uniqueItems: Item[] = [
+  heroesSeed[1].item,heroesSeed[2].item,heroesSeed[4].item
+];
+
+export function randomGeneralItem(level:number=6): Item {
+  const names=[["철검","weapon"],["전투도끼","weapon"],["정찰자의 반지","ring"],["수호 흉갑","armor"],["주술 목걸이","accessory"]] as const;
+  const [name,slot]=names[Math.floor(Math.random()*names.length)];
+  const rolls=[
+    `공격력 +${8+Math.floor(Math.random()*15)}`,
+    `방어력 +${6+Math.floor(Math.random()*12)}`,
+    `치명타 +${2+Math.floor(Math.random()*7)}%`,
+    `최대 HP +${5+Math.floor(Math.random()*12)}%`,
+    `공격 속도 +${2+Math.floor(Math.random()*8)}%`
+  ];
+  const pick=rolls.sort(()=>Math.random()-.5).slice(0,2);
+  return {id:`roll-${Date.now()}-${Math.random()}`,name,slot,level,rarity:["고급","희귀","영웅"][Math.floor(Math.random()*3)],stats:pick,aiMods:{focus:Math.floor(Math.random()*9)-4,aggression:Math.floor(Math.random()*9)-4,caution:Math.floor(Math.random()*9)-4},description:"무작위 옵션이 각각 독립적으로 굴러간 일반 장비."} as Item;
+}
+
+export function chooseMonsterSpecies(floor:number): string {
+  const pools = floor<4 ? ["Goblin","Kobold","Slime"] : floor<6 ? ["Lizardman","Arachne","Gnoll"] : ["Orc","Uruk","Ogre"];
+  return pools[Math.floor(Math.random()*pools.length)];
+}
+
+export function cloneTendencies(t:Tendencies):Tendencies { return {...t}; }
