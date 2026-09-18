@@ -2,15 +2,24 @@ import type { Terrain, Unit } from '../types';
 import { BOARD_WIDTH, getReachableCells, isInRange } from './battleRules';
 import { getGeneralSkillTargetIds } from './skillRules';
 
-export function getEnemyMovementCells(units: Unit[], terrain: Terrain[]): Set<string> {
+export function getEnemyMovementMap(units: Unit[], terrain: Terrain[]): Map<string, string[]> {
   const occupied = new Set(units.filter(u=>u.currentHp>0).map(u=>`${u.x},${u.y}`));
-  const cells = new Set<string>();
+  const cells = new Map<string, string[]>();
   for (const enemy of units.filter(u=>u.team==='enemy' && u.currentHp>0 && !(u.status==='stun'&&u.statusTurns>0))) {
     const movePoints = enemy.status==='slow'&&enemy.statusTurns>0 ? Math.max(1,Math.floor(enemy.move*0.5)) : enemy.move;
     const reachable = getReachableCells({...enemy,movePoints}, terrain, occupied);
-    for(const cell of reachable) cells.add(`${cell.x},${cell.y}`);
+    for(const cell of reachable) {
+      const key=`${cell.x},${cell.y}`;
+      const owners=cells.get(key)??[];
+      if(!owners.includes(enemy.name)) owners.push(enemy.name);
+      cells.set(key,owners);
+    }
   }
   return cells;
+}
+
+export function getEnemyMovementCells(units: Unit[], terrain: Terrain[]): Set<string> {
+  return new Set(getEnemyMovementMap(units, terrain).keys());
 }
 
 export type BattleCellView = {
