@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserRound, Zap } from "lucide-react";
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionLabel } from "./promotion";
-import { bondAfterBattle, relationshipFromMap } from "./relationships";
+import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -228,7 +228,7 @@ export default function App(){
       const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
       const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
       setSave(s=>{
-        const bonded=bondAfterBattle(s.heroes,s.party,deadIds);
+        const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
         return {...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
@@ -282,7 +282,7 @@ export default function App(){
 
     {screen==="party"&&<section className="page"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>원정대 구성</h2><p className="muted">전투 전에만 편성과 장비를 변경할 수 있습니다.</p></div><span className="counter">{save.party.length}/4</span></div>
       <div className="party-grid">{save.heroes.map(h=><HeroCard key={h.id} hero={h} active={save.party.includes(h.id)} onClick={()=>{setSelectedHero(h.id);toggleParty(h.id)}}/>)}</div>
-      <div className="subpanel"><div><b>현재 편성</b><span>{party.map(h=>jobIcon[h.job]+" "+h.name).join(" · ")}</span></div><button className="primary-btn compact" onClick={()=>setScreen("dungeon")}><Swords size={16}/> 던전으로</button></div></section>}
+      <div className="subpanel"><div><b>현재 편성</b><span>{party.map(h=>jobIcon[h.job]+" "+h.name).join(" · ")}</span></div><div className="social-summary"><span>관계는 전투를 함께할수록 강화되고, 동료를 잃으면 기억이 남습니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("dungeon")}><Swords size={16}/> 던전으로</button></div></section>
 
     {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
@@ -312,7 +312,24 @@ export default function App(){
 }
 
 function Feature({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <article className="feature-card"><div className="feature-icon">{icon}</div><b>{title}</b><p>{text}</p></article>;}
-function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>void}){return <article className={"hero-card "+(active?"hero-selected":"")} onClick={onClick}><div className="hero-avatar" style={{background:hero.color}}>{jobIcon[hero.job]}</div><div className="hero-card-main"><div className="name-row"><b>{hero.name}</b><span>Lv.{hero.level}</span></div><p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/100</p><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div><small>장비 · {hero.item.name}{hero.item.unique?" · UNIQUE":""}</small></div><ChevronRight size={17}/></article>;}
+function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>void}){
+  const bond=strongestBond(hero);
+  const bondName=heroesSeed.find(h=>h.id===bond?.id)?.name||"동료";
+  return <article className={"hero-card "+(active?"hero-selected":"")} onClick={onClick}>
+    <div className="hero-avatar" style={{background:hero.color}}>{jobIcon[hero.job]}</div>
+    <div className="hero-card-main">
+      <div className="name-row"><b>{hero.name}</b><span>Lv.{hero.level}</span></div>
+      <p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/100</p>
+      <div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div>
+      <small>장비 · {hero.item.name}{hero.item.unique?" · UNIQUE":""}</small>
+      <div className="social-meta">
+        {bond&&<span>유대 · {bondName} {Math.round(bond.relation.bond)}</span>}
+        <span>기억 {hero.memories?.length||0}</span>
+      </div>
+    </div>
+    <ChevronRight size={17}/>
+  </article>;
+}
 function tags(h:Hero){const ks=(Object.keys(tendencyKo) as (keyof Tendencies)[]).sort((a,b)=>(h.tendencies[b]+(h.item.aiMods[b]||0))-(h.tendencies[a]+(h.item.aiMods[a]||0)));return ks.slice(0,3).map(k=>tendencyKo[k]+" "+((h.tendencies[k]+(h.item.aiMods[k]||0))>=80?"높음":(h.tendencies[k]+(h.item.aiMods[k]||0))>=60?"중상":"보통"));}
 function ItemCard({item,equipped,onEquip}:{item:Item;equipped?:boolean;onEquip?:()=>void}){return <article className={"item-card "+(item.unique?"unique-item":"")}><div className="item-top"><span>{item.rarity}</span>{item.unique&&<b>UNIQUE</b>}</div><h3>{item.name}</h3><small>{item.slot} · Lv.{item.level}</small><div className="stat-list">{item.stats.map(s=><span key={s}>{s}</span>)}</div><div className="ai-mod"><Brain size={14}/>{Object.entries(item.aiMods).map(([k,v])=><span key={k}>{tendencyKo[k as keyof Tendencies]} {(v||0)>0?"+":""}{v}</span>)}</div><p>{item.description}</p>{onEquip&&<button className="ghost-btn" onClick={onEquip}>{equipped?"장착 중":"장착"}</button>}</article>;}
 
