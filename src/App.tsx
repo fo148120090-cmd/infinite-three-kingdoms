@@ -302,7 +302,7 @@ export default function App(){
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
     let lineages=save.monsterLineages;
-    if(nextMode==="raid" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
+    if(nextMode==="raid" && raidBossForFloor(save.floor)==="Uruk" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
     if(nextMode==="raid" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
     const units=spawn(save.heroes,save.party,room,save.floor,lineages);
     const objectiveKind=defenseObjectiveForFloor(save.floor);
@@ -328,6 +328,7 @@ export default function App(){
         const now=Date.now();
 
         if(prev.mode==="defense"){
+          e.forEach(x=>{if(x.pos>0.45)x.pos=Math.max(0.45,x.pos-(0.075+wave*.006));});
           const nearGoal=e.filter(x=>x.pos<0.8).length;
           const bossNear=e.filter(x=>x.grade==="Boss"&&x.pos<1.4).length;
           const pressure=prev.objectiveKind==="gate"?nearGoal*3+bossNear*5:prev.objectiveKind==="relic"?nearGoal*2+bossNear*6:nearGoal*4;
@@ -467,8 +468,8 @@ export default function App(){
       <div className="battle-tools"><button className="ghost-btn" onClick={()=>setPaused(x=>!x)}>{paused?<CirclePlay size={17}/>:<CirclePause size={17}/>} {paused?"재생":"일시정지"}</button>{[.5,1,2,4].map(x=><button key={x} className={speed===x?"speed-on":"speed-btn"} onClick={()=>setSpeed(x)}>{x}x</button>)}</div></div>
       <div className="battle-summary-strip">
         <span>MODE · {battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span>
-        {battle.mode==="defense"&&<><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
-        {battle.mode==="raid"&&<span>PHASE {battle.phase} · 보스 패턴 AI</span>}
+        {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
+        {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase} · 종족별 패턴 AI</span></>}
       </div>
       <div className="battle-layout"><div className="cave-panel"><div className="cave-label"><span>입구</span><span>심층</span></div><div className="cave-lane"><div className="cave-floor"/>
         {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")} style={{left:(u.pos*9.3)+"%"}}>
