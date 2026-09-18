@@ -76,3 +76,22 @@ export function promotionLabel(hero:Hero){
   const path=hero.promotionPath||[];
   return path.length?path.join(" → "):"초급";
 }
+
+
+export function promotionActions(heroPath:string[]|undefined):{name:string;detail:string;bonus:number}[]{
+  const path=heroPath||[];
+  const text=path.join(" ");
+  const out:{name:string;detail:string;bonus:number}[]=[];
+  if(/광전사|전쟁군주|학살자|광란/.test(text))out.push({name:"광폭 돌격",detail:"공격성과 용맹을 전부 밀어붙이는 전직 행동",bonus:34});
+  if(/기사|성기사|크루세이더|근위|템플러|수호기사|팔라딘|성전사|여명의 기사/.test(text))out.push({name:"수호 맹세",detail:"가까운 위험한 아군을 지키며 자신도 방어 태세를 취함",bonus:32});
+  if(/검투사|결투가|챔피언|처형자/.test(text))out.push({name:"결투 집중",detail:"가장 위협적인 단일 대상을 집중 공격",bonus:28});
+  if(/철벽|요새|바스티온|불가동벽|중장벽|아에기스/.test(text))out.push({name:"철벽 진형",detail:"아군 주변에서 방어 우선순위를 극대화",bonus:30});
+  if(/저격수|데드아이|명사수|탄환/.test(text))out.push({name:"정밀 사격",detail:"체력이 낮은 대상을 확실하게 마무리",bonus:30});
+  if(/헌터|비스트마스터|추적자|스토커|레인저|윈드러너|패스파인더|스커미셔/.test(text))out.push({name:"사냥 본능",detail:"약한 대상을 추적하며 거리 우위를 유지",bonus:27});
+  if(/엘리멘탈리스트|인페르노|템페스트|프로스트/.test(text))out.push({name:"원소 폭발",detail:"여러 적에게 광역 피해를 집중",bonus:31});
+  if(/주술사|스피릿|헥스|폭풍 주술사/.test(text))out.push({name:"저주 확산",detail:"다수 적에게 약화 효과를 남기는 전직 행동",bonus:25});
+  if(/아케인|아르카니스트|스펠블레이드|보이드|대현자/.test(text))out.push({name:"비전 해방",detail:"집중력을 끌어올려 강한 마법을 사용",bonus:33});
+  if(/힐러|대사제|성인|오라클/.test(text))out.push({name:"대회복",detail:"가장 위험한 동료에게 큰 회복을 시도",bonus:34});
+  if(/저지|이단심문관|중재자|정화자/.test(text))out.push({name:"심판",detail:"위협적인 대상을 우선 제압",bonus:29});
+  return out;
+}
