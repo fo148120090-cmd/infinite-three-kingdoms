@@ -469,7 +469,7 @@ export default function App(){
       const base={...h,campaignStats:stats};
       const previousProfile=h.combatProfile||{actions:0,damage:0,healing:0,battles:0,topActions:{}};
       const actionCounts={...previousProfile.topActions};
-      Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>actionCounts[name]=(actionCounts[name]||0)+count);
+      Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>{const before=h.behaviorCounts?.[name]||0;const gained=Math.max(0,count-before);if(gained)actionCounts[name]=(actionCounts[name]||0)+gained;});
       const combatProfile={actions:previousProfile.actions+(unit.battleStats?.actions||0),damage:previousProfile.damage+(unit.battleStats?.damage||0),healing:previousProfile.healing+(unit.battleStats?.healing||0),battles:previousProfile.battles+1,topActions:actionCounts};
       const withProfile={...base,combatProfile};
       const behaviorBase=applyBehaviorHistory(withProfile,unit.behaviorCounts||{});
