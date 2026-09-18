@@ -33,3 +33,6 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .battle-summary-strip{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}.battle-summary-strip span{padding:7px 9px;border:1px solid #2a3650;border-radius:9px;background:#0e1522;color:#a8b4ca;font-size:10px;letter-spacing:.05em}.battle-summary-strip span:first-child{color:#cdd7ed;border-color:#44577f;background:#141d31}
 @media(max-width:900px){.mode-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:650px){.mode-grid{grid-template-columns:1fr}.battle-summary-strip{gap:5px}.battle-summary-strip span{font-size:9px}}
+
+.social-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}.social-meta span{padding:4px 6px;border-radius:7px;background:#132031;color:#91a6ca;font-size:10px}.social-summary{max-width:410px}.social-summary span{color:#7f8da6;font-size:11px;line-height:1.45}
+@media(max-width:650px){.social-summary{max-width:none}}
