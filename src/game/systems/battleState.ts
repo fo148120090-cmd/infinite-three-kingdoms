@@ -4,7 +4,6 @@ import { canTargetEnemy, calculateDamage, getReachableCells, isBattleOver, isInR
 import { resolveGeneralSkill } from './skillRules';
 import { resolveEnemyTurn } from './enemyAi';
 import { applyBattleDamageReduction } from './battleModifiers';
-import { applyMonsterTurnEffects } from './monsterTurnEffects';
 
 export type BattleTurn = 'player' | 'enemy';
 export type BattlePhase = 'player' | 'enemy' | 'victory' | 'defeat';
@@ -133,7 +132,7 @@ export function endPlayerTurn(state: BattleState, terrain: Terrain[], floor = 1)
   if (state.phase !== 'player') return { state, success: false, message: '플레이어 턴이 아닙니다.' };
   const workingUnits = normalizeDefeatedUnits(cloneUnits(state.units));
   const monsterTurn = state.log.filter((entry) => entry === '몬스터 턴').length;
-  const bossEffects = applyMonsterTurnEffects(workingUnits, floor, monsterTurn);
+  const bossEffects: Array<{message:string}> = [];
   const enemyResult = resolveEnemyTurn(workingUnits, terrain, monsterTurn);
   const reset = enemyResult.units.map((unit) => unit.team === 'player' && unit.currentHp > 0
     ? { ...advanceStatuses(unit), acted: false, movePoints: unit.status === 'slow' && unit.statusTurns > 0 ? Math.max(1, Math.ceil(unit.move / 2)) : unit.move }
