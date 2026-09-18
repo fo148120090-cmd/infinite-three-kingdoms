@@ -85,3 +85,21 @@ export function partyMemorySummary(memory:PartyMemory|undefined):string{
   if(!memory||memory.battles<=0)return "아직 함께 쌓인 집단 전투 기억이 없습니다.";
   return "협동 "+memory.battles+"전 · 보호 "+memory.protection+"회 · 회복 "+memory.recovery+"회 · 전멸 경험 "+memory.losses+"회";
 }
+
+
+export function partyTacticalLinks(heroes:Hero[]):{a:Hero;b:Hero;strength:number;detail:string}[]{
+  const links:{a:Hero;b:Hero;strength:number;detail:string}[]=[];
+  for(let i=0;i<heroes.length;i++) for(let j=i+1;j<heroes.length;j++){
+    const a=heroes[i], b=heroes[j];
+    const rA=a.relationships?.[b.id]||{trust:50,respect:50,fear:0,bond:0};
+    const rB=b.relationships?.[a.id]||{trust:50,respect:50,fear:0,bond:0};
+    const strength=Math.min(100,Math.round(((rA.bond+rB.bond)*.45+(rA.trust+rB.trust)*.275)));
+    let detail="전투 중 서로의 행동을 인식하는 관계";
+    if((a.job==="Guardian"||b.job==="Guardian")&&(a.job==="Cleric"||b.job==="Cleric"))detail="수호·회복 연계";
+    else if((a.job==="Warrior"||b.job==="Warrior")&&(a.job==="Archer"||b.job==="Archer"))detail="전열·원거리 연계";
+    else if((a.job==="Warrior"||b.job==="Warrior")&&(a.job==="Mage"||b.job==="Mage"))detail="전열 압박·광역 연계";
+    else if(a.job==="Archer"&&b.job==="Mage"||a.job==="Mage"&&b.job==="Archer")detail="약점 포착·마법 연계";
+    links.push({a,b,strength,detail});
+  }
+  return links.sort((x,y)=>y.strength-x.strength).slice(0,6);
+}
