@@ -15,7 +15,7 @@ export const chronicleCatalog:ChronicleDef[]=[
   {id:"dungeon-vanguard",kind:"title",name:"동굴의 선봉장",description:"심층 관문을 돌파한 원정대의 선봉장.",bonus:{attack:2,hpPct:2},check:h=>(h.campaignStats?.bossWins||0)>=1},
   {id:"iron-heart",kind:"title",name:"철의 심장",description:"패배를 겪어도 원정을 이어 간 불굴의 용사.",bonus:{defense:3,hpPct:3},check:h=>(h.campaignStats?.losses||0)>=1&&(h.campaignStats?.wins||0)>=3},
   {id:"scenario-veteran",kind:"title",name:"반복 도전의 전사",description:"완료한 시나리오를 다시 돌파하며 성장했다.",bonus:{speedPct:3,attack:2},check:h=>(h.campaignStats?.repeatWins||0)>=5},
-  {id:"world-saver",kind:"title",name:"세계의 봉인자",description:"세계의 구멍을 막아 악의 침입을 저지했다.",bonus:{attack:8,defense:8,hpPct:8},check:h=>(h.campaignStats?.finalWins||0)>=1}
+  {id:"world-saver",kind:"title",name:"세계의 봉인자",description:"세계의 구멍을 막아 악의 침입을 저지했다.",bonus:{attack:8,defense:8,hpPct:8},check:h=>h.statusNote==="세계의 구멍 봉인 완료"}
 ];
 
 export function chronicleBonuses(hero:Hero):Bonus{
@@ -54,7 +54,8 @@ export function systemMood(hero:Hero):string{
 
 export function systemStatus(hero:Hero):string{
   const stats=hero.campaignStats;
-  if((stats?.finalWins||0)>0)return "세계의 구멍 봉인 완료 · 전설의 원정 기록";
+  if(hero.statusNote==="세계의 구멍 봉인 완료")return "세계의 구멍 봉인 완료 · 전설의 원정 기록";
+  if((stats?.finalWins||0)>0)return "악의 동굴 수문장 격파 · 세계의 구멍 봉인 대기";
   if((stats?.bossWins||0)>0)return "심층 전투 경험 축적 · 다음 관문 대비";
   if((stats?.losses||0)>0)return "전투 상처의 기억 보유 · 재도전 가능";
   if((stats?.wins||0)>0)return "원정 경험 누적 · 성장 단계 진입";
@@ -63,7 +64,8 @@ export function systemStatus(hero:Hero):string{
 
 export function systemEvaluation(hero:Hero):string{
   const b=chronicleBonuses(hero);
-    if((hero.campaignStats?.finalWins||0)>0)return "평가: 세계의 구멍을 봉인한 전설적 용사. 연대기 가산 효과가 전투력에 반영된다.";
+    if(hero.statusNote==="세계의 구멍 봉인 완료")return "평가: 세계의 구멍을 봉인한 전설적 용사. 연대기 가산 효과가 전투력에 반영된다.";
+  if((hero.campaignStats?.finalWins||0)>0)return "평가: 악의 동굴 수문장을 쓰러뜨린 용사. 이제 마지막 봉인 의식만 남았다.";
   if(b.attack&&b.defense)return "평가: 전투 기록과 영웅적 업적이 균형 있게 축적되고 있다.";
   if(hero.tendencies.protect>80&&hero.tendencies.cooperation>80)return "평가: 동료의 생존을 우선하는 핵심 수호자.";
   if(hero.tendencies.aggression>80&&hero.tendencies.bravery>75)return "평가: 위험을 감수하며 전선을 밀어붙이는 공격형 용사.";
