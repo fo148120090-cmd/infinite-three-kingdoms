@@ -26,8 +26,10 @@ function buildPlayers(save:SaveLike):Unit[]{
   const eq=save.equipment?.[g.id],star=Math.max(1,Math.min(6,save.stars?.[g.id]||1)),level=Math.max(1,save.generalLevels?.[g.id]||save.level||1),equipLevel=eq?.equipped===false?0:Math.max(0,eq?.level||0),mult=1+0.05*(star-1);
   const hpOption=eq?.equipped===false?0:(eq?.optionA===1?equipLevel*5:eq?.optionB===1?equipLevel*5:0);
   const atkOption=eq?.equipped===false?0:(eq?.optionA===0?equipLevel*2:eq?.optionB===0?equipLevel*2:0);
+  const critChance=eq?.equipped===false?0:(eq?.optionA===2?Math.floor(equipLevel/2):eq?.optionB===2?Math.floor(equipLevel/2):0);
+  const skillOption=eq?.equipped===false?0:(eq?.optionA===3?equipLevel:eq?.optionB===3?equipLevel:0);
   const hp=Math.floor((g.hp+(level-1)*12+equipLevel*10+hpOption)*mult),atk=Math.floor((g.atk+(level-1)*3+equipLevel*4+atkOption)*mult),defense=Math.floor((g.defense+(level-1)*1.5+equipLevel*2+((eq?.optionA===1||eq?.optionB===1)?Math.floor(equipLevel*.8):0))*mult);
-  const base:Unit={...g,hp,atk,defense,maxHp:hp,currentHp:hp,team:'player',x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none',statusTurns:0};
+  const base:Unit={...g,skillPower:g.skillPower+skillOption,hp,atk,defense,maxHp:hp,currentHp:hp,team:'player',x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none',statusTurns:0,critChance};
   return applyBattleModifiers(base,formation);
  });
 }
