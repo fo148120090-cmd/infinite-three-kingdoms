@@ -225,7 +225,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[]
   } else if(d.action==="아군 보호"){
     const t=by(d.target)||allies[0]; if(t){a.pos += t.pos > a.pos ? .5 : -.5;a.guard=2;t.guard=Math.max(t.guard,1);a.actionText="아군 보호 → "+t.name;line=a.actionText;}
   } else if(d.action==="회복"){
-    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.18+a.tendencies.cooperation*.001)*(1+(a.item?.combatMods?.healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.18+a.tendencies.cooperation*.001)*(1+(combinedCombatMods(equippedItemsOf(a)).healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="광역 마법"){
     const ts=enemies.filter(x=>dist(a,x)<=5).slice(0,3); if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,.72);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText="광역 마법 → "+bits.join(", ");line=a.actionText;} else if(enemies[0])move(enemies[0]),a.actionText="광역 사거리 확보";
   } else if(d.action==="기습 후퇴"||d.action==="후퇴"){a.pos=Math.max(.3,a.pos-.95);a.actionText=d.action+" · 생존 우선";line=a.actionText;
@@ -585,8 +585,9 @@ export default function App(){
       {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
     {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">EQUIPMENT</span><h2>장비 연구실</h2><p className="muted">직업 제한 없음 · 일반 장비는 무작위 롤 · 고유 장비는 AI 행동까지 바꿉니다.</p></div></div>
-      <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>{jobKo[hero.job]} · {hero.item?.name||"장비 없음"}</span><small>자동 빌드 · {buildProfile(hero).name}</small></div><button className="primary-btn compact" onClick={randomEquip} disabled={save.materials<12}><RotateCcw size={16}/> 무작위 재굴림 · 12</button></div>
-      <div className="item-list">{hero.item&&<ItemCard item={hero.item} equipped/>}<div className="unique-title"><Sparkles size={16}/> 대표 고유 장비</div>{uniqueItems.filter(x=>x.id!==hero.item?.id).map(i=><ItemCard key={i.id} item={i} onEquip={()=>equip(i)}/>)}{save.items.map(i=><ItemCard key={i.id} item={i} onEquip={()=>{equip(i);setSave(s=>({...s,items:s.items.filter(x=>x.id!==i.id)}));}}/> )}</div></div></section>}
+      <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>{jobKo[hero.job]} · 장비 {equippedItemsOf(hero).length}/3</span><small>슬롯 {selectedEquipSlot+1} 선택 · 자동 빌드 · {buildProfile(hero).name}</small></div><button className="primary-btn compact" onClick={randomEquip} disabled={save.materials<12}><RotateCcw size={16}/> 선택 슬롯 재굴림 · 12</button></div>
+      <div className="equipment-slots">{equipmentSlotsOf(hero).map((item,slot)=><button key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")} onClick={()=>setSelectedEquipSlot(slot)}><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"아이템을 선택해 장착"}</span></button>)}</div>
+      <div className="item-list"><div className="unique-title"><Sparkles size={16}/> 대표 고유 장비 · 선택 슬롯 {selectedEquipSlot+1}</div>{uniqueItems.filter(x=>!equippedItemsOf(hero).some(e=>e.id===x.id)).map(i=><ItemCard key={i.id} item={i} onEquip={()=>equip(i,selectedEquipSlot,false)}/>)}{save.items.map(i=><ItemCard key={i.id} item={i} onEquip={()=>equip(i,selectedEquipSlot,true)}/> )}</div></div></section>}
 
     <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
   </main>;
@@ -602,7 +603,7 @@ function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>vo
       <div className="name-row"><b>{hero.name}</b><span>Lv.{hero.level}</span></div>
       <p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/100</p>
       <div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div>
-      <small>장비 · {hero.item?.name||"없음"}{hero.item?.unique?" · UNIQUE":""}</small><small>코스튬 · {costumeLabel(hero.job,hero.costumeId)}</small>
+      <small>장비 · {equippedItemsOf(hero).map(x=>x.name).join(" · ")||"없음"} ({equippedItemsOf(hero).length}/3)</small><small>코스튬 · {costumeLabel(hero.job,hero.costumeId)}</small>
       <small>{behaviorSummary(hero)}</small><small>AI 빌드 · {buildProfile(hero).name} · {buildProfile(hero).detail}</small>
       <div className="social-meta">
         {bond&&<span>유대 · {bondName} {Math.round(bond.relation.bond)}</span>}
