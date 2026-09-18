@@ -27,6 +27,11 @@ const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 �
 const defenseObjectiveKo: Record<DefenseObjective,string> = {gate:"성문",relic:"성유물",escort:"호위 대상"};
 const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
 const defenseObjectiveForFloor=(floor:number):DefenseObjective=>floor%3===1?"gate":floor%3===2?"relic":"escort";
+const defenseObjectiveDetail:Record<DefenseObjective,string>={
+  gate:"성문 · Guardian이 근처를 지키면 받는 압박이 감소합니다.",
+  relic:"성유물 · Mage가 보호하고 Cleric이 회복할 수 있습니다.",
+  escort:"호위 대상 · Guardian 생존 시 내구도가 주기적으로 회복됩니다."
+};
 const raidBossForFloor=(floor:number)=>floor%3===1?"Uruk":floor%3===2?"Arachne":"Demon";
 
 const lineageFor=(lineages:MonsterLineage[],species:string)=>lineages.find(x=>x.species===species);
@@ -639,8 +644,8 @@ export default function App(){
       <div className="battle-tools"><button className="ghost-btn" onClick={()=>setPaused(x=>!x)}>{paused?<CirclePlay size={17}/>:<CirclePause size={17}/>} {paused?"재생":"일시정지"}</button>{[.5,1,2,4].map(x=><button key={x} className={speed===x?"speed-on":"speed-btn"} onClick={()=>setSpeed(x)}>{x}x</button>)}</div></div>
       <div className="battle-summary-strip">
         <span>MODE · {battle.repeatScenarioFloor!==undefined?"SCENARIO REPLAY":battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span>{battle.repeatScenarioFloor!==undefined&&<><span>재도전 · {battle.repeatScenarioFloor}F</span><span>반복 {battle.repeatCount}회</span><span>보상 {Math.round((battle.rewardMultiplier||1)*100)}%</span>{battle.elitePack&&<span>정예 무리 출현</span>}</>}
-        {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
-        {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase} · 종족별 패턴 AI</span></>}
+        {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>{defenseObjectiveDetail[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
+        {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase}</span><span>종족 전용 패턴 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.species||"—"}</span></>}
         {battle.environment&&<span>환경 · {environmentInfo[battle.environment].name}</span>}
       </div>
       {battle.environment&&<div className="environment-note"><b>{environmentInfo[battle.environment].name}</b><span>{environmentInfo[battle.environment].detail}</span></div>}
