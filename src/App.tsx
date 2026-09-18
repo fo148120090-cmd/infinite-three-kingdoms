@@ -1,7 +1,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
-import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
+import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 import { evolutionHint, monsterEvolutionTrees } from "./monsterEvolution";
@@ -460,9 +460,12 @@ export default function App(){
       const baseGold=180+battle.units.filter(u=>u.team==="enemy").length*55+(isBoss?900:0)+(isFinal?1800:0);
       const baseMaterials=isFinal?100:isBoss?60:18;
       const exp=Math.max(8,Math.round((22+(isElite?15:0)+(isBoss?70:0)+(isFinal?110:0))*(isRepeat?.85:1)));
+      const loot=victory?rollBattleLoot(Math.max(1,s.floor+(isBoss?2:0)),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
+      if(victory&&loot.length) window.setTimeout(()=>notify("전리품 획득 · "+loot.map(x=>x.name).join(" · ")),0);
       return {...s,
         gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier):0),
         materials:s.materials+(victory?Math.max(5,Math.round(baseMaterials*rewardMultiplier)):0),
+        items:victory?[...s.items,...loot]:s.items,
         scenarioClears,
         floor:victory&&isBoss?s.floor+1:s.floor,
         stage:victory?(isBoss?0:(isFinal?s.stage:s.stage+1)):s.stage,
@@ -479,32 +482,29 @@ export default function App(){
     else if(save.party.length<4)setSave(s=>({...s,party:s.party.concat(id)}));
     else notify("데모 파티 최대 4명");
   };
-  const equip=(item:Item,slot=selectedEquipSlot,fromInventory=false)=>{
-    setSave(s=>{
-      let replaced:Item|undefined;
-      const heroes=s.heroes.map(h=>{
-        if(h.id!==selectedHero)return h;
-        const slots=equipmentSlotsOf(h);
-        replaced=slots[slot];
-        slots[slot]=item;
-        return {...h,equipment:slots,item:slots[0]};
-      });
-      const inventory=fromInventory
-        ? s.items.filter(x=>x.id!==item.id).concat(replaced&&!replaced.unique?[replaced]:[])
-        : s.items;
-      return {...s,heroes,items:inventory};
-    });
-    notify(hero.name+" · "+item.name+" 장착 (슬롯 "+(slot+1)+")");
-  };
-  const randomEquip=()=>{
-    if(save.materials<12){notify("재료가 부족합니다.");return;}
-    const item=randomGeneralItem(hero.level,hero.tendencies);
-    setSave(s=>({...s,materials:s.materials-12,heroes:s.heroes.map(h=>{
+  const equip=(item:Item,slot=selectedEquipSlot)=>{
+    setSave(s=>({...s,heroes:s.heroes.map(h=>{
       if(h.id!==selectedHero)return h;
-      const slots=equipmentSlotsOf(h); slots[selectedEquipSlot]=item;
+      const slots=equipmentSlotsOf(h); slots[slot]=item;
       return {...h,equipment:slots,item:slots[0]};
     })}));
-    notify("슬롯 "+(selectedEquipSlot+1)+"의 장비 옵션을 새로 굴렸습니다.");
+    notify(hero.name+" · "+item.name+" 장착 (슬롯 "+(slot+1)+")");
+  };
+  const unequip=(slot:number)=>{
+    const current=equipmentSlotsOf(hero)[slot];
+    if(!current){notify("선택한 슬롯이 비어 있습니다.");return;}
+    setSave(s=>({...s,heroes:s.heroes.map(h=>{
+      if(h.id!==selectedHero)return h;
+      const slots=equipmentSlotsOf(h); slots[slot]=undefined;
+      return {...h,equipment:slots,item:slots[0]};
+    }),items:[...s.items,current]}));
+    notify(hero.name+" · "+current.name+" 장비 해제");
+  };
+  const sellItem=(item:Item)=>{
+    if(equippedItemsOf(hero).some(x=>x.id===item.id)){notify("장착 중인 장비는 먼저 해제해야 합니다.");return;}
+    const price=Math.max(10,Math.round((item.level*10)+(item.rarity==="전설"?90:item.rarity==="영웅"?55:item.rarity==="희귀"?30:18)+(item.unique?120:0)));
+    setSave(s=>({...s,gold:s.gold+price,items:s.items.filter(x=>x.id!==item.id)}));
+    notify(item.name+" 판매 · +"+price+"G");
   };
   const recruit=(job:Job)=>{
     if(save.gold<350){notify("모집 자금이 부족합니다.");return;}
@@ -584,10 +584,10 @@ export default function App(){
       <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · 장비 {equippedItemsOf(hero).length}/3</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>{behaviorSummary(hero)}</small><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
       {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
-    {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">EQUIPMENT</span><h2>장비 연구실</h2><p className="muted">직업 제한 없음 · 일반 장비는 무작위 롤 · 고유 장비는 AI 행동까지 바꿉니다.</p></div></div>
-      <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>{jobKo[hero.job]} · 장비 {equippedItemsOf(hero).length}/3</span><small>슬롯 {selectedEquipSlot+1} 선택 · 자동 빌드 · {buildProfile(hero).name}</small></div><button className="primary-btn compact" onClick={randomEquip} disabled={save.materials<12}><RotateCcw size={16}/> 선택 슬롯 재굴림 · 12</button></div>
-      <div className="equipment-slots">{equipmentSlotsOf(hero).map((item,slot)=><button key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")} onClick={()=>setSelectedEquipSlot(slot)}><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"아이템을 선택해 장착"}</span></button>)}</div>
-      <div className="item-list"><div className="unique-title"><Sparkles size={16}/> 대표 고유 장비 · 선택 슬롯 {selectedEquipSlot+1}</div>{uniqueItems.filter(x=>!equippedItemsOf(hero).some(e=>e.id===x.id)).map(i=><ItemCard key={i.id} item={i} onEquip={()=>equip(i,selectedEquipSlot,false)}/>)}{save.items.map(i=><ItemCard key={i.id} item={i} onEquip={()=>equip(i,selectedEquipSlot,true)}/> )}</div></div></section>}
+    {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">GUILD WAREHOUSE</span><h2>용사단 창고</h2><p className="muted">장비 획득은 전투 전리품과 보물방으로만 이루어집니다. 창고에서 보관, 장착, 해제가 가능하며 필요 없는 장비는 판매할 수 있습니다.</p></div><span className="counter">{save.items.length}개</span></div>
+      <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>장착 {equippedItemsOf(hero).length}/3 · 슬롯 {selectedEquipSlot+1}</span><small>장비 옵션은 캐릭터의 전투 행동과 AI 성향에 영향을 줍니다.</small></div></div>
+      <div className="equipment-slots">{equipmentSlotsOf(hero).map((item,slot)=><div key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")}><button onClick={()=>setSelectedEquipSlot(slot)} className="slot-main"><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"창고에서 장비를 선택해 장착"}</span></button>{item&&<button className="ghost-btn slot-action" onClick={()=>unequip(slot)}>해제</button>}</div>)}</div>
+      <div className="item-list">{save.items.length===0?<div className="subpanel empty-warehouse"><b>창고가 비어 있습니다.</b><span>첫 전투의 승리 전리품이나 보물방에서 장비를 획득하세요.</span></div>:save.items.map((i,idx)=><ItemCard key={i.id+"-"+idx} item={i} onEquip={()=>equip(i,selectedEquipSlot)} onSell={()=>sellItem(i)}/> )}</div></div></section>}
 
     <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
   </main>;
@@ -614,7 +614,7 @@ function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>vo
   </article>;
 }
 function tags(h:Hero){const mod=combinedAiMods(equippedItemsOf(h));const ks=(Object.keys(tendencyKo) as (keyof Tendencies)[]).sort((a,b)=>(h.tendencies[b]+(mod[b]||0))-(h.tendencies[a]+(mod[a]||0)));return ks.slice(0,3).map(k=>tendencyKo[k]+" "+((h.tendencies[k]+(mod[k]||0))>=80?"높음":(h.tendencies[k]+(mod[k]||0))>=60?"중상":"보통"));}
-function ItemCard({item,equipped,onEquip}:{item:Item;equipped?:boolean;onEquip?:()=>void}){return <article className={"item-card "+(item.unique?"unique-item":"")}><div className="item-top"><span>{item.rarity}</span>{item.unique&&<b>UNIQUE</b>}</div><h3>{item.name}</h3><small>{item.slot} · Lv.{item.level}</small><div className="stat-list">{item.stats.map(s=><span key={s}>{s}</span>)}</div><div className="ai-mod"><Brain size={14}/>{Object.entries(item.aiMods).map(([k,v])=><span key={k}>{tendencyKo[k as keyof Tendencies]} {(v||0)>0?"+":""}{v}</span>)}</div><p>{item.description}</p>{onEquip&&<button className="ghost-btn" onClick={onEquip}>{equipped?"장착 중":"장착"}</button>}</article>;}
+function ItemCard({item,equipped,onEquip,onSell}:{item:Item;equipped?:boolean;onEquip?:()=>void;onSell?:()=>void}){return <article className={"item-card "+(item.unique?"unique-item":"")}><div className="item-top"><span>{item.rarity}</span>{item.unique&&<b>UNIQUE</b>}</div><h3>{item.name}</h3><small>{item.slot} · Lv.{item.level}</small><div className="stat-list">{item.stats.map(s=><span key={s}>{s}</span>)}</div><div className="ai-mod"><Brain size={14}/>{Object.entries(item.aiMods).map(([k,v])=><span key={k}>{tendencyKo[k as keyof Tendencies]} {(v||0)>0?"+":""}{v}</span>)}</div><p>{item.description}</p><div className="item-actions">{onEquip&&<button className="ghost-btn" onClick={onEquip}>{equipped?"장착 중":"장착"}</button>}{onSell&&<button className="ghost-btn danger-btn" onClick={onSell}>판매</button>}</div></article>;}
 
 
 function ModeCard({title,subtitle,text,icon,onClick}:{title:string;subtitle:string;text:string;icon:string;onClick:()=>void}){
