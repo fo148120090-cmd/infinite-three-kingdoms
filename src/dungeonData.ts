@@ -12,10 +12,14 @@ export type Item = {
   stats:string[]; aiMods:Partial<Tendencies>; unique?:boolean; description:string;
 };
 
+export type Relationship = {trust:number; respect:number; fear:number; bond:number};
+export type Memory = {text:string; weight:number; createdAt:number};
+
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
   speed:number; range:number; tendencies:Tendencies; item:Item; experience:number;
   history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
+  relationships?:Record<string,Relationship>; memories?:Memory[];
 };
 
 export type Monster = {
@@ -28,7 +32,7 @@ export type BattleUnit = {
   id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade;
   hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
   pos:number; alive:boolean; tendencies:Tendencies; item?:Item; actionText:string;
-  cooldown:number; guard:number; xp:number;
+  cooldown:number; guard:number; xp:number; relationships?:Record<string,Relationship>; memories?:Memory[];
 };
 
 export const defaultTendencies: Record<Job,Tendencies> = {
