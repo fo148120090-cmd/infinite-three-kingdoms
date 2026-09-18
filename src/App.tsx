@@ -121,7 +121,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] 
   }
   if(a.team==="enemy"&&a.species&&a.cooldown<=0){
     for(const m of monsterActions(a.species,a.grade,a.mutation)){
-      let score=m.bonus+t.focus*.08+envBonus+evolutionActionBonus({id:"runtime",species:a.species!,level:1,experience:0,focus:{},evolutionStage:a.evolutionStage||0,evolutionPath:a.evolutionPath||[],focus:a.evolutionFocus?{[a.evolutionFocus]:1}:{}},m.name);
+      let score=m.bonus+t.focus*.08+envBonus+evolutionActionBonus({id:"runtime",species:a.species!,level:1,experience:0,focus:a.evolutionFocus?{[a.evolutionFocus]:1}:{},evolutionStage:a.evolutionStage||0,evolutionPath:a.evolutionPath||[]},m.name);
       if((m.name==="대지 강타"||m.name==="분열"||m.name==="영역 지배")&&enemies.length>=2)score+=18;
       if((m.name==="무리 사냥"||m.name==="약점 추적"||m.name==="역할 분석")&&weak)score+=Math.max(0,(1-pct(weak))*35);
       if(m.name==="회피 기동"&&pct(a)<.5)score+=35;
@@ -312,7 +312,7 @@ export default function App(){
           return {...h,hp:Math.min(h.hp,Math.max(1,h.hp+(update.hpDelta||0))),tendencies:nextT};
         }),
         gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,
-        items:outcome.item?[...s.items,outcome.item]:s.items,stage:s.stage+1
+        stage:s.stage+1
       }));
       notify(outcome.text);
       return;
