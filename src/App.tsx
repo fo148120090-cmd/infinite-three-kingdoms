@@ -33,7 +33,7 @@ const aiT=(t:Tendencies,item?:Item):Tendencies=>{
 };
 
 function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleUnit[] {
-  const ps=heroes.filter(h=>party.includes(h.id)).map((h,i)=>({
+  const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>({
     id:h.id,name:h.name,job:h.job,team:"player" as const,hp:h.hp,maxHp:h.hp,attack:h.attack,defense:h.defense,
     speed:h.speed,range:h.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
     actionText:"대기",cooldown:0,guard:0,xp:0
