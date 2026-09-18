@@ -544,6 +544,7 @@ function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>vo
       <p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/100</p>
       <div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div>
       <small>장비 · {hero.item.name}{hero.item.unique?" · UNIQUE":""}</small>
+      <small>{behaviorSummary(hero)}</small>
       <div className="social-meta">
         {bond&&<span>유대 · {bondName} {Math.round(bond.relation.bond)}</span>}
         <span>기억 {hero.memories?.length||0}</span>
