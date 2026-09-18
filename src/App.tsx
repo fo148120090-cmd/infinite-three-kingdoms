@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map as MapIcon, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
-import { grantExperience, promotionActions, promotionLabel } from "./promotion";
+import { grantExperience, promotionActions, promotionForecast, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 import { applyLineage, emptyLineage, evolutionActionBonus, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
@@ -897,6 +897,7 @@ export default function App(){
 function CharacterStatusModal({hero,onClose}:{hero:Hero;onClose:()=>void}){
   const stats=combatStats(hero);
   const bonus=chronicleBonuses(hero);
+  const growth=promotionForecast(hero);
   const items=equippedItemsOf(hero);
   const aiMods=combinedAiMods(items);
   return <div className="status-modal-backdrop" onClick={onClose}>
@@ -909,6 +910,7 @@ function CharacterStatusModal({hero,onClose}:{hero:Hero;onClose:()=>void}){
         <div className="status-modal-card"><div className="modal-card-title"><b>AI 성향</b><span>{buildProfile(hero).name}</span></div><div className="modal-tendency-grid">
           {(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>{const value=clamp(hero.tendencies[k]+(aiMods[k]||0));return <div key={k}><span>{tendencyKo[k]}</span><b>{Math.round(value)}</b><i><em style={{width:value+"%"}}/></i></div>})}
         </div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div><div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div><p className="growth-reason">{growth.reason}</p><div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>주요 성향</b>{(Object.entries(hero.tendencies) as [keyof Tendencies,number][]).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>tendencyKo[x[0]]+" "+Math.round(x[1])).join(" · ")}</span></div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 상태</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">
           {[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}
         </div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
