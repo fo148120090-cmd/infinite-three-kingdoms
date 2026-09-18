@@ -22,6 +22,11 @@ export type Hero = {
   relationships?:Record<string,Relationship>; memories?:Memory[];
 };
 
+export type MonsterLineage = {
+  id:string; species:string; level:number; experience:number; focus:Record<string,number>;
+  evolutionStage:number; evolutionPath:string[]; lastMemory?:string;
+};
+
 export type Monster = {
   id:string; name:string; species:string; grade:Grade; level:number; hp:number; attack:number;
   defense:number; speed:number; range:number; tendencies:Tendencies; pos:number; maxHp:number;
