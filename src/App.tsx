@@ -73,9 +73,8 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleU
     speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0})));
 }
 
-function asEnemy(e:ReturnType<typeof createMonster>,suffix="",lineage?:MonsterLineage):BattleUnit{
-  const m=lineage?applyLineage(e,lineage):e;
-  return {id:m.id+suffix,name:m.name,species:m.species,grade:m.grade,team:"enemy" as const,hp:m.hp,maxHp:m.maxHp,attack:m.attack,defense:m.defense,speed:m.speed,range:m.range,pos:m.pos,alive:true,tendencies:m.tendencies,mutation:m.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
+function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
+  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
 }
 
 function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] {
