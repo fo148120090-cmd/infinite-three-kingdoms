@@ -126,6 +126,8 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
 function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;line:string}{
   const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})}})); const a=n.find(x=>x.id===id)!; const d=weighted(decisions(a,n));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
+  const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
+  const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
   a.behaviorCounts![d.action]=(a.behaviorCounts![d.action]||0)+1;
   const by=(x?:string)=>n.find(q=>q.id===x&&q.alive);
   const move=(target:BattleUnit)=>{
