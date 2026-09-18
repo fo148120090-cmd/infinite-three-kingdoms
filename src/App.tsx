@@ -812,7 +812,14 @@ export default function App(){
       return {
         ...s,
         routeMemory:recordRouteMemory(s.routeMemory,"event",true,outcome.gold),
-        heroes:nextHeroes,
+        heroes:nextHeroes.map(h=>{
+          if(h.id!==outcome.rewardHeroId||!outcome.rewardKind||!outcome.rewardName)return h;
+          const detail=outcome.rewardKind==="trait"
+            ?(traitEffect?.detail||"던전 이벤트에서 획득한 특성입니다.")
+            :(outcome.rewardItem?.description||"던전 이벤트에서 획득한 기재입니다.");
+          const records=[...(h.eventRewards||[]),{kind:outcome.rewardKind,name:outcome.rewardName||outcome.rewardItem?.name||"획득 기록",floor:s.floor,detail}].slice(-8);
+          return {...h,eventRewards:records};
+        }),
         items:outcome.rewardKind==="equipment"&&outcome.rewardItem?[...s.items,outcome.rewardItem]:s.items,
         gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,stage:s.stage+1
       };
@@ -923,6 +930,7 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes
         <div className="status-modal-card"><div className="modal-card-title"><b>AI 성향</b><span>{buildProfile(hero).name}</span></div><div className="modal-tendency-grid">{(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>{const value=clamp(hero.tendencies[k]+(aiMods[k]||0));return <div key={k}><span>{tendencyKo[k]}</span><b>{Math.round(value)}</b><i><em style={{width:value+"%"}}/></i></div>})}</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div><div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div><p className="growth-reason">{growth.reason}</p><div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>주요 성향</b>{(Object.entries(hero.tendencies) as [keyof Tendencies,number][]).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>tendencyKo[x[0]]+" "+Math.round(x[1])).join(" · ")}</span></div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4</span></div><div className="modal-traits">{(hero.traits||[]).map(name=><div key={name}><b>{name}</b><span>{eventTraitEffects[name]?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>)}</div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>던전 획득 기록</b><span>최근 8회</span></div><div className="modal-event-rewards">{(hero.eventRewards||[]).slice().reverse().map((r,i)=><div key={r.name+"-"+r.floor+"-"+i}><span>{r.kind==="trait"?"특성":"기재"} · {r.floor}F</span><b>{r.name}</b><small>{r.detail}</small></div>)}{(!hero.eventRewards||hero.eventRewards.length===0)&&<small>던전 이벤트에서 획득한 특성·기재가 여기에 기록됩니다.</small>}</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 상태</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
       </div>
       <div className="status-modal-bottom"><div className="modal-bottom-card"><b>장기 전투 기록</b><span>{hero.combatProfile?.battles||0}전투 · {hero.combatProfile?.actions||0}행동 · {hero.combatProfile?.damage||0}피해 · {hero.combatProfile?.healing||0}회복</span><small>{Object.entries(hero.combatProfile?.topActions||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+" · "+x[1]+"회").join("  /  ")||"기록 없음"}</small></div><div className="modal-bottom-card"><b>최근 기억</b><span>{(hero.memories||[]).slice(0,2).map(m=>m.text+" · 영향 "+Math.round(m.weight*10)/10).join("  /  ")||"강하게 남은 기억 없음"}</span><small>칭호 · {chronicleLabel(hero)}</small></div></div>
