@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from "react";
-import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserRound, Zap } from "lucide-react";
+import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
@@ -9,19 +9,21 @@ import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
 import { resolveDungeonEvent, resolveHiddenRoom } from "./dungeonEvents";
 import { applyBehaviorHistory, behaviorSummary, buildProfile, partyPreference } from "./progression";
+import { awardChronicle, chronicleBonuses, chronicleLabel, systemEvaluation, systemMood, systemStatus } from "./chronicle";
+import { costumeLabel, costumesForJob } from "./costumes";
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 
-type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
+type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit";
 type BattleMode = "dungeon" | "defense" | "raid";
 type DefenseObjective = "gate" | "relic" | "escort";
-type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[] };
+type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; worldSealed?:boolean };
 type Decision = { action: string; target?: string; detail: string; score: number };
 
 const KEY = "autonomous-dungeon-demo-v1";
 const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
 const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
-const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",hidden:"◇",boss:"👑"};
-const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",event:"던전 이벤트",hidden:"숨은 방",boss:"심층 보스"};
+const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",hidden:"◇",boss:"👑",evilCave:"🕳"};
+const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",event:"던전 이벤트",hidden:"숨은 방",boss:"심층 보스",evilCave:"악의 동굴"};
 const defenseObjectiveKo: Record<DefenseObjective,string> = {gate:"성문",relic:"성유물",escort:"호위 대상"};
 const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
 const defenseObjectiveForFloor=(floor:number):DefenseObjective=>floor%3===1?"gate":floor%3===2?"relic":"escort";
@@ -32,10 +34,10 @@ function load(): Save {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies}})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss"))};
+      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies}})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
     }
   } catch {}
-  return {heroes:heroesSeed.map(h=>({...h,tendencies:cloneTendencies(h.tendencies)})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[]};
+  return {heroes:heroesSeed.map(h=>({...h,tendencies:cloneTendencies(h.tendencies)})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},worldSealed:false};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
@@ -58,12 +60,12 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleU
       relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
-  const count=room==="boss"?3:room==="elite"?4:3;
+  const count=room==="boss"||room==="evilCave"?3:room==="elite"?4:3;
   let es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
-  if(room==="boss"){
-    const bossSpecies=raidBossForFloor(floor);
+  if(room==="boss"||room==="evilCave"){
+    const bossSpecies=room==="evilCave"?"Demon":raidBossForFloor(floor);
     const base=createMonster(bossSpecies,Math.max(8,floor+5),"Boss",0);
-    const bossName=bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
+    const bossName=room==="evilCave"?"악의 동굴 수문장":bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
     es[0]={...base,name:bossName,pos:8.8};
   }
   return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
