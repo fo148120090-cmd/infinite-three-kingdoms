@@ -13,12 +13,21 @@ export type DungeonEventOutcome={
 
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 
+const partyPreference=(party:Hero[]):Partial<Tendencies>=>{
+  const out:Partial<Tendencies>={};
+  if(!party.length)return out;
+  (Object.keys(party[0].tendencies) as (keyof Tendencies)[]).forEach(k=>out[k]=party.reduce((n,h)=>n+h.tendencies[k],0)/party.length);
+  return out;
+};
+
+
 export function resolveHiddenRoom(heroes:Hero[],partyIds:string[],floor:number,environment:EnvironmentKind):DungeonEventOutcome{
   const party=heroes.filter(h=>partyIds.includes(h.id));
   const heroUpdates:Record<string,EventUpdate>={};
   const curiosity=party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0;
+  const preference=partyPreference(party);
   const focus=party.length?party.reduce((n,h)=>n+h.tendencies.focus,0)/party.length:0;
-  const item=Math.random()<.28?uniqueItems[Math.floor(Math.random()*uniqueItems.length)]:randomGeneralItem(floor+6);
+  const item=Math.random()<.28?uniqueItems[Math.floor(Math.random()*uniqueItems.length)]:randomGeneralItem(floor+6,preference);
   party.forEach(h=>heroUpdates[h.id]={tendencies:{curiosity:clamp(h.tendencies.curiosity+1.2),focus:clamp(h.tendencies.focus+.5)}});
   const envReward=environment==="water"?20:environment==="dark"?18:environment==="unstable"?28:12;
   return {text:`숨은 방 발견 · ${environmentInfoName(environment)} · 호기심 ${Math.round(curiosity)}/100 / 집중 ${Math.round(focus)}/100`,gold:220,materials:envReward,item,heroUpdates};
@@ -30,7 +39,8 @@ export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number
   const avg=(key:keyof Tendencies)=>party.length?party.reduce((n,h)=>n+h.tendencies[key],0)/party.length:0;
   const curiosity=avg("curiosity"), caution=avg("caution"), greed=avg("greed"), bravery=avg("bravery"), survival=avg("survival"), focus=avg("focus"), cooperation=avg("cooperation");
   const roll=Math.random();
-  const heroUpdates:Record<string,EventUpdate>={};
+  const heroUpdates:Record<string,EventUpdate>={}; 
+  const preference=partyPreference(party);
 
   party.forEach(h=>heroUpdates[h.id]={});
   const touch=(id:string,update:EventUpdate)=>{
@@ -39,7 +49,7 @@ export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number
   };
 
   if(environment==="dark" && curiosity>=62 && roll<.52){
-    const item=randomGeneralItem(floor+4);
+    const item=randomGeneralItem(floor+4,preference);
     party.forEach(h=>touch(h.id,{tendencies:{curiosity:clamp(h.tendencies.curiosity+1),focus:clamp(h.tendencies.focus+.6)}}));
     return {text:"암흑 기록실: 어둠 속 숨겨진 문서를 찾아 고급 장비를 발견했다.",gold:160,materials:20,item,heroUpdates};
   }
@@ -49,12 +59,12 @@ export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number
     return {text:"압력판 통로: 좁은 길에서 함정이 작동해 파티가 피해를 입었다.",gold:70,materials:16,heroUpdates};
   }
   if(environment==="toxic" && survival>=58 && roll<.58){
-    const item=randomGeneralItem(floor+3);
+    const item=randomGeneralItem(floor+3,preference);
     party.forEach(h=>touch(h.id,{hpDelta:10,tendencies:{survival:clamp(h.tendencies.survival+.7),caution:clamp(h.tendencies.caution+.4)}}));
     return {text:"해독 약초 저장고: 독성 지대에서 약초를 확보해 회복하고 장비를 찾았다.",gold:90,materials:24,item,heroUpdates};
   }
   if(environment==="water" && curiosity>=58 && roll<.55){
-    const item=roll<.14?uniqueItems[Math.floor(Math.random()*uniqueItems.length)]:randomGeneralItem(floor+5);
+    const item=roll<.14?uniqueItems[Math.floor(Math.random()*uniqueItems.length)]:randomGeneralItem(floor+5,preference);
     party.forEach(h=>touch(h.id,{tendencies:{curiosity:clamp(h.tendencies.curiosity+.8)}}));
     return {text:"수중 금고: 물속에 잠긴 보관함에서 특수 보상을 발견했다.",gold:140,materials:26,item,heroUpdates};
   }
@@ -66,7 +76,7 @@ export function resolveDungeonEvent(heroes:Hero[],partyIds:string[],floor:number
 
 
   if(curiosity>=70 && roll<.42){
-    const item=randomGeneralItem(floor+3);
+    const item=randomGeneralItem(floor+3,preference);
     party.forEach(h=>touch(h.id,{tendencies:{curiosity:clamp(h.tendencies.curiosity+.5),greed:clamp(h.tendencies.greed+.2)}}));
     return {text:"봉인된 제단: 호기심이 봉인을 풀어 추가 장비를 발견했다.",gold:120,materials:18,item,heroUpdates};
   }
