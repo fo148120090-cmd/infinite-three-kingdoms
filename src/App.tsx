@@ -216,6 +216,28 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[]
   } else if(d.action==="역할 분석"){
     const t=enemies.slice().sort((x,y)=>(x.job==="Cleric"?0:1)-(y.job==="Cleric"?0:1)||pct(x)-pct(y))[0]||weak||nearest;
     if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.28);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="역할 분석 → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="전선 재편"){
+    const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
+    const minions=live(n,"enemy").filter(x=>x.id!==a.id);
+    const target=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
+    minions.forEach(x=>{x.tendencies.focus=Math.min(100,x.tendencies.focus+7);x.tendencies.aggression=Math.min(100,x.tendencies.aggression+5);if(phase>=2)x.guard=Math.max(x.guard,2);});
+    if(target&&phase>=2)target.tendencies.caution=Math.max(0,target.tendencies.caution-8);
+    a.guard=phase>=3?3:1;a.actionText="전선 재편 · PHASE "+phase;line=a.actionText;
+  } else if(d.action==="둥지 확장"){
+    const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
+    enemies.filter(x=>dist(a,x)<6).forEach(x=>x.speed=Math.max(.3,x.speed-(phase===3?.3:.16)));
+    if(phase>=2)a.tendencies.survival=Math.min(100,a.tendencies.survival+5);
+    a.guard=phase===3?2:0;a.actionText="둥지 확장 · 거미줄 지대 · PHASE "+phase;line=a.actionText;
+  } else if(d.action==="공포의 심문"){
+    const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
+    const target=enemies.slice().sort((x,y)=>(pct(x)-pct(y))||((x.job==="Cleric"?0:1)-(y.job==="Cleric"?0:1)))[0];
+    if(target){
+      target.tendencies.bravery=Math.max(0,target.tendencies.bravery-(phase===3?15:8));
+      target.tendencies.focus=Math.max(0,target.tendencies.focus-(phase===3?12:6));
+      if(dist(a,target)<=a.range){const x=hit(a,target,phase===3?1.22:1.05);target.hp=Math.max(0,target.hp-x);target.alive=target.hp>0;}
+      else move(target);
+    }
+    a.actionText="공포의 심문 → "+(target?.name||"취약 대상")+" · PHASE "+phase;line=a.actionText;
   } else if(d.action==="영역 지배"){
     a.guard=2;live(n,"enemy").filter(x=>x.id!==a.id).forEach(x=>x.tendencies.bravery=Math.min(100,x.tendencies.bravery+8));
     a.actionText="영역 지배 · 보스 오라";line=a.actionText;
