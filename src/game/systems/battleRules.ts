@@ -106,7 +106,7 @@ export function getEffectiveDefense(unit: Pick<Unit, 'defense' | 'role' | 'statu
 }
 
 export function calculateDamage(
-  attacker: Pick<Unit, 'atk' | 'buff'>,
+  attacker: Pick<Unit, 'atk' | 'buff' | 'critChance'>,
   defender: Pick<Unit, 'defense' | 'role' | 'status'>,
   _terrainType: Terrain,
   power = 0,
