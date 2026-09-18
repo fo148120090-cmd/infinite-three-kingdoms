@@ -23,6 +23,10 @@ function getOptionLevel(equipment: GeneralStatEquipment | undefined, option: num
   return 0;
 }
 
+export function getGeneralCombatPower(stats: Pick<GeneralEffectiveStats, 'hp' | 'atk' | 'defense' | 'critChance' | 'skillPower'>) {
+  return Math.floor(stats.hp / 10 + stats.atk * 4 + stats.defense * 3 + stats.critChance * 5 + stats.skillPower * 2);
+}
+
 export function getGeneralEffectiveStats(
   general: General,
   {
