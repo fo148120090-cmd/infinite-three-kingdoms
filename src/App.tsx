@@ -6,6 +6,7 @@ import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
+import { monsterActions } from "./monsterAbilities";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -81,6 +82,15 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
     if((p.name.includes("폭발")||p.name.includes("저주"))&&enemies.length>=2) score+=enemies.length*10;
     arr.push({action:p.name,detail:p.detail,score});
   }
+  if(a.team==="enemy"&&a.species){
+    for(const m of monsterActions(a.species,a.grade,a.mutation)){
+      let score=m.bonus+t.focus*.08;
+      if((m.name==="대지 강타"||m.name==="분열"||m.name==="영역 지배")&&enemies.length>=2)score+=18;
+      if((m.name==="무리 사냥"||m.name==="약점 추적"||m.name==="역할 분석")&&weak)score+=Math.max(0,(1-pct(weak))*35);
+      if(m.name==="회피 기동"&&pct(a)<.5)score+=35;
+      arr.push({action:m.name,detail:m.detail,score});
+    }
+  }
 
   if(nearest){
     let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40;
@@ -137,6 +147,43 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
     const t=weak||nearest; if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.45);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="비전 해방 → "+t.name+" (-"+x+")";line=a.actionText;}}
   } else if(d.action==="대회복"){
     const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+(a.item?.combatMods?.healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+  } else if(d.action==="분열"){
+    if(pct(a)>.55 && n.filter(x=>x.team==="enemy").length<8){
+      const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true};
+      n.push(child);a.hp=Math.round(a.hp*.72);a.actionText="분열 → "+child.name;line=a.actionText;
+    } else {a.actionText="분열 대기";line=a.actionText;}
+  } else if(d.action==="함정 투척"||d.action==="매복 함정"||d.action==="거미줄"){
+    const t=by(d.target)||weak||nearest;
+    if(t){t.speed=Math.max(.35,t.speed-.22);a.actionText=d.action+" → "+t.name;line=a.actionText;}
+  } else if(d.action==="무리 사냥"||d.action==="약점 추적"||d.action==="연계 공격"){
+    const t=by(d.target)||weak||nearest;
+    if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.2);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="전투 함성"||d.action==="지휘 명령"){
+    live(n,"enemy").filter(x=>x.id!==a.id).forEach(x=>{x.tendencies.aggression=Math.min(100,x.tendencies.aggression+7);x.tendencies.focus=Math.min(100,x.tendencies.focus+5);});
+    a.actionText=d.action+" · 아군 강화";line=a.actionText;
+  } else if(d.action==="측면 습격"||d.action==="급강하"||d.action==="굴 파기 기습"){
+    const t=by(d.target)||weak||nearest;
+    if(t){a.pos=Math.max(.3,t.pos-.7);const x=hit(a,t,1.18);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}
+  } else if(d.action==="독성 압박"||d.action==="매혹"){
+    const t=by(d.target)||weak||nearest;
+    if(t){t.tendencies.focus=Math.max(0,t.tendencies.focus-(d.action==="매혹"?12:7));t.attack=Math.max(1,Math.round(t.attack*.92));const x=hit(a,t,.9);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}
+  } else if(d.action==="대지 강타"){
+    const ts=enemies.filter(x=>dist(a,x)<=2.4).slice(0,4);
+    if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,1.05);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText="대지 강타 → "+bits.join(", ");line=a.actionText;}
+  } else if(d.action==="회피 기동"){
+    a.pos=Math.max(.3,a.pos-.95);a.tendencies.survival=Math.min(100,a.tendencies.survival+7);a.actionText="회피 기동 · 거리 확보";line=a.actionText;
+  } else if(d.action==="역할 분석"){
+    const t=enemies.slice().sort((x,y)=>(x.job==="Cleric"?0:1)-(y.job==="Cleric"?0:1)||pct(x)-pct(y))[0]||weak||nearest;
+    if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.28);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="역할 분석 → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="영역 지배"){
+    a.guard=2;live(n,"enemy").filter(x=>x.id!==a.id).forEach(x=>x.tendencies.bravery=Math.min(100,x.tendencies.bravery+8));
+    a.actionText="영역 지배 · 보스 오라";line=a.actionText;
+  } else if(d.action==="광폭화"){
+    a.attack=Math.round(a.attack*1.16);a.tendencies.survival=Math.max(0,a.tendencies.survival-10);a.tendencies.aggression=Math.min(100,a.tendencies.aggression+10);
+    a.actionText="광폭화 · 공격 상승";line=a.actionText;
+  } else if(d.action==="연계 공격"){
+    const t=by(d.target)||weak||nearest;
+    if(t){const x=hit(a,t,1.12);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="연계 공격 → "+t.name+" (-"+x+")";line=a.actionText;}
   } else if(d.action==="일반 공격"){
     const t=by(d.target)||enemies[0]; if(t){if(dist(a,t)>a.range) move(t),a.actionText="접근 → "+t.name; else {const x=hit(a,t);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="일반 공격 → "+t.name+" (-"+x+")";line=a.actionText;}}
   } else if(d.action==="추격"){
