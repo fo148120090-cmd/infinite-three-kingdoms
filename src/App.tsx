@@ -266,6 +266,7 @@ export default function App(){
   const party=useMemo(()=>save.heroes.filter(h=>save.party.includes(h.id)),[save.heroes,save.party]);
   const partyPref=useMemo(()=>partyPreference(party),[party]);
   const hero=save.heroes.find(h=>h.id===selectedHero)||save.heroes[0];
+  const chronicleBonus=useMemo(()=>chronicleBonuses(hero),[hero]);
   const active=battle.units.find(u=>u.id===battle.next&&u.alive);
   const notify=(s:string)=>{setToast(s);window.setTimeout(()=>setToast(""),1800);};
 
