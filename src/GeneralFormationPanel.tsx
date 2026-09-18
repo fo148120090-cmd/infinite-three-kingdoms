@@ -30,18 +30,19 @@ export default function GeneralFormationPanel(){
  const team=formation.map(id=>generals.get(id)).filter(Boolean) as General[];
  const formationModifiers=getBattleModifiers(team);
  const activeRelationships=getActiveRelationships(team);
- const battlePower=(g:General)=>{
+ const powerForFormation=(members:General[])=>members.reduce((sum,g)=>{
    const base=getStats(g,save);
-   const mod=getUnitBattleModifiers({id:g.id},team);
-   return getGeneralCombatPower({
+   const mod=getUnitBattleModifiers({id:g.id},members);
+   return sum+getGeneralCombatPower({
      hp:Math.floor(base.hp*(1+mod.hpPct/100)),
      atk:Math.floor(base.atk*(1+mod.attackPct/100)),
      defense:base.defense,
      critChance:base.critChance+mod.critPct,
      skillPower:Math.floor(base.skillPower*(1+mod.skillPowerPct/100)),
    });
- };
- const teamPower=team.reduce((sum,g)=>sum+battlePower(g),0);
+ },0);
+ const battlePower=(g:General)=>powerForFormation([g]);
+ const teamPower=powerForFormation(team);
  const selected=formation[slot]?generals.get(formation[slot]):undefined;
  const candidates=GENERALS.filter(g=>owned.has(g.id)&&!formation.includes(g.id));
 
@@ -91,7 +92,7 @@ export default function GeneralFormationPanel(){
     </section>
     <h3 style={{margin:'8px 0'}}>보유 장수 · 교체 후보</h3>
     {candidates.length===0?<p style={{color:'#9aa6b8'}}>현재 편성에 없는 보유 장수가 없습니다.</p>:<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:9}}>
-      {candidates.map(g=>{const stats=getStats(g,save),candidatePower=battlePower(g),projected=selected?teamPower-battlePower(selected)+candidatePower:teamPower+candidatePower;const delta=projected-teamPower;return <button key={g.id} onClick={()=>assign(g)} style={{textAlign:'left',padding:12,borderRadius:10,border:'1px solid #2a3345',background:'#141923',color:'#fff',cursor:'pointer'}}>
+      {candidates.map(g=>{const stats=getStats(g,save),candidatePower=battlePower(g),projectedIds=[...formation]; if(selected)projectedIds[slot]=g.id; else {while(projectedIds.length<5)projectedIds.push('');projectedIds[slot]=g.id;} const projectedTeam=projectedIds.filter(Boolean).filter((id,index,all)=>all.indexOf(id)===index).map(id=>generals.get(id)).filter(Boolean) as General[]; const projected=powerForFormation(projectedTeam),delta=projected-teamPower;return <button key={g.id} onClick={()=>assign(g)} style={{textAlign:'left',padding:12,borderRadius:10,border:'1px solid #2a3345',background:'#141923',color:'#fff',cursor:'pointer'}}>
        <div style={{display:'flex',justifyContent:'space-between',gap:8}}><b>{g.name}</b><span>Lv.{stats.level} · ★{stats.star}</span></div>
        <div style={{fontSize:11,color:'#9aa6b8',margin:'5px 0'}}>HP {stats.hp} · 공격 {stats.atk} · 방어 {stats.defense}</div>
        <div style={{fontSize:12}}>전투력 <b>{fmt(candidatePower)}</b>{selected&&<span style={{color:delta>=0?'#9ed0aa':'#d7a2a2'}}> · 교체 후 {fmt(projected)} ({delta>=0?'+':''}{fmt(delta)})</span>}</div>
