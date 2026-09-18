@@ -1,5 +1,6 @@
 import type { Terrain, Unit } from '../types';
 import { BOARD_WIDTH, getReachableCells, isInRange } from './battleRules';
+import { getGeneralSkillTargetIds } from './skillRules';
 
 export type BattleCellView = {
   x: number;
@@ -8,6 +9,7 @@ export type BattleCellView = {
   unit: Unit | null;
   reachable: boolean;
   targetable: boolean;
+  skillTargetable: boolean;
   selected: boolean;
 };
 
@@ -27,12 +29,14 @@ export function buildBattleCellViews(
   const reachable = actionable && mover && mover.movePoints > 0
     ? new Set(getReachableCells(mover, terrain, occupied).map((cell) => `${cell.x},${cell.y}`))
     : new Set<string>();
+  const skillTargetIds = actionable ? new Set(getGeneralSkillTargetIds(units, selected!.id, terrain)) : new Set<string>();
 
   return terrain.map((tile, index) => {
     const x = index % BOARD_WIDTH;
     const y = Math.floor(index / BOARD_WIDTH);
     const unit = units.find((candidate) => candidate.currentHp > 0 && candidate.x === x && candidate.y === y) ?? null;
     const targetable = Boolean(actionable && unit && unit.team === 'enemy' && isInRange(selected!, unit, selected!.range));
+    const skillTargetable = Boolean(actionable && unit && unit.team === 'enemy' && skillTargetIds.has(unit.id));
     return {
       x,
       y,
@@ -40,6 +44,7 @@ export function buildBattleCellViews(
       unit,
       reachable: reachable.has(`${x},${y}`),
       targetable,
+      skillTargetable,
       selected: unit?.id === selectedId,
     };
   });
