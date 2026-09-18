@@ -1,5 +1,5 @@
 export type Job = "Warrior" | "Guardian" | "Archer" | "Mage" | "Cleric";
-export type RoomKind = "battle" | "elite" | "treasure" | "rest" | "event" | "boss";
+export type RoomKind = "battle" | "elite" | "treasure" | "rest" | "event" | "hidden" | "boss";
 export type Grade = "Normal" | "Elite" | "Named" | "Boss";
 
 export type Tendencies = {
