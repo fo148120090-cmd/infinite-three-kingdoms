@@ -29,6 +29,7 @@ export function bondAfterBattle(heroes:Hero[],partyIds:string[],deadIds:string[]
   const survivors=inParty.filter(h=>h.hp>0 && !deadIds.includes(h.id));
   return heroes.map(hero=>{
     if(!partyIds.includes(hero.id))return hero;
+    if(deadIds.includes(hero.id))return hero;
     let next=hero;
     for(const ally of survivors){
       if(ally.id===hero.id)continue;
