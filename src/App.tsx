@@ -95,7 +95,7 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
   } else if(d.action==="추격"){
     const t=by(d.target)||enemies[0]; if(t){if(dist(a,t)>a.range)move(t),a.actionText="추격 → "+t.name;else{const x=hit(a,t,1.18);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="추격 공격 → "+t.name+" (-"+x+")";line=a.actionText;}}
   } else if(d.action==="아군 보호"){
-    const t=by(d.target)||allies[0]; if(t){a.pos+=(t.pos>a.pos?.5:-.5);a.guard=2;t.guard=Math.max(t.guard,1);a.actionText="아군 보호 → "+t.name;line=a.actionText;}
+    const t=by(d.target)||allies[0]; if(t){a.pos += t.pos > a.pos ? .5 : -.5;a.guard=2;t.guard=Math.max(t.guard,1);a.actionText="아군 보호 → "+t.name;line=a.actionText;}
   } else if(d.action==="회복"){
     const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*(.18+a.tendencies.cooperation*.001));t.hp=Math.min(t.maxHp,t.hp+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="광역 마법"){
