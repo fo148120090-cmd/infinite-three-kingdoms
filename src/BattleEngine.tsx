@@ -11,7 +11,7 @@ import { getTowerFloorRule, getNextTowerFloor, getTowerClearReward, TOWER_MAX_FL
 import { BOARD_HEIGHT, BOARD_WIDTH } from './game/data/constants';
 import { applyBattleModifiers } from './game/systems/battleModifiers';
 import { calculateDamage } from './game/systems/battleRules';
-import { applyBattleDamageReduction } from './game/systems/battleState';
+import { applyBattleDamageReduction } from './game/systems/battleModifiers';
 import { getGeneralSkillAvailability, getSkillDescription } from './game/systems/skillRules';
 import { getGeneralEffectiveStats } from './game/systems/generalStats';
 
