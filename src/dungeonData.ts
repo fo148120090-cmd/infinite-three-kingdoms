@@ -140,6 +140,17 @@ export const dungeonStages = [
   {id:"r6",title:"심층 관문",kind:"boss" as RoomKind,summary:"오크와 우르크를 거느리는 네임드가 길을 막는다.",species:["Orc","Uruk"]}
 ];
 
+const expandedUniqueItems: Item[] = [
+  {id:"storm-breaker",name:"폭풍의 파쇄검",slot:"weapon",level:14,rarity:"신화",stats:["공격력 +31","공격 속도 +10%","추적성 +16"],aiMods:{aggression:22,pursuit:30,bravery:12},combatMods:{attack:31,speedPct:10},unique:true,description:"전투가 길어질수록 추격과 공격 행동을 강하게 선호한다."},
+  {id:"guardian-aegis",name:"수호의 아이기스",slot:"armor",level:14,rarity:"신화",stats:["방어력 +25","최대 HP +16%","아군보호 +20"],aiMods:{protect:34,cooperation:24,survival:18,caution:8},combatMods:{defense:25,hpPct:16},unique:true,description:"위험한 동료를 발견하면 자신의 위치보다 보호를 우선한다."},
+  {id:"eagle-eye",name:"천리안의 눈",slot:"accessory",level:14,rarity:"신화",stats:["사거리 +1.2","치명타 +12%","집중력 +28"],aiMods:{focus:34,caution:16,pursuit:20},combatMods:{range:1.2,critPct:12},unique:true,description:"거리와 약점 계산에 집중하며 무리한 접근을 줄인다."},
+  {id:"mana-core",name:"심층 마나핵",slot:"accessory",level:14,rarity:"신화",stats:["공격력 +26","사거리 +0.8","치유량 +8%"],aiMods:{focus:30,curiosity:26,cooperation:10},combatMods:{attack:26,range:.8,healPct:8},unique:true,description:"전장의 다수 목표를 읽고 강한 능력을 선택한다."},
+  {id:"martyr-band",name:"순교자의 인장",slot:"ring",level:14,rarity:"신화",stats:["방어력 +18","최대 HP +18%","아군보호 +25"],aiMods:{protect:38,cooperation:18,bravery:10,survival:16},combatMods:{defense:18,hpPct:18},unique:true,description:"자신의 생존보다 동료를 지키는 행동을 우선한다."},
+  {id:"greed-crown",name:"황금 탐욕의 관",slot:"accessory",level:14,rarity:"신화",stats:["공격력 +22","치명타 +10%","탐욕 +32"],aiMods:{greed:36,curiosity:18,aggression:16},combatMods:{attack:22,critPct:10},unique:true,description:"더 큰 보상을 향해 위험한 선택도 감수하는 성향을 강화한다."},
+  {id:"survivor-cloak",name:"생환자의 망토",slot:"armor",level:14,rarity:"신화",stats:["방어력 +20","최대 HP +20%","생존본능 +30"],aiMods:{survival:38,caution:28,bravery:-4,pursuit:-8},combatMods:{defense:20,hpPct:20},unique:true,description:"치명적인 상황에서 후퇴와 생존을 매우 강하게 고려한다."},
+  {id:"war-chorus",name:"전장의 합창",slot:"ring",level:14,rarity:"신화",stats:["공격 속도 +8%","방어력 +14","협동성 +30"],aiMods:{cooperation:36,focus:18,bravery:12,protect:14},combatMods:{speedPct:8,defense:14},unique:true,description:"동료의 행동을 읽고 협공과 지원 행동을 강화한다."},
+];
+
 const extraUniqueItems: Item[] = [
   {id:"immortal-greatsword",name:"불멸자의 대검",slot:"weapon",level:10,rarity:"신화",stats:["공격력 +28","최대 HP +10%","공격 속도 +7%"],aiMods:{aggression:24,bravery:18,survival:-12},combatMods:{attack:28,hpPct:10,speedPct:7},unique:true,description:"치명적인 상황에서도 물러서지 않고 전투를 계속한다."},
   {id:"death-bow",name:"죽음의 활",slot:"weapon",level:10,rarity:"신화",stats:["공격력 +24","사거리 +0.8","치명타 +9%"],aiMods:{focus:26,pursuit:22,greed:6},combatMods:{attack:24,range:.8},unique:true,description:"도망치는 적보다 쓰러뜨릴 수 있는 적을 우선한다."},
@@ -149,13 +160,18 @@ const extraUniqueItems: Item[] = [
 
 export const uniqueItems: Item[] = [
   ...heroesSeed.map(h=>h.item).filter((x):x is Item=>!!x),
-  ...extraUniqueItems
+  ...extraUniqueItems,
+  ...expandedUniqueItems
 ];
 
 export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies>): Item {
   const names=[
     ["철검","weapon"],["전투도끼","weapon"],["장궁","weapon"],["마도서","weapon"],
-    ["정찰자의 반지","ring"],["수호 흉갑","armor"],["주술 목걸이","accessory"],["기민한 장화","armor"]
+    ["전쟁망치","weapon"],["쌍날도끼","weapon"],["석궁","weapon"],["정령서","weapon"],
+    ["정찰자의 반지","ring"],["사냥꾼의 반지","ring"],["전술의 반지","ring"],
+    ["수호 흉갑","armor"],["경량 사슬갑옷","armor"],["심층 판금","armor"],
+    ["주술 목걸이","accessory"],["마력 목걸이","accessory"],["수호 부적","accessory"],
+    ["기민한 장화","armor"],["추적자의 장화","armor"],["마법사의 로브","armor"]
   ] as const;
   const [name,slot]=names[Math.floor(Math.random()*names.length)];
   type Roll={text:string;mod:()=>Record<string,number>};
