@@ -4,7 +4,7 @@ import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, P
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
-import { applyLineage, emptyLineage, evolutionHint, recordLineage } from "./monsterEvolution";
+import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
@@ -311,6 +311,14 @@ export default function App(){
       <ModeCard title="DUNGEON" subtitle="던전" text="방을 선택하고 탐색·전투·보상·보스까지 진행합니다." icon="⚔" onClick={()=>{setMode("dungeon");setScreen("dungeon")}} />
       <ModeCard title="DEFENSE" subtitle="방어전" text="30초 동안 웨이브가 계속됩니다. 목표와 파티 생존을 AI가 지킵니다." icon="🛡" onClick={()=>startMode("defense")} />
       <ModeCard title="BOSS RAID" subtitle="보스 레이드" text="보스의 체력에 따라 3페이즈 패턴이 자동 전환됩니다." icon="♛" onClick={()=>startMode("raid")} />
+    </div>
+    <div className="evolution-section">
+      <div className="section-mini-head"><div><span className="eyebrow">MONSTER EVOLUTION</span><h3>14종 종족의 진화 계통</h3><p>번식으로 개체 수를 늘리지 않고, 반복 전투를 겪은 네임드·보스 계보가 행동 편향에 따라 진화합니다.</p></div></div>
+      <div className="evolution-grid">{Object.entries(monsterEvolutionTrees).map(([species,branches])=>{
+        const lineage=save.monsterLineages.find(x=>x.species===species);
+        const activeLine=lineage?evolutionHint(lineage):"아직 계보 기억 없음";
+        return <article className="evolution-card" key={species}><b>{species}</b><small>{activeLine}</small><div>{branches.slice(0,3).map((b,i)=><span key={i}>{b.forms.join(" → ")}</span>)}</div></article>;
+      })}</div>
     </div>
     <div className="demo-note"><div><b>이번 데모</b><span>던전 / 자동 실시간 전투 / AI 빌드 / 장비 / 성장 기록</span></div><div><b>제외</b><span>멸종 / 번식 / 직접 공격 명령 / 직접 이동 명령 / 수동 스킬 대상 지정</span></div></div></section>}
 
