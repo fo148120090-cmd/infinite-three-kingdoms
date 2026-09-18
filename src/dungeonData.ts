@@ -135,29 +135,55 @@ export const dungeonStages = [
   {id:"r6",title:"심층 관문",kind:"boss" as RoomKind,summary:"오크와 우르크를 거느리는 네임드가 길을 막는다.",species:["Orc","Uruk"]}
 ];
 
+const extraUniqueItems: Item[] = [
+  {id:"immortal-greatsword",name:"불멸자의 대검",slot:"weapon",level:10,rarity:"신화",stats:["공격력 +28","최대 HP +10%","공격 속도 +7%"],aiMods:{aggression:24,bravery:18,survival:-12},combatMods:{attack:28,hpPct:10,speedPct:7},unique:true,description:"치명적인 상황에서도 물러서지 않고 전투를 계속한다."},
+  {id:"death-bow",name:"죽음의 활",slot:"weapon",level:10,rarity:"신화",stats:["공격력 +24","사거리 +0.8","치명타 +9%"],aiMods:{focus:26,pursuit:22,greed:6},combatMods:{attack:24,range:.8},unique:true,description:"도망치는 적보다 쓰러뜨릴 수 있는 적을 우선한다."},
+  {id:"arcane-lens",name:"비전의 렌즈",slot:"accessory",level:10,rarity:"신화",stats:["공격력 +20","사거리 +0.6","최대 HP +5%"],aiMods:{focus:28,curiosity:20,caution:8},combatMods:{attack:20,range:.6,hpPct:5},unique:true,description:"다수의 적이 모이면 강한 광역 행동을 선택한다."},
+  {id:"dead-mans-ring",name:"망자의 반지",slot:"ring",level:10,rarity:"신화",stats:["방어력 +12","최대 HP +14%","치유량 +12%"],aiMods:{survival:20,caution:22,protect:12},combatMods:{defense:12,hpPct:14,healPct:12},unique:true,description:"치명적인 상황에서 생존과 회복 행동을 크게 중시한다."}
+];
+
 export const uniqueItems: Item[] = [
-  heroesSeed[1].item,heroesSeed[2].item,heroesSeed[4].item
+  heroesSeed[1].item,heroesSeed[2].item,heroesSeed[4].item,...extraUniqueItems
 ];
 
 export function randomGeneralItem(level:number=6): Item {
-  const names=[["철검","weapon"],["전투도끼","weapon"],["정찰자의 반지","ring"],["수호 흉갑","armor"],["주술 목걸이","accessory"]] as const;
+  const names=[
+    ["철검","weapon"],["전투도끼","weapon"],["장궁","weapon"],["마도서","weapon"],
+    ["정찰자의 반지","ring"],["수호 흉갑","armor"],["주술 목걸이","accessory"],["기민한 장화","armor"]
+  ] as const;
   const [name,slot]=names[Math.floor(Math.random()*names.length)];
-  const rolls=[
-    `공격력 +${8+Math.floor(Math.random()*15)}`,
-    `방어력 +${6+Math.floor(Math.random()*12)}`,
-    `치명타 +${2+Math.floor(Math.random()*7)}%`,
-    `최대 HP +${5+Math.floor(Math.random()*12)}%`,
-    `공격 속도 +${2+Math.floor(Math.random()*8)}%`
+  type Roll={text:string;mod:()=>Record<string,number>};
+  const rolls:Roll[]=[
+    {text:"공격력 +",mod:()=>({attack:8+Math.floor(Math.random()*18)})},
+    {text:"방어력 +",mod:()=>({defense:6+Math.floor(Math.random()*14)})},
+    {text:"치명타 +",mod:()=>({})},
+    {text:"최대 HP +",mod:()=>({hpPct:5+Math.floor(Math.random()*16)})},
+    {text:"공격 속도 +",mod:()=>({speedPct:2+Math.floor(Math.random()*9)})},
+    {text:"사거리 +",mod:()=>({range:Number((.2+Math.random()*.7).toFixed(1))})},
+    {text:"치유량 +",mod:()=>({healPct:5+Math.floor(Math.random()*15)})},
+    {text:"피해 감소 +",mod:()=>({defense:2+Math.floor(Math.random()*5)})}
   ];
-  const pick=rolls.sort(()=>Math.random()-.5).slice(0,2);
-  const mods:{attack?:number;defense?:number;hpPct?:number;speedPct?:number}={};
-  for(const s of pick){
-    if(s.startsWith("공격력"))mods.attack=Number(s.match(/\d+/)?.[0]||0);
-    if(s.startsWith("방어력"))mods.defense=Number(s.match(/\d+/)?.[0]||0);
-    if(s.startsWith("최대 HP"))mods.hpPct=Number(s.match(/\d+/)?.[0]||0);
-    if(s.startsWith("공격 속도"))mods.speedPct=Number(s.match(/\d+/)?.[0]||0);
+  const shuffled=rolls.slice().sort(()=>Math.random()-.5);
+  const count=2+Math.floor(Math.random()*3);
+  const picked=shuffled.slice(0,count);
+  const combatMods:NonNullable<Item["combatMods"]>={};
+  const stats:string[]=[];
+  for(const r of picked){
+    const m=r.mod();
+    for(const [key,value] of Object.entries(m)) combatMods[key as keyof typeof combatMods]=(combatMods[key as keyof typeof combatMods]||0)+value;
+    if(r.text==="치명타 +")stats.push("치명타 +"+(2+Math.floor(Math.random()*8))+"%");
+    else if(r.text==="사거리 +")stats.push(r.text+String(m.range));
+    else stats.push(r.text+String(Object.values(m)[0])+(r.text.includes("HP")||r.text.includes("속도")||r.text.includes("치유")||r.text.includes("감소")?"%":""));
   }
-  return {id:`roll-${Date.now()}-${Math.random()}`,name,slot,level,rarity:["고급","희귀","영웅"][Math.floor(Math.random()*3)],stats:pick,aiMods:{focus:Math.floor(Math.random()*9)-4,aggression:Math.floor(Math.random()*9)-4,caution:Math.floor(Math.random()*9)-4},combatMods:mods,description:"무작위 옵션이 각각 독립적으로 굴러간 일반 장비."} as Item;
+  const aiKeys=(Object.keys(defaultTendencies.Warrior) as (keyof Tendencies)[]).sort(()=>Math.random()-.5).slice(0,2+Math.floor(Math.random()*2));
+  const aiMods:Partial<Tendencies>={};
+  for(const key of aiKeys)aiMods[key]=Math.floor(Math.random()*17)-5;
+  const roll=Math.random();
+  const rarity=roll<.06?"전설":roll<.24?"영웅":roll<.58?"희귀":"고급";
+  return {
+    id:`roll-${Date.now()}-${Math.random()}`,name,slot,level,rarity,stats,aiMods,combatMods,
+    description:"각 옵션과 AI 성향 보정이 독립적으로 굴러가는 무작위 일반 장비."
+  };
 }
 
 export function chooseMonsterSpecies(floor:number): string {
