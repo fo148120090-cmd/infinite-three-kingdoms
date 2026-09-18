@@ -11,6 +11,7 @@ import { getTowerFloorRule, getNextTowerFloor, getTowerClearReward, TOWER_MAX_FL
 import { BOARD_HEIGHT, BOARD_WIDTH } from './game/data/constants';
 import { applyBattleModifiers } from './game/systems/battleModifiers';
 import { getGeneralSkillAvailability, getSkillDescription } from './game/systems/skillRules';
+import { getGeneralEffectiveStats } from './game/systems/generalStats';
 
 const KEY='infinite-three-kingdoms-save-v2';
 const terrainLabel:Record<Terrain,string>={plain:'평지',forest:'숲',hill:'고지',water:'물',fort:'요새'};
@@ -23,22 +24,17 @@ function readSave():SaveLike{try{return JSON.parse(localStorage.getItem(KEY)||'{
 function buildPlayers(save:SaveLike):Unit[]{
  const formation=(save.formation||[]).map(id=>GENERAL_BY_ID[id]).filter(Boolean).slice(0,5);
  return formation.map((g,i)=>{
-  const eq=save.equipment?.[g.id],star=Math.max(1,Math.min(6,save.stars?.[g.id]||1)),level=Math.max(1,save.generalLevels?.[g.id]||save.level||1),equipLevel=eq?.equipped===false?0:Math.max(0,eq?.level||0),mult=1+0.05*(star-1);
-  const hpOption=eq?.equipped===false?0:(eq?.optionA===1?equipLevel*5:eq?.optionB===1?equipLevel*5:0);
-  const atkOption=eq?.equipped===false?0:(eq?.optionA===0?equipLevel*2:eq?.optionB===0?equipLevel*2:0);
-  const critChance=eq?.equipped===false?0:(eq?.optionA===2?Math.floor(equipLevel/2):eq?.optionB===2?Math.floor(equipLevel/2):0);
-  const skillOption=eq?.equipped===false?0:(eq?.optionA===3?equipLevel:eq?.optionB===3?equipLevel:0);
-  const hp=Math.floor((g.hp+(level-1)*12+equipLevel*10+hpOption)*mult),atk=Math.floor((g.atk+(level-1)*3+equipLevel*4+atkOption)*mult),defense=Math.floor((g.defense+(level-1)*1.5+equipLevel*2+((eq?.optionA===1||eq?.optionB===1)?Math.floor(equipLevel*.8):0))*mult);
-  const base:Unit={...g,skillPower:g.skillPower+skillOption,hp,atk,defense,maxHp:hp,currentHp:hp,team:'player',x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none',statusTurns:0,critChance};
+  const star=Math.max(1,Math.min(6,save.stars?.[g.id]||1)),level=Math.max(1,save.generalLevels?.[g.id]||save.level||1),eq=save.equipment?.[g.id];
+  const stats=getGeneralEffectiveStats(g,{level,star,equipment:eq});
+  const base:Unit={...g,skillPower:stats.skillPower,hp:stats.hp,atk:stats.atk,defense:stats.defense,maxHp:stats.hp,currentHp:stats.hp,team:'player',x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none',statusTurns:0,critChance:stats.critChance};
   return applyBattleModifiers(base,formation);
- });
 }
 function terrainClass(t:Terrain){return `be-terrain-${t}`}
 function isPlayerActionUnavailable(u:Unit){return u.currentHp<=0||(u.status==='stun'&&u.statusTurns>0)}
 function getPlayerActionState(u:Unit){if(u.currentHp<=0)return '전투불능';if(u.status==='stun'&&u.statusTurns>0)return `기절 · ${u.statusTurns}턴`;if(u.acted)return '행동 완료';return '행동 가능'}
 export default function BattleEngine(){
  const[save,setSave]=useState<SaveLike>(readSave);const[towerComplete,setTowerComplete]=useState(false);const[feedback,setFeedback]=useState('');const[enemyFeed,setEnemyFeed]=useState('');const[enemyFeedStep,setEnemyFeedStep]=useState(0);const[enemyFeedTotal,setEnemyFeedTotal]=useState(0);const[engine,setEngine]=useState<BattleState|null>(null);const[terrain,setTerrain]=useState<Terrain[]>([]);const[seed,setSeed]=useState(0);const floor=save.floor||1;const rule=getTowerFloorRule(floor);const players=useMemo(()=>buildPlayers(save),[save]);
- const formationKey=useMemo(()=>players.map(player=>`${player.id}:${player.maxHp}:${player.atk}:${player.defense}`).join(','),[players]);
+ const formationKey=useMemo(()=>players.map(player=>`${player.id}:${player.maxHp}:${player.atk}:${player.defense}:${player.critChance||0}:${player.skillPower}`).join(','),[players]);
  const completionNotice=towerComplete?'100층 천탑 정복이 저장되었습니다.':'';
  const start=()=>{setFeedback('');setEnemyFeed('');setEnemyFeedStep(0);setEnemyFeedTotal(0);const nextSeed=createBattleFieldSeed();const nextTerrain=createBattleField(nextSeed);const enemies=createMonsterEnemies(floor);setSeed(nextSeed);setTerrain(nextTerrain);setEngine(createBattleState([...players,...enemies],[`천탑 ${floor}층 · ${rule.kind==='boss'?'BOSS':'일반'} 전투`,`지형 시드 ${nextSeed}`]));};
  useEffect(()=>{start()},[floor,formationKey]);if(!engine){return completionNotice?<section className="be-shell"><div className="be-result"><h2>천탑 완주!</h2><p>{completionNotice}</p></div></section>:null}if(terrain.length!==BOARD_WIDTH*BOARD_HEIGHT)return null;
