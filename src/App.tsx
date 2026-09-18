@@ -447,6 +447,7 @@ export default function App(){
           return {...h,hp:Math.min(h.hp,Math.max(1,h.hp+(update.hpDelta||0))),tendencies:nextT};
         }),
         gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,
+        routeMemory:recordRouteMemory(s.routeMemory,"hidden",true,outcome.gold),
         stage:s.stage+1
       }));
       notify(outcome.text);
@@ -461,12 +462,12 @@ export default function App(){
       const uniqueBase=uniqueItems[Math.floor(Math.random()*uniqueItems.length)];
       const uniqueDrop=Math.random()<.12 ? {...uniqueBase,id:uniqueBase.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)} : undefined;
       const item=uniqueDrop||randomGeneralItem(save.floor+2,partyPref);
-      setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));
+      setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,routeMemory:recordRouteMemory(s.routeMemory,"treasure",true,180),stage:s.stage+1}));
       notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득");
       return;
     }
     if(kind==="rest"){
-      setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...grantExperience(h,4).hero,hp:Math.round(h.hp*1.15)}:h),stage:s.stage+1}));
+      setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...grantExperience(h,4).hero,hp:Math.round(h.hp*1.15)}:h),routeMemory:recordRouteMemory(s.routeMemory,"rest",true,0),stage:s.stage+1}));
       notify("휴식: 경험 기록 +4 · HP 15% 회복");
       return;
     }
@@ -630,6 +631,7 @@ export default function App(){
       const baseMaterials=isFinal?100:isBoss?60:18;
       const exp=Math.max(8,Math.round((22+(isElite?15:0)+(isBoss?70:0)+(isFinal?110:0))*(isRepeat?.85:1)));
       const loot=victory?rollBattleLoot(Math.max(1,s.floor+(isBoss?2:0)),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
+      const routeLearning=battle.mode==="dungeon"&&!isRepeat&&(battle.room==="battle"||battle.room==="elite"||battle.room==="boss"||battle.room==="evilCave");
       if(victory) setLastLoot(loot);
       if(victory&&loot.length) window.setTimeout(()=>notify("전리품 획득 · "+loot.map(x=>x.name).join(" · ")),0);
       return {...s,
@@ -640,6 +642,7 @@ export default function App(){
         monsterLineages:nextLineages,
         floor:victory&&isBoss?s.floor+1:s.floor,
         stage:victory?(isBoss?0:(isFinal?s.stage:s.stage+1)):s.stage,
+        routeMemory:routeLearning?recordRouteMemory(s.routeMemory,battle.room,victory,victory?Math.round(baseGold*rewardMultiplier):0):s.routeMemory,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
           return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id]);
@@ -703,6 +706,7 @@ export default function App(){
     if(!choice)return;
     const outcome=resolveDungeonChoice(save.heroes,save.party,save.floor,env,choice);
     setSave(s=>({...s,
+      routeMemory:recordRouteMemory(s.routeMemory,"event",true,outcome.gold),
       heroes:s.heroes.map(h=>{
         const update=outcome.heroUpdates[h.id];
         if(!update)return h;
@@ -768,7 +772,8 @@ export default function App(){
     {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
       {Object.keys(save.scenarioClears).length>0&&<div className="repeat-panel"><div><b>완료 시나리오 재도전</b><span>성장을 위해 완료한 시나리오를 반복할 수 있습니다. 반복할수록 보상이 감소하고 25% 확률로 정예 몬스터 무리가 등장합니다.</span></div><div className="repeat-list">{Object.keys(save.scenarioClears).sort((a,b)=>Number(b)-Number(a)).map(k=>{const n=save.scenarioClears[k];const mult=Math.max(.3,.6-.1*Math.max(0,n-1));return <button key={k} className="repeat-card" onClick={()=>startRepeat(Number(k))}><b>{k}F 시나리오</b><span>클리어 {n}회 · 다음 보상 {Math.round(mult*100)}%</span><ChevronRight size={16}/></button>})}</div></div>}
-      <div className="route-grid">{route(save.stage,save.floor,party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0).map((r,i)=>{const f=routeForecast(r.kind,save.floor,party);return <button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p><div className="route-intel"><span>위험 {f.risk}</span><span>예상 보상 {f.reward}G</span><span>적합도 {f.fit}</span><span>{environmentInfo[f.environment].name}</span></div></div><ChevronRight size={20}/></button>})}</div>
+      <div className="route-grid">{route(save.stage,save.floor,party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0).map((r,i)=>{const f=routeForecast(r.kind,save.floor,party,save.routeMemory);return <button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p><div className="route-intel"><span>위험 {f.risk}</span><span>예상 보상 {f.reward}G</span><span>적합도 {f.fit}</span><span>{environmentInfo[f.environment].name}</span><span>경험 {f.experience}회{f.experience>0?" · 성공 "+f.successRate+"%":""}</span></div></div><ChevronRight size={20}/></button>})}</div>
+      {Object.entries(save.routeMemory||{}).filter(([,m])=>m.attempts>0).length>0&&<div className="route-memory-panel"><div><span className="eyebrow">DUNGEON MEMORY</span><b>던전 경로 기억</b><small>같은 종류의 방을 실제로 경험한 결과가 다음 예측에 조금씩 반영됩니다.</small></div><div className="route-memory-list">{Object.entries(save.routeMemory||{}).filter(([,m])=>m.attempts>0).sort((a,b)=>b[1].attempts-a[1].attempts).slice(0,6).map(([kind,m])=><div className="route-memory-row" key={kind}><strong>{roomKo[kind as RoomKind]}</strong><span>경험 {m.attempts}회</span><span>성공 {Math.round(m.clears/m.attempts*100)}%</span>{m.rewardSamples>=2&&<span>실측 보상 {Math.round(m.rewardGold/m.rewardSamples)}G</span>}</div>)}</div></div>}
       <div className="dungeon-meta"><div><b>현재 파티</b>{party.map(h=><span key={h.id}>{jobIcon[h.job]} {h.name}</span>)}</div><div><b>대서사의 목표</b><span>{save.worldSealed?"세계의 구멍 봉인 완료":"동굴을 돌파해 악의 동굴을 찾고 세계의 구멍을 봉인하세요."}</span></div></div></section>}
 
     {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="evilCave"?"악의 동굴 · 세계의 구멍":battle.room==="boss"?"심층 관문":battle.repeatScenarioFloor!==undefined?"시나리오 재도전":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
