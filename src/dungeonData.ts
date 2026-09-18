@@ -148,7 +148,8 @@ const extraUniqueItems: Item[] = [
 ];
 
 export const uniqueItems: Item[] = [
-  heroesSeed[1].item,heroesSeed[2].item,heroesSeed[4].item,...extraUniqueItems
+  ...heroesSeed.map(h=>h.item).filter((x):x is Item=>!!x),
+  ...extraUniqueItems
 ];
 
 export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies>): Item {
@@ -200,6 +201,23 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
     id:`roll-${Date.now()}-${Math.random()}`,name,slot,level,rarity,stats,aiMods,combatMods,
     description:"각 옵션과 AI 성향 보정이 독립적으로 굴러가는 무작위 일반 장비."
   };
+}
+
+export function rollBattleLoot(level:number, room:RoomKind, preference?:Partial<Tendencies>, rewardMultiplier=1): Item[] {
+  const general=randomGeneralItem(Math.max(1,level),preference);
+  const bossLike=room==="boss"||room==="evilCave";
+  const eliteLike=room==="elite";
+  const baseUniqueChance=room==="evilCave"?.55:room==="boss"?.35:room==="elite"?.16:.08;
+  const uniqueChance=baseUniqueChance*Math.max(.3,Math.min(1,rewardMultiplier));
+  const loot=[general];
+  if(bossLike||eliteLike||Math.random()<uniqueChance){
+    if(Math.random()<uniqueChance){
+      loot.push(uniqueItems[Math.floor(Math.random()*uniqueItems.length)]);
+    } else if(bossLike||eliteLike){
+      loot.push(randomGeneralItem(Math.max(1,level+1),preference));
+    }
+  }
+  return loot;
 }
 
 export function chooseMonsterSpecies(floor:number): string {
