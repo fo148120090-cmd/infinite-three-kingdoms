@@ -36,13 +36,19 @@ const live=(u:BattleUnit[],team:"player"|"enemy")=>u.filter(x=>x.team===team&&x.
 const aiT=(t:Tendencies,item?:Item):Tendencies=>{
   const n={...t}; if(item) (Object.keys(item.aiMods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(item.aiMods[k]||0))); return n;
 };
+const combatStats=(hero:Hero)=>{
+  const m=hero.item.combatMods||{};
+  const hp=Math.round(hero.hp*(1+(m.hpPct||0)/100));
+  return {hp,maxHp:hp,attack:hero.attack+(m.attack||0),defense:hero.defense+(m.defense||0),speed:hero.speed*(1+(m.speedPct||0)/100),range:hero.range+(m.range||0)};
+};
 
 function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[]): BattleUnit[] {
-  const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>({
-    id:h.id,name:h.name,job:h.job,team:"player" as const,hp:h.hp,maxHp:h.hp,attack:h.attack,defense:h.defense,
-    speed:h.speed,range:h.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
-    relationships:h.relationships,memories:h.memories,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}
-  }));
+  const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>{
+    const s=combatStats(h);
+    return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
+      speed:s.speed,range:s.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
+      relationships:h.relationships,memories:h.memories,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
+  });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"?3:room==="elite"?4:3;
   let es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
@@ -117,7 +123,7 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
   } else if(d.action==="아군 보호"){
     const t=by(d.target)||allies[0]; if(t){a.pos += t.pos > a.pos ? .5 : -.5;a.guard=2;t.guard=Math.max(t.guard,1);a.actionText="아군 보호 → "+t.name;line=a.actionText;}
   } else if(d.action==="회복"){
-    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*(.18+a.tendencies.cooperation*.001));t.hp=Math.min(t.maxHp,t.hp+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.18+a.tendencies.cooperation*.001)*(1+(a.item?.combatMods?.healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="광역 마법"){
     const ts=enemies.filter(x=>dist(a,x)<=5).slice(0,3); if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,.72);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText="광역 마법 → "+bits.join(", ");line=a.actionText;} else if(enemies[0])move(enemies[0]),a.actionText="광역 사거리 확보";
   } else if(d.action==="기습 후퇴"||d.action==="후퇴"){a.pos=Math.max(.3,a.pos-.95);a.actionText=d.action+" · 생존 우선";line=a.actionText;
