@@ -57,3 +57,15 @@ export function partyPreference(heroes:Hero[]):Partial<Tendencies>{
   (Object.keys(heroes[0].tendencies) as (keyof Tendencies)[]).forEach(k=>out[k]=heroes.reduce((n,h)=>n+h.tendencies[k],0)/heroes.length);
   return out;
 }
+
+export function habitBias(hero:{behaviorCounts?:Record<string,number>},action:string):number{
+  const count=hero.behaviorCounts?.[action]||0;
+  if(count<=0)return 0;
+  return Math.min(12,Math.sqrt(count)*1.8);
+}
+
+export function profileInsight(hero:Hero):string{
+  const entries=Object.entries(hero.behaviorCounts||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  if(!entries.length)return "아직 뚜렷한 전투 습관이 없습니다.";
+  return entries.map(([action,count])=>action+" "+count+"회").join(" · ");
+}
