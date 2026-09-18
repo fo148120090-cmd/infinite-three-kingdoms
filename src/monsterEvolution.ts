@@ -18,9 +18,14 @@ export const monsterEvolutionTrees:Record<string,Branch[]>={
   Demon:[{focus:"war",forms:["중급 악마","고급 악마"]},{focus:"flame",forms:["화염 악마","화염 군주"]},{focus:"domination",forms:["지배 악마","악마 군주"]},{focus:"illusion",forms:["환영 악마","공포의 악마"]},{focus:"death",forms:["사령 악마","죽음의 대공"]}]
 };
 
-const focusForAction=(action:string):string=>{
-  if(action.includes("공격")||action.includes("추격"))return "combat";
-  if(action.includes("보호")||action.includes("지휘"))return "command";
+const focusForAction=(action:string,species?:string):string=>{
+  if(action.includes("보스 패턴")||action.includes("지휘"))return species==="Uruk"?"command":"command";
+  if(action.includes("공격")||action.includes("추격")){
+    if(species==="Uruk")return "soldier";
+    if(species==="Ogre")return "strength";
+    return "combat";
+  }
+  if(action.includes("보호"))return "command";
   if(action.includes("후퇴"))return "survival";
   if(action.includes("광역"))return "magic";
   if(action.includes("기습"))return "ambush";
@@ -47,7 +52,7 @@ export function evolveLineage(lineage:MonsterLineage):MonsterLineage{
 }
 
 export function recordLineage(lineage:MonsterLineage,action:string,won:boolean):MonsterLineage{
-  const focus=focusForAction(action);
+  const focus=focusForAction(action,lineage.species);
   const next={...lineage,focus:{...lineage.focus},experience:lineage.experience+(won?2:1)};
   next.focus[focus]=(next.focus[focus]||0)+(won?1.4:.6);
   next.level=Math.max(1,1+Math.floor(next.experience/10));
@@ -60,7 +65,7 @@ export function applyLineage(monster:Monster,lineage?:MonsterLineage):Monster{
   const stat=1+(lineage.evolutionStage*.08);
   const tendencies:Tendencies={...monster.tendencies};
   Object.entries(lineage.focus).forEach(([k,v])=>{
-    const map:Record<string,keyof Tendencies>={combat:"aggression",command:"cooperation",survival:"survival",magic:"focus",ambush:"pursuit",defense:"caution"};
+    const map:Record<string,keyof Tendencies>={combat:"aggression",soldier:"aggression",officer:"focus",armor:"caution",command:"cooperation",survival:"survival",magic:"focus",ambush:"pursuit",defense:"caution",strength:"aggression"};
     const key=map[k];
     if(key)tendencies[key]=Math.min(100,tendencies[key]+Math.min(12,v));
   });
