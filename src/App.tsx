@@ -4,10 +4,12 @@ import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, P
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
+import { applyLineage, emptyLineage, evolutionHint, recordLineage } from "./monsterEvolution";
+import type { MonsterLineage } from "./dungeonData";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
 type BattleMode = "dungeon" | "defense" | "raid";
-type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[] };
+type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[] };
 type Decision = { action: string; target?: string; detail: string; score: number };
 
 const KEY = "autonomous-dungeon-demo-v1";
@@ -22,10 +24,10 @@ function load(): Save {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies}})), items:s.items||[]};
+      return {...s, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies}})), items:s.items||[], monsterLineages:s.monsterLineages||[]};
     }
   } catch {}
-  return {heroes:heroesSeed.map(h=>({...h,tendencies:cloneTendencies(h.tendencies)})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[]};
+  return {heroes:heroesSeed.map(h=>({...h,tendencies:cloneTendencies(h.tendencies)})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[]};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
@@ -35,7 +37,7 @@ const aiT=(t:Tendencies,item?:Item):Tendencies=>{
   const n={...t}; if(item) (Object.keys(item.aiMods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(item.aiMods[k]||0))); return n;
 };
 
-function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleUnit[] {
+function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[]): BattleUnit[] {
   const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>({
     id:h.id,name:h.name,job:h.job,team:"player" as const,hp:h.hp,maxHp:h.hp,attack:h.attack,defense:h.defense,
     speed:h.speed,range:h.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
@@ -43,14 +45,18 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleU
   }));
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"?3:room==="elite"?4:3;
-  const es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
-  if(room==="boss") es[0]={...es[0],id:"uruk-boss",name:"우르크 전쟁대장",species:"Uruk",grade:"Boss",hp:420,maxHp:420,attack:53,defense:30,pos:8.8};
+  let es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
+  if(room==="boss"){
+    const lineage=lineages.find(x=>x.id==="uruk-boss")||emptyLineage("uruk-boss","Uruk");
+    es[0]=applyLineage({...es[0],id:"uruk-boss",name:"우르크 전쟁대장",species:"Uruk",grade:"Boss",hp:420,maxHp:420,attack:53,defense:30,pos:8.8},lineage);
+  }
   return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
     speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0})));
 }
 
-function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
-  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.hp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
+function asEnemy(e:ReturnType<typeof createMonster>,suffix="",lineage?:MonsterLineage):BattleUnit{
+  const m=lineage?applyLineage(e,lineage):e;
+  return {id:m.id+suffix,name:m.name,species:m.species,grade:m.grade,team:"enemy" as const,hp:m.hp,maxHp:m.maxHp,attack:m.attack,defense:m.defense,speed:m.speed,range:m.range,pos:m.pos,alive:true,tendencies:m.tendencies,mutation:m.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
 }
 
 function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
@@ -157,7 +163,10 @@ export default function App(){
   const start=(kind:RoomKind)=>{
     if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));notify("보물: "+item.name+" 획득");return;}
     if(kind==="rest"){setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?grantExperience(h,4).hero:h),stage:s.stage+1}));notify("휴식: 경험 기록 +4");return;}
-    const units=spawn(save.heroes,save.party,kind,save.floor);
+    let lineages=save.monsterLineages;
+    if(kind==="boss" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
+    if(kind==="boss" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
+    const units=spawn(save.heroes,save.party,kind,save.floor,lineages);
     setMode("dungeon");
     setBattle({units,log:[roomKo[kind]+" 시작 · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
@@ -166,7 +175,10 @@ export default function App(){
   const startMode=(nextMode:BattleMode)=>{
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
-    const units=spawn(save.heroes,save.party,room,save.floor);
+    let lineages=save.monsterLineages;
+    if(nextMode==="raid" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
+    if(nextMode==="raid" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
+    const units=spawn(save.heroes,save.party,room,save.floor,lineages);
     const label=nextMode==="defense"?"방어전 시작 · 30초 동안 웨이브가 계속됩니다.":"보스 레이드 시작 · 보스 페이즈는 AI가 자동 전환됩니다.";
     setBattle({units,log:[label],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1});
     setPaused(false);setScreen("battle");
