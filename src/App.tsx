@@ -8,7 +8,7 @@ import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recor
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
 import { resolveDungeonEvent, resolveHiddenRoom } from "./dungeonEvents";
-import { applyBehaviorHistory, behaviorSummary } from "./progression";
+import { applyBehaviorHistory, behaviorSummary, buildProfile, partyPreference } from "./progression";
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
@@ -265,6 +265,7 @@ export default function App(){
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
   const [toast,setToast]=useState("");
   const party=useMemo(()=>save.heroes.filter(h=>save.party.includes(h.id)),[save.heroes,save.party]);
+  const partyPref=useMemo(()=>partyPreference(party),[party]);
   const hero=save.heroes.find(h=>h.id===selectedHero)||save.heroes[0];
   const active=battle.units.find(u=>u.id===battle.next&&u.alive);
   const notify=(s:string)=>{setToast(s);window.setTimeout(()=>setToast(""),1800);};
@@ -306,7 +307,7 @@ export default function App(){
     }
     if(kind==="treasure"){
       const uniqueDrop=Math.random()<.12 ? uniqueItems[Math.floor(Math.random()*uniqueItems.length)] : undefined;
-      const item=uniqueDrop||randomGeneralItem(save.floor+2);
+      const item=uniqueDrop||randomGeneralItem(save.floor+2,partyPref);
       setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));
       notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득");
       return;
@@ -526,7 +527,7 @@ export default function App(){
       {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p></div><button className="primary-btn" onClick={()=>{setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
     {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">EQUIPMENT</span><h2>장비 연구실</h2><p className="muted">직업 제한 없음 · 일반 장비는 무작위 롤 · 고유 장비는 AI 행동까지 바꿉니다.</p></div></div>
-      <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>{jobKo[hero.job]} · {hero.item.name}</span></div><button className="primary-btn compact" onClick={randomEquip} disabled={save.materials<12}><RotateCcw size={16}/> 무작위 재굴림 · 12</button></div>
+      <div className="inventory-grid"><div className="subpanel equipment-hero"><div><small>현재 선택</small><b>{hero.name}</b><span>{jobKo[hero.job]} · {hero.item.name}</span><small>자동 빌드 · {buildProfile(hero).name}</small></div><button className="primary-btn compact" onClick={randomEquip} disabled={save.materials<12}><RotateCcw size={16}/> 무작위 재굴림 · 12</button></div>
       <div className="item-list"><ItemCard item={hero.item} equipped/><div className="unique-title"><Sparkles size={16}/> 대표 고유 장비</div>{uniqueItems.filter(x=>x.id!==hero.item.id).map(i=><ItemCard key={i.id} item={i} onEquip={()=>equip(i)}/>)}{save.items.map(i=><ItemCard key={i.id} item={i} onEquip={()=>{equip(i);setSave(s=>({...s,items:s.items.filter(x=>x.id!==i.id)}));}}/> )}</div></div></section>}
 
     <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
@@ -544,7 +545,7 @@ function HeroCard({hero,active,onClick}:{hero:Hero;active:boolean;onClick:()=>vo
       <p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/100</p>
       <div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div>
       <small>장비 · {hero.item.name}{hero.item.unique?" · UNIQUE":""}</small>
-      <small>{behaviorSummary(hero)}</small>
+      <small>{behaviorSummary(hero)}</small><small>AI 빌드 · {buildProfile(hero).name} · {buildProfile(hero).detail}</small>
       <div className="social-meta">
         {bond&&<span>유대 · {bondName} {Math.round(bond.relation.bond)}</span>}
         <span>기억 {hero.memories?.length||0}</span>
