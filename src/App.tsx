@@ -346,7 +346,7 @@ export default function App(){
       return;
     }
     const env=environmentFor(save.floor,kind,"dungeon");
-    const units=spawn(save.heroes,save.party,kind,save.floor);
+    const units=spawn(save.heroes,save.party,kind,save.floor,save.monsterLineages);
     setMode("dungeon");
     setBattle({units,log:[roomKo[kind]+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
@@ -358,7 +358,7 @@ export default function App(){
     const elitePack=Math.random()<.25;
     const room:RoomKind=elitePack?"elite":"battle";
     const env=environmentFor(scenarioFloor,room,"dungeon");
-    const units=spawn(save.heroes,save.party,room,scenarioFloor);
+    const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages);
     const rewardMultiplier=Math.max(.3,.6-.1*Math.max(0,repeatCount-1));
     setBattle({units,log:[scenarioFloor+"F 완료 시나리오 재도전 · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
     setPaused(false);setScreen("battle");setDecision(elitePack?"재도전 중 정예 무리의 전투 성향을 분석 중...":"완료 시나리오의 적 행동을 다시 분석 중...");
@@ -368,7 +368,7 @@ export default function App(){
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
     const env=environmentFor(save.floor,room,nextMode);
-    const units=spawn(save.heroes,save.party,room,save.floor);
+    const units=spawn(save.heroes,save.party,room,save.floor,save.monsterLineages);
     const objectiveKind=defenseObjectiveForFloor(save.floor);
     const label=nextMode==="defense"
       ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · 30초 동안 웨이브가 계속됩니다.`
@@ -406,7 +406,7 @@ export default function App(){
             const pool=["Goblin","Kobold","Gnoll","Orc","Uruk","Arachne","Ogre"];
             const count=Math.min(7,2+wave);
             const nextEnemies=Array.from({length:count},(_,i)=>{
-              const m=createLinedMonster(pool[(i+wave+save.floor)%pool.length],Math.max(1,save.floor+wave-1),wave>=4?"Elite":"Normal",i,prev.monsterLineages||save.monsterLineages);
+              const m=createLinedMonster(pool[(i+wave+save.floor)%pool.length],Math.max(1,save.floor+wave-1),wave>=4?"Elite":"Normal",i,save.monsterLineages);
               return asEnemy({...m,pos:8.2+i*.55},"-w"+wave);
             });
             out.units=out.units.concat(nextEnemies);
