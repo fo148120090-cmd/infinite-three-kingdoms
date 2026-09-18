@@ -8,7 +8,7 @@ import { applyMonsterTurnEffects } from './monsterTurnEffects';
 
 export type BattleTurn = 'player' | 'enemy';
 export type BattlePhase = 'player' | 'enemy' | 'victory' | 'defeat';
-export type BattleState = { units: Unit[]; turn: BattleTurn; phase: BattlePhase; selectedId: string | null; targetId: string | null; log: string[] };
+export type BattleState = { units: Unit[]; turn: BattleTurn; phase: BattlePhase; turnNumber: number; selectedId: string | null; targetId: string | null; log: string[] };
 export type BattleActionResult = { state: BattleState; success: boolean; message: string };
 
 const cloneUnits = (units: Unit[]) => units.map((unit) => ({ ...unit }));
@@ -42,7 +42,7 @@ function advanceStatuses(unit: Unit): Unit {
 export function createBattleState(units: Unit[], log: string[] = ['전투를 시작합니다.']): BattleState {
   const safeUnits = normalizeDefeatedUnits(cloneUnits(units).map((unit) => ({ ...unit, acted: unit.team === 'enemy', movePoints: unit.move })));
   const outcome = isBattleOver(safeUnits);
-  return { units: safeUnits, turn: 'player', phase: outcome === 'player' ? 'victory' : outcome === 'enemy' ? 'defeat' : 'player', selectedId: safeUnits.find((unit) => unit.team === 'player' && canAct(unit))?.id ?? null, targetId: null, log };
+  return { units: safeUnits, turn: 'player', phase: outcome === 'player' ? 'victory' : outcome === 'enemy' ? 'defeat' : 'player', turnNumber: 1, selectedId: safeUnits.find((unit) => unit.team === 'player' && canAct(unit))?.id ?? null, targetId: null, log };
 }
 
 export function selectBattleUnit(state: BattleState, id: string | null): BattleState {
@@ -144,13 +144,13 @@ export function endPlayerTurn(state: BattleState, terrain: Terrain[], floor = 1)
   const log = [...state.log, '몬스터 턴', enemyLog];
   const outcome = isBattleOver(normalizedReset);
   if (outcome === 'enemy') {
-    return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'defeat', targetId: null, log: [...log, '전투 패배...'] }, success: true, message: enemyLog };
+    return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'defeat', turnNumber: state.turnNumber, targetId: null, log: [...log, '전투 패배...'] }, success: true, message: enemyLog };
   }
   if (outcome === 'player') {
-    return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'victory', targetId: null, log: [...log, '전투 승리!'] }, success: true, message: enemyLog };
+    return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'victory', turnNumber: state.turnNumber, targetId: null, log: [...log, '전투 승리!'] }, success: true, message: enemyLog };
   }
   const selected = normalizedReset.find((unit) => unit.team === 'player' && canAct(unit));
-  return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'player', targetId: null, selectedId: selected?.id ?? null, log }, success: true, message: enemyLog };
+  return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'player', turnNumber: state.turnNumber + 1, targetId: null, selectedId: selected?.id ?? null, log }, success: true, message: enemyLog };
 }
 
 export function getBattleTargetable(state: BattleState): Unit[] {
