@@ -37,7 +37,7 @@ export type BattleUnit = {
   id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade;
   hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
   pos:number; alive:boolean; tendencies:Tendencies; item?:Item; actionText:string;
-  cooldown:number; guard:number; xp:number; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string;
+  cooldown:number; guard:number; xp:number; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>;
 };
 
 export const defaultTendencies: Record<Job,Tendencies> = {
