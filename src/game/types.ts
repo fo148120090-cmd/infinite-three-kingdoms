@@ -58,4 +58,5 @@ export type Unit = General & {
   movePoints: number;
   status: Status;
   statusTurns: number;
+  critChance?: number;
 };
