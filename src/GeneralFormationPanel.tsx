@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { GENERALS } from './game/data/generals';
 import { getGeneralImagePaths } from './game/data/generalImages';
 import { getGeneralCombatPower, getGeneralEffectiveStats } from './game/systems/generalStats';
+import { getBattleModifiers, getUnitBattleModifiers } from './game/systems/battleModifiers';
+import { getActiveRelationships } from './game/systems/relationships';
 import type { Equip, General } from './game/types';
 
 const KEY='infinite-three-kingdoms-save-v2';
@@ -26,7 +28,20 @@ export default function GeneralFormationPanel(){
  const formation=useMemo(()=>Array.isArray(save.formation)?save.formation.filter((x):x is string=>typeof x==='string').slice(0,5):[],[save.formation]);
  const generals=useMemo(()=>new Map(GENERALS.map(g=>[g.id,g])),[]);
  const team=formation.map(id=>generals.get(id)).filter(Boolean) as General[];
- const teamPower=team.reduce((sum,g)=>sum+power(g,save),0);
+ const formationModifiers=getBattleModifiers(team);
+ const activeRelationships=getActiveRelationships(team);
+ const battlePower=(g:General)=>{
+   const base=getStats(g,save);
+   const mod=getUnitBattleModifiers({id:g.id},team);
+   return getGeneralCombatPower({
+     hp:Math.floor(base.hp*(1+mod.hpPct/100)),
+     atk:Math.floor(base.atk*(1+mod.attackPct/100)),
+     defense:base.defense,
+     critChance:base.critChance+mod.critPct,
+     skillPower:Math.floor(base.skillPower*(1+mod.skillPowerPct/100)),
+   });
+ };
+ const teamPower=team.reduce((sum,g)=>sum+battlePower(g),0);
  const selected=formation[slot]?generals.get(formation[slot]):undefined;
  const candidates=GENERALS.filter(g=>owned.has(g.id)&&!formation.includes(g.id));
 
@@ -56,7 +71,14 @@ export default function GeneralFormationPanel(){
      <button onClick={()=>setOpen(false)} aria-label="닫기" style={{border:0,background:'transparent',color:'#fff',fontSize:22,cursor:'pointer'}}>✕</button>
     </header>
     {message&&<div style={{padding:'9px 11px',marginBottom:12,borderRadius:9,background:'#182235',color:'#c6d4eb',fontSize:13}}>{message}</div>}
-    <section style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(140px,1fr))',gap:9,marginBottom:16}}>
+    <section style={{padding:12,borderRadius:12,border:'1px solid #2a3345',background:'#101722',marginBottom:14}}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}><b>활성 시너지</b><span style={{fontSize:11,color:'#8fa0b9'}}>실제 전투 수치에 적용</span></div>
+      <div style={{marginTop:7,display:'flex',gap:7,flexWrap:'wrap'}}>
+       {(formationModifiers.labels.length?formationModifiers.labels:['기본 진형']).map((label,i)=><span key={'f'+i} style={{padding:'5px 8px',borderRadius:7,background:'#182235',fontSize:11,color:'#c6d4eb'}}>{label}</span>)}
+       {activeRelationships.map((rel,i)=><span key={'r'+i} style={{padding:'5px 8px',borderRadius:7,background:'#241e16',fontSize:11,color:'#e1cfaa'}}>{rel.label}</span>)}
+      </div>
+     </section>
+     <section style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(140px,1fr))',gap:9,marginBottom:16}}>
      {Array.from({length:5},(_,i)=>{const g=formation[i]?generals.get(formation[i]):undefined;return <button key={i} onClick={()=>selectSlot(i)} style={{textAlign:'left',padding:10,borderRadius:12,border:'1px solid '+(slot===i?'#8799b8':'#2a3345'),background:slot===i?'#1a2639':'#141923',color:'#fff',cursor:'pointer',minHeight:145}}>
        <small style={{color:'#8fa0b9'}}>SLOT {i+1}</small>{g?<><img src={getGeneralImagePaths(g).sd} alt="" style={{display:'block',width:48,height:48,objectFit:'cover',borderRadius:9,margin:'7px 0'}} onError={e=>{e.currentTarget.style.display='none'}}/><b>{g.name}</b><div style={{fontSize:11,color:'#a9b4c5',marginTop:4}}>Lv.{getStats(g,save).level} · ★{getStats(g,save).star}</div><div style={{fontSize:11,color:'#9aa6b8'}}>전투력 {fmt(power(g,save))}</div></>:<div style={{padding:'28px 0',color:'#6f7e96'}}>빈 슬롯</div>}
       </button>})}
@@ -69,7 +91,7 @@ export default function GeneralFormationPanel(){
     </section>
     <h3 style={{margin:'8px 0'}}>보유 장수 · 교체 후보</h3>
     {candidates.length===0?<p style={{color:'#9aa6b8'}}>현재 편성에 없는 보유 장수가 없습니다.</p>:<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:9}}>
-      {candidates.map(g=>{const stats=getStats(g,save),candidatePower=power(g,save),projected=selected?teamPower-power(selected,save)+candidatePower:teamPower+candidatePower;const delta=projected-teamPower;return <button key={g.id} onClick={()=>assign(g)} style={{textAlign:'left',padding:12,borderRadius:10,border:'1px solid #2a3345',background:'#141923',color:'#fff',cursor:'pointer'}}>
+      {candidates.map(g=>{const stats=getStats(g,save),candidatePower=battlePower(g),projected=selected?teamPower-battlePower(selected)+candidatePower:teamPower+candidatePower;const delta=projected-teamPower;return <button key={g.id} onClick={()=>assign(g)} style={{textAlign:'left',padding:12,borderRadius:10,border:'1px solid #2a3345',background:'#141923',color:'#fff',cursor:'pointer'}}>
        <div style={{display:'flex',justifyContent:'space-between',gap:8}}><b>{g.name}</b><span>Lv.{stats.level} · ★{stats.star}</span></div>
        <div style={{fontSize:11,color:'#9aa6b8',margin:'5px 0'}}>HP {stats.hp} · 공격 {stats.atk} · 방어 {stats.defense}</div>
        <div style={{fontSize:12}}>전투력 <b>{fmt(candidatePower)}</b>{selected&&<span style={{color:delta>=0?'#9ed0aa':'#d7a2a2'}}> · 교체 후 {fmt(projected)} ({delta>=0?'+':''}{fmt(delta)})</span>}</div>
