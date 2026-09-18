@@ -15,7 +15,7 @@ export type Item = {
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
   speed:number; range:number; tendencies:Tendencies; item:Item; experience:number;
-  history:string[]; color:string;
+  history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
 };
 
 export type Monster = {
