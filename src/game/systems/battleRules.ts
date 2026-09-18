@@ -5,18 +5,27 @@ export { BOARD_WIDTH, BOARD_HEIGHT };
 
 export const TERRAIN_COST: Record<Terrain, number> = {
   plain: 1,
-  forest: 1,
-  hill: 1,
-  water: 1,
+  forest: 2,
+  hill: 2,
+  water: 2,
   fort: 1,
 };
 
-export const TERRAIN_ATTACK_BONUS: Record<Terrain, number> = {
+/** Target-tile defense modifier. Positive values reduce incoming damage. */
+export const TERRAIN_DEFENSE_BONUS: Record<Terrain, number> = {
   plain: 0,
-  forest: 0,
-  hill: 0,
-  water: 0,
-  fort: 0,
+  forest: 4,
+  hill: 2,
+  water: -2,
+  fort: 8,
+};
+
+export const TERRAIN_EFFECT_TEXT: Record<Terrain, string> = {
+  plain: '이동 1 · 방어 보정 없음',
+  forest: '이동 2 · 방어 +4',
+  hill: '이동 2 · 방어 +2',
+  water: '이동 2 · 방어 -2',
+  fort: '이동 1 · 방어 +8',
 };
 
 export type BattleAction = 'move' | 'attack' | 'skill' | 'wait';
@@ -108,11 +117,11 @@ export function getEffectiveDefense(unit: Pick<Unit, 'defense' | 'role' | 'statu
 export function calculateDamage(
   attacker: Pick<Unit, 'atk' | 'buff' | 'critChance'>,
   defender: Pick<Unit, 'defense' | 'role' | 'status'>,
-  _terrainType: Terrain,
+  terrainType: Terrain,
   power = 0,
 ): number {
-  const terrainBonus = 0;
-  const defense = getEffectiveDefense(defender);
+  const terrainBonus = TERRAIN_DEFENSE_BONUS[terrainType] ?? 0;
+  const defense = Math.max(0, getEffectiveDefense(defender) + terrainBonus);
   return Math.max(
     1,
     attacker.atk + attacker.buff + power + terrainBonus - defense,
