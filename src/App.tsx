@@ -120,7 +120,7 @@ export default function App(){
   const [save,setSave]=useState<Save>(load);
   const [screen,setScreen]=useState<Screen>("home");
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
-  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;ended:boolean;result?:string;next?:string}>({units:[],log:[],room:"battle",round:0,ended:false});
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
@@ -133,10 +133,10 @@ export default function App(){
   useEffect(()=>localStorage.setItem(KEY,JSON.stringify(save)),[save]);
 
   const start=(kind:RoomKind)=>{
-    if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180}));notify("보물: "+item.name+" 획득");return;}
-    if(kind==="rest"){setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...h,experience:h.experience+4}:h)}));notify("휴식: 경험 기록 +4");return;}
+    if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));notify("보물: "+item.name+" 획득");return;}
+    if(kind==="rest"){setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...h,experience:h.experience+4}:h),stage:s.stage+1}));notify("휴식: 경험 기록 +4");return;}
     const units=spawn(save.heroes,save.party,kind,save.floor);
-    setBattle({units,log:[roomKo[kind]+" 시작 · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,ended:false,next:units[0].id});
+    setBattle({units,log:[roomKo[kind]+" 시작 · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
   };
 
@@ -151,11 +151,11 @@ export default function App(){
         const p=live(out.units,"player"),e=live(out.units,"enemy");
         const ended=p.length===0||e.length===0;
         if(out.decision) setDecision(out.decision.detail+" · 후보점수 "+Math.round(out.decision.score));
-        return {...prev,units:out.units,log:[out.line+(out.decision.detail?" / "+out.decision.detail:"")].concat(prev.log).slice(0,10),round:prev.round+(actor.team==="enemy"?1:0),ended,result:e.length?"": "victory",next:out.units.find(x=>x.id===actor.id&&x.alive)?.id};
+        const result = e.length===0 ? "victory" : p.length===0 ? "defeat" : undefined; return {...prev,units:out.units,log:[out.line+(out.decision.detail?" / "+out.decision.detail:"")].concat(prev.log).slice(0,10),round:prev.round+(actor.team==="enemy"?1:0),tick:prev.tick+1,ended,result,next:out.units.find(x=>x.id===actor.id&&x.alive)?.id};
       });
     },Math.max(150,850/speed));
     return ()=>window.clearTimeout(timer);
-  },[screen,paused,battle.ended,speed,battle.round]);
+  },[screen,paused,battle.ended,speed,battle.tick]);
 
   useEffect(()=>{
     if(screen!=="battle"||!battle.ended)return;
@@ -163,7 +163,7 @@ export default function App(){
     if(victory){
       const gain=180+battle.units.filter(u=>u.team==="enemy").length*55+(battle.room==="boss"?900:0);
       const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
-      setSave(s=>({...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:s.stage+1,
+      setSave(s=>({...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
           const unit=battle.units.find(u=>u.id===h.id); const t={...h.tendencies};
