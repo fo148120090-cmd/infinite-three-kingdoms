@@ -84,6 +84,61 @@ export function getReachableCells(
   return result.sort((a, b) => a.cost - b.cost || a.y - b.y || a.x - b.x);
 }
 
+export function getMovementPath(
+  unit: Pick<Unit, 'x' | 'y' | 'movePoints'>,
+  terrain: Terrain[],
+  occupied: Set<string> = new Set(),
+  destination: { x: number; y: number },
+): Array<{ x: number; y: number }> {
+  const start = key(unit.x, unit.y);
+  const goal = key(destination.x, destination.y);
+  if (start === goal) return [];
+  const best = new Map<string, number>([[start, 0]]);
+  const previous = new Map<string, string>();
+  const open: ReachableCell[] = [{ x: unit.x, y: unit.y, cost: 0 }];
+
+  while (open.length) {
+    open.sort((a, b) => a.cost - b.cost);
+    const current = open.shift()!;
+    const currentKey = key(current.x, current.y);
+    if (currentKey === goal) break;
+    if (current.cost !== best.get(currentKey)) continue;
+
+    const neighbors = [
+      [current.x + 1, current.y],
+      [current.x - 1, current.y],
+      [current.x, current.y + 1],
+      [current.x, current.y - 1],
+    ];
+
+    for (const [x, y] of neighbors) {
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) continue;
+      if (occupied.has(key(x, y)) && !(x === unit.x && y === unit.y)) continue;
+      const terrainType = terrain[y * BOARD_WIDTH + x];
+      if (!terrainType) continue;
+      const nextCost = current.cost + TERRAIN_COST[terrainType];
+      if (nextCost > unit.movePoints) continue;
+      const nextKey = key(x, y);
+      if ((best.get(nextKey) ?? Number.POSITIVE_INFINITY) <= nextCost) continue;
+      best.set(nextKey, nextCost);
+      previous.set(nextKey, currentKey);
+      open.push({ x, y, cost: nextCost });
+    }
+  }
+
+  if (!best.has(goal)) return [];
+  const path: Array<{ x: number; y: number }> = [];
+  let cursor = goal;
+  while (cursor !== start) {
+    const [x, y] = cursor.split(',').map(Number);
+    path.push({ x, y });
+    const prev = previous.get(cursor);
+    if (!prev) return [];
+    cursor = prev;
+  }
+  return path.reverse();
+}
+
 export function isInRange(a: Pick<Unit, 'x' | 'y'>, b: Pick<Unit, 'x' | 'y'>, range: number): boolean {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) <= range;
 }
@@ -120,11 +175,11 @@ export function calculateDamage(
   terrainType: Terrain,
   power = 0,
 ): number {
-  const terrainBonus = TERRAIN_DEFENSE_BONUS[terrainType] ?? 0;
-  const defense = Math.max(0, getEffectiveDefense(defender) + terrainBonus);
+  const terrainDefense = TERRAIN_DEFENSE_BONUS[terrainType] ?? 0;
+  const defense = Math.max(0, getEffectiveDefense(defender) + terrainDefense);
   return Math.max(
     1,
-    attacker.atk + attacker.buff + power + terrainBonus - defense,
+    attacker.atk + attacker.buff + power - defense,
   );
 }
 
