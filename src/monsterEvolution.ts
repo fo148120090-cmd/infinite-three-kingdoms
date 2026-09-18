@@ -81,7 +81,8 @@ export function applyLineage(monster:Monster,lineage?:MonsterLineage):Monster{
     const key=map[k];
     if(key)tendencies[key]=Math.min(100,tendencies[key]+Math.min(12,v));
   });
-  return {...monster,name:form?monster.name+" · "+form:monster.name,level:Math.max(monster.level,lineage.level),
+  const evolutionFocus=Object.entries(lineage.focus).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  return {...monster,name:form?monster.name+" · "+form:monster.name,level:Math.max(monster.level,lineage.level),evolutionFocus,
     hp:Math.round(monster.hp*stat),maxHp:Math.round(monster.maxHp*stat),attack:Math.round(monster.attack*stat),
     defense:Math.round(monster.defense*stat),tendencies};
 }
