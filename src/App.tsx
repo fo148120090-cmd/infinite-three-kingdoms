@@ -11,6 +11,7 @@ import { resolveDungeonEvent } from "./dungeonEvents";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
 type BattleMode = "dungeon" | "defense" | "raid";
+type DefenseObjective = "gate" | "relic" | "escort";
 type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[] };
 type Decision = { action: string; target?: string; detail: string; score: number };
 
@@ -19,7 +20,10 @@ const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:
 const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
 const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",boss:"👑"};
 const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",event:"던전 이벤트",boss:"심층 보스"};
+const defenseObjectiveKo: Record<DefenseObjective,string> = {gate:"성문",relic:"성유물",escort:"호위 대상"};
 const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
+const defenseObjectiveForFloor=(floor:number):DefenseObjective=>floor%3===1?"gate":floor%3===2?"relic":"escort";
+const raidBossForFloor=(floor:number)=>floor%3===1?"Uruk":floor%3===2?"Arachne":"Demon";
 
 function load(): Save {
   try {
@@ -228,7 +232,7 @@ export default function App(){
   const [screen,setScreen]=useState<Screen>("home");
   const [mode,setMode]=useState<BattleMode>("dungeon");
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
-  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
@@ -284,8 +288,11 @@ export default function App(){
     if(nextMode==="raid" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
     if(nextMode==="raid" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
     const units=spawn(save.heroes,save.party,room,save.floor,lineages);
-    const label=nextMode==="defense"?"방어전 시작 · 30초 동안 웨이브가 계속됩니다.":"보스 레이드 시작 · 보스 페이즈는 AI가 자동 전환됩니다.";
-    setBattle({units,log:[label],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1});
+    const objectiveKind=defenseObjectiveForFloor(save.floor);
+    const label=nextMode==="defense"
+      ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · 30초 동안 웨이브가 계속됩니다.`
+      : `보스 레이드 시작 · ${raidBossForFloor(save.floor)} 보스 · 페이즈는 AI가 자동 전환됩니다.`;
+    setBattle({units,log:[label],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1,objectiveKind});
     setPaused(false);setScreen("battle");
     setDecision(nextMode==="defense"?"방어 목표와 생존 경로를 계산 중...":"보스 패턴과 페이즈 전환을 분석 중...");
   };
