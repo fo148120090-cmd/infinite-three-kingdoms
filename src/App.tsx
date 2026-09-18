@@ -48,8 +48,9 @@ const aiT=(t:Tendencies,item?:Item):Tendencies=>{
 };
 const combatStats=(hero:Hero)=>{
   const m=hero.item.combatMods||{};
-  const hp=Math.round(hero.hp*(1+(m.hpPct||0)/100));
-  return {hp,maxHp:hp,attack:hero.attack+(m.attack||0),defense:hero.defense+(m.defense||0),speed:hero.speed*(1+(m.speedPct||0)/100),range:hero.range+(m.range||0)};
+  const bonus=chronicleBonuses(hero);
+  const hp=Math.round(hero.hp*(1+((m.hpPct||0)+(bonus.hpPct||0))/100));
+  return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)};
 };
 
 function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleUnit[] {
@@ -405,39 +406,53 @@ export default function App(){
     if(screen!=="battle"||!battle.ended)return;
     const victory=battle.result==="victory";
     const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
-    if(!victory){
-      setSave(s=>{
-        const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
-        const updatedHeroes=s.heroes.map(h=>{
-          if(!s.party.includes(h.id))return h;
-          const unit=battle.units.find(u=>u.id===h.id);
-          return unit?applyBehaviorHistory(bonded.find(x=>x.id===h.id)||h,unit.behaviorCounts||{}):h;
-        });
-        return {...s,heroes:updatedHeroes};
+    const isRepeat=battle.repeatScenarioFloor!==undefined;
+    const isElite=battle.room==="elite"||!!battle.elitePack;
+    const isBoss=battle.room==="boss";
+    const isFinal=battle.room==="evilCave";
+    const baseStats={wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0};
+    const buildHero=(h:Hero,unit:BattleUnit|undefined,won:boolean,stats:any)=>{
+      if(!unit)return h;
+      const base={...h,campaignStats:stats};
+      const behaviorBase=applyBehaviorHistory(base,unit.behaviorCounts||{});
+      const behavioral=unit.actionText
+        ? {...behaviorBase,history:[unit.actionText,...behaviorBase.history].slice(0,6)}
+        : behaviorBase;
+      const awarded=awardChronicle(behavioral);
+      return {...awarded,mood:systemMood(awarded),statusNote:systemStatus(awarded),evaluation:systemEvaluation(awarded)};
+    };
+    setSave(s=>{
+      const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
+      const statsById:Record<string,any>={};
+      s.heroes.forEach(h=>statsById[h.id]={...baseStats,...(h.campaignStats||{})});
+      s.party.forEach(id=>{
+        const h=s.heroes.find(x=>x.id===id);
+        const unit=battle.units.find(u=>u.id===id);
+        if(h){
+          const st=statsById[id];
+          if(victory){st.wins+=1;if(isElite)st.eliteWins+=1;if(isBoss)st.bossWins+=1;if(isRepeat)st.repeatWins+=1;if(isFinal)st.finalWins+=1;}
+          else st.losses+=1;
+        }
       });
-      return;
-    }
-    if(victory){
-      const gain=180+battle.units.filter(u=>u.team==="enemy").length*55+(battle.room==="boss"?900:0);
-      const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
-      setSave(s=>{
-        const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
-
-        return {...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
+      const scenarioClears={...s.scenarioClears};
+      if(victory&&battle.room==="boss")scenarioClears[String(s.floor)]=(scenarioClears[String(s.floor)]||0)+1;
+      if(victory&&isRepeat)scenarioClears[String(battle.repeatScenarioFloor)]=(scenarioClears[String(battle.repeatScenarioFloor)]||1)+1;
+      const rewardMultiplier=isRepeat?(battle.rewardMultiplier||.6):1;
+      const baseGold=180+battle.units.filter(u=>u.team==="enemy").length*55+(isBoss?900:0)+(isFinal?1800:0);
+      const baseMaterials=isFinal?100:isBoss?60:18;
+      const exp=Math.max(8,Math.round((22+(isElite?15:0)+(isBoss?70:0)+(isFinal?110:0))*(isRepeat?.85:1)));
+      return {...s,
+        gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier):0),
+        materials:s.materials+(victory?Math.max(5,Math.round(baseMaterials*rewardMultiplier)):0),
+        scenarioClears,
+        floor:victory&&isBoss?s.floor+1:s.floor,
+        stage:victory?(isBoss?0:(isFinal?s.stage:s.stage+1)):s.stage,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
-          const base=bonded.find(x=>x.id===h.id)||h;
-          const unit=battle.units.find(u=>u.id===h.id);
-          const action=unit?.actionText||"";
-          const behaviorBase=applyBehaviorHistory(base,unit?.behaviorCounts||{});
-          const behavioral=action
-            ? {...behaviorBase,history:[action,...behaviorBase.history].slice(0,6)}
-            : behaviorBase;
-          return grantExperience(behavioral,exp).hero;
+          return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id]);
         })
-        };
-      });
-    }
+      };
+    });
   },[battle.ended,battle.result]);
 
   const toggleParty=(id:string)=>{
