@@ -9,6 +9,40 @@ const alivePlayers = (units: Unit[]) => units.filter((u) => u.team === 'player' 
 const allPlayers = (units: Unit[]) => units.filter((u) => u.team === 'player');
 const adjacentEnemies = (caster: Unit, units: Unit[]) => aliveEnemies(units).filter((u) => Math.abs(u.x - caster.x) + Math.abs(u.y - caster.y) <= 1);
 
+export type SkillAvailability = { ready: boolean; needsTarget: boolean; targetIds: string[]; message: string };
+
+export function getGeneralSkillTargetIds(units: Unit[], casterId: string, terrain: Terrain[] = []): string[] {
+  const caster = units.find((u) => u.id === casterId && u.team === 'player' && u.currentHp > 0);
+  if (!caster || caster.acted || (caster.status === 'stun' && caster.statusTurns > 0)) return [];
+  const enemies = aliveEnemies(units);
+  const name = caster.skill;
+  if (name === '인덕의 격려' || name === '강동의 결의' || name === '간웅의 명령') return [];
+  if (name === '맹격' || name === '호통') return adjacentEnemies(caster, enemies).map((u) => u.id);
+  if (name === '용진') return enemies.filter((u) => isInRange(caster, u, caster.range) && (u.x === caster.x || u.y === caster.y)).filter((u) => {
+    const dx = Math.sign(u.x - caster.x), dy = Math.sign(u.y - caster.y);
+    const distance = Math.abs(u.x - caster.x) + Math.abs(u.y - caster.y);
+    if (distance === 0 || !terrain.length) return distance > 0;
+    for (let step = 1; step <= distance; step += 1) {
+      const x = caster.x + dx * step, y = caster.y + dy * step;
+      if (x < 0 || y < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT || !terrain[y * BOARD_WIDTH + x]) return false;
+    }
+    return true;
+  }).map((u) => u.id);
+  return enemies.filter((u) => isInRange(caster, u, caster.range)).map((u) => u.id);
+}
+
+export function getGeneralSkillAvailability(units: Unit[], casterId: string, terrain: Terrain[] = []): SkillAvailability {
+  const caster = units.find((u) => u.id === casterId && u.team === 'player' && u.currentHp > 0);
+  if (!caster) return { ready: false, needsTarget: true, targetIds: [], message: '사용할 장수를 선택하세요.' };
+  if (caster.acted) return { ready: false, needsTarget: true, targetIds: [], message: '이미 행동한 장수입니다.' };
+  if (caster.status === 'stun' && caster.statusTurns > 0) return { ready: false, needsTarget: true, targetIds: [], message: '기절 상태라 스킬을 사용할 수 없습니다.' };
+  const name = caster.skill;
+  if (name === '인덕의 격려' || name === '강동의 결의' || name === '간웅의 명령') return { ready: true, needsTarget: false, targetIds: [], message: '즉시 사용할 수 있습니다.' };
+  const targetIds = getGeneralSkillTargetIds(units, casterId, terrain);
+  if (!targetIds.length) return { ready: false, needsTarget: true, targetIds, message: name === '맹격' || name === '호통' ? '인접한 적이 필요합니다.' : name === '용진' ? '사거리 내 직선 방향의 적이 필요합니다.' : '사거리 내 적이 필요합니다.' };
+  return { ready: true, needsTarget: true, targetIds, message: '대상을 선택하세요.' };
+}
+
 export function resolveGeneralSkill(units: Unit[], casterId: string, targetId: string | null, terrain: Terrain[]): SkillResult {
   const caster = units.find((u) => u.id === casterId && u.team === 'player' && u.currentHp > 0);
   if (!caster || caster.acted || (caster.status === 'stun' && caster.statusTurns > 0)) return { units, message: '스킬을 사용할 수 없습니다.', success: false };
