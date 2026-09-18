@@ -20,6 +20,7 @@ type RouteMemoryEntry = { attempts:number; clears:number; failures:number; rewar
 type RouteMemory = Partial<Record<RoomKind,RouteMemoryEntry>>;
 type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; routeMemory?:RouteMemory; worldSealed?:boolean };
 type Decision = { action: string; target?: string; detail: string; score: number };
+type BattlePlan = { key:"aggressive"|"defensive"|"focused"|"balanced"; label:string; detail:string };
 
 const KEY = "autonomous-dungeon-demo-v1";
 const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
@@ -127,6 +128,26 @@ function formationLabel(heroes:Hero[],mode:BattleMode){
   if(!rear)return "전면 압박";
   return mode==="defense"?"자동 방어 진형":"자동 전열·후열 진형";
 }
+function battlePlanFor(heroes:Hero[],mode:BattleMode):BattlePlan{
+  const avg=(k:keyof Tendencies)=>heroes.length?heroes.reduce((n,h)=>n+h.tendencies[k],0)/heroes.length:50;
+  const pressure=avg("aggression")*.45+avg("bravery")*.25+avg("pursuit")*.3;
+  const safety=avg("protect")*.4+avg("survival")*.32+avg("caution")*.28;
+  const precision=avg("focus")*.5+avg("cooperation")*.2+avg("pursuit")*.3;
+  if(mode==="defense" && safety>=pressure) return {key:"defensive",label:"수호 방침",detail:"목표 유지와 동료 생존을 우선하는 자동 전투 방침"};
+  if(mode==="raid" && pressure>=68 && precision>=68) return {key:"focused",label:"집중 압박",detail:"보스의 약점을 좇아 공격 행동을 압축하는 자동 전투 방침"};
+  if(pressure>=70 && avg("caution")<62) return {key:"aggressive",label:"전면 돌격",detail:"공격·추격을 앞세워 전투를 빠르게 끝내려는 자동 전투 방침"};
+  if(safety>=70) return {key:"defensive",label:"수호 방침",detail:"위험 관리와 보호·회복을 우선하는 자동 전투 방침"};
+  if(precision>=72) return {key:"focused",label:"정밀 압박",detail:"약점과 사거리 계산을 중심으로 행동을 집중하는 자동 전투 방침"};
+  return {key:"balanced",label:"균형 방침",detail:"상황 변화에 따라 공격·지원·생존을 균형 있게 배분하는 자동 전투 방침"};
+}
+function battlePlanBonus(plan:BattlePlan|undefined,action:string,team:"player"|"enemy"){
+  if(!plan||team!=="player")return 0;
+  const attack=["일반 공격","추격","광폭 돌격","결투 집중","정밀 사격","사냥 본능","원소 폭발","저주 확산","비전 해방","심판"];
+  if(plan.key==="aggressive") return attack.includes(action)?14:action==="후퇴"?-10:action==="아군 보호"?-3:action==="회복"?-4:4;
+  if(plan.key==="defensive") return action==="아군 보호"?16:action==="회복"?15:action==="대회복"?18:action==="후퇴"?10:attack.includes(action)?-3:4;
+  if(plan.key==="focused") return attack.includes(action)?10:action==="광역 마법"?8:action==="대기"?-4:3;
+  return action==="아군 보호"||action==="회복"?5:action==="일반 공격"||action==="추격"?5:2;
+}
 
 function routeForecast(kind:RoomKind,floor:number,heroes:Hero[],routeMemory?:RouteMemory){
   const avg=(key:keyof Tendencies)=>heroes.length?heroes.reduce((n,h)=>n+h.tendencies[key],0)/heroes.length:50;
@@ -228,7 +249,7 @@ function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
   return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
 }
 
-function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?:PartyMemory):Decision[] {
+function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan):Decision[] {
   const allies=live(u,a.team), enemies=live(u,a.team==="player"?"enemy":"player");
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -239,7 +260,7 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   const lossBias=(a.memories||[]).filter(m=>m.text.includes("전사")).reduce((n,m)=>n+m.weight,0);
   const envBonus=env?environmentDecisionBonus(a,env):0;
   if(a.cooldown<=0) for(const p of promotionActions(a.promotionPath)){
-    let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08+envBonus+habitBias(a,p.name)+(a.team==="player"?partyHabitBias(partyMemory,p.name):0);
+    let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08+envBonus+habitBias(a,p.name)+(a.team==="player"?partyHabitBias(partyMemory,p.name):0)+battlePlanBonus(plan,p.name,a.team);
     if((p.name.includes("대회복")||p.name.includes("수호"))&&ally) score+=Math.max(0,(1-pct(ally))*55);
     if((p.name.includes("사격")||p.name.includes("사냥")||p.name.includes("심판"))&&weak) score+=Math.max(0,(1-pct(weak))*45);
     if((p.name.includes("폭발")||p.name.includes("저주"))&&enemies.length>=2) score+=enemies.length*10;
@@ -258,18 +279,18 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   if(nearest){
     let s=68+t.aggression*.42+t.bravery*.24+t.focus*.12+(1-pct(weak))*46+envBonus+(a.team==="enemy"?24:0);
     if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
-    arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협·마무리 가능성·기존 공격 습관을 계산",score:s+habitBias(a,"일반 공격")+roleSynergy(a,allies,"일반 공격")});
+    arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협·마무리 가능성·기존 공격 습관을 계산",score:s+habitBias(a,"일반 공격")+roleSynergy(a,allies,"일반 공격")+battlePlanBonus(plan,"일반 공격",a.team)});
   }
-  if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8+habitBias(a,"추격")+roleSynergy(a,allies,"추격")});
-  if(a.job==="Guardian"&&ally&&pct(ally)<.82) arr.push({action:"아군 보호",target:ally.id,detail:"부상한 아군을 우선 보호하고 전선을 유지",score:26+t.protect*.5+t.cooperation*.25+(1-pct(ally))*58+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+roleSynergy(a,allies,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)});
-  if(a.job==="Cleric"&&ally&&pct(ally)<.76) arr.push({action:"회복",target:ally.id,detail:"부상한 아군을 즉시 회복",score:32+t.protect*.35+t.cooperation*.25+(1-pct(ally))*82+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+roleSynergy(a,allies,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7+Math.min(8,lossBias*.15)});
-  if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8+habitBias(a,"광역 마법")+roleSynergy(a,allies,"광역 마법")});
+  if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8+habitBias(a,"추격")+roleSynergy(a,allies,"추격")+battlePlanBonus(plan,"추격",a.team)});
+  if(a.job==="Guardian"&&ally&&pct(ally)<.82) arr.push({action:"아군 보호",target:ally.id,detail:"부상한 아군을 우선 보호하고 전선을 유지",score:26+t.protect*.5+t.cooperation*.25+(1-pct(ally))*58+habitBias(a,"아군 보호")+partyHabitBias(partyMemory,"아군 보호")+roleSynergy(a,allies,"아군 보호")+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)+battlePlanBonus(plan,"아군 보호",a.team)});
+  if(a.job==="Cleric"&&ally&&pct(ally)<.76) arr.push({action:"회복",target:ally.id,detail:"부상한 아군을 즉시 회복",score:32+t.protect*.35+t.cooperation*.25+(1-pct(ally))*82+habitBias(a,"회복")+partyHabitBias(partyMemory,"회복")+roleSynergy(a,allies,"회복")+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7+Math.min(8,lossBias*.15)+battlePlanBonus(plan,"회복",a.team)});
+  if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8+habitBias(a,"광역 마법")+roleSynergy(a,allies,"광역 마법")+battlePlanBonus(plan,"광역 마법",a.team)});
   if(a.team==="enemy"&&a.species==="Goblin") arr.push({action:"기습 후퇴",target:nearest?.id,detail:"위험해지면 생존을 위해 물러남",score:20+t.greed*.2+t.caution*.35+(1-pct(a))*60});
   if(a.team==="enemy"&&a.grade==="Boss"){
     const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
     arr.push({action:"보스 패턴",detail:"페이즈 "+phase+" 패턴을 선택하고 전장을 압박",score:42+t.focus*.25+t.bravery*.25+(phase-1)*18});
   }
-  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+habitBias(a,"후퇴")+partyHabitBias(partyMemory,"후퇴")+(pct(a)<.12?20:0)-(equippedItemsOf(a).some(x=>x.id==="berserker-heart")?35:0)-(a.team==="enemy"?10:0)});
+  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25-t.aggression*.12+envBonus+habitBias(a,"후퇴")+partyHabitBias(partyMemory,"후퇴")+(pct(a)<.12?20:0)-(equippedItemsOf(a).some(x=>x.id==="berserker-heart")?35:0)-(a.team==="enemy"?10:0)+battlePlanBonus(plan,"후퇴",a.team)});
   arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05+envBonus*.2});
   return arr;
 }
@@ -306,8 +327,8 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
   return Math.max(5,Math.round((a.attack*m-b.defense*.5)*crit*(.94+Math.random()*.12)*guardFactor));
 }
 
-function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const d=weighted(decisions(a,n,env,partyMemory));
+function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan):{units:BattleUnit[];decision:Decision;line:string}{
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const d=weighted(decisions(a,n,env,partyMemory,plan));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -455,7 +476,7 @@ export default function App(){
   const [selectedEquipSlot,setSelectedEquipSlot]=useState(0);
   const [lastLoot,setLastLoot]=useState<Item[]>([]);
   const [pendingEvent,setPendingEvent]=useState<DungeonChoiceEvent|undefined>();
-  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean;phaseNotice?:string;partyMemory?:PartyMemory}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1,partyMemory:defaultPartyMemory});
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean;phaseNotice?:string;partyMemory?:PartyMemory;plan?:BattlePlan}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1,partyMemory:defaultPartyMemory});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
@@ -508,7 +529,8 @@ export default function App(){
     const env=environmentFor(save.floor,kind,"dungeon");
     const units=spawn(save.heroes,save.party,kind,save.floor,save.monsterLineages,"dungeon");
     setMode("dungeon");
-    setBattle({units,log:[roomKo[kind]+" · "+formationLabel(party,"dungeon")+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
+    const plan=battlePlanFor(party,"dungeon");
+    setBattle({units,plan,log:[roomKo[kind]+" · "+formationLabel(party,"dungeon")+" · "+plan.label+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
   };
 
@@ -520,7 +542,8 @@ export default function App(){
     const env=environmentFor(scenarioFloor,room,"dungeon");
     const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages,"dungeon");
     const rewardMultiplier=Math.max(.3,.6-.1*Math.max(0,repeatCount-1));
-    setBattle({units,log:[scenarioFloor+"F 완료 시나리오 재도전 · "+formationLabel(party,"dungeon")+" · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
+    const plan=battlePlanFor(party,"dungeon");
+    setBattle({units,plan,log:[scenarioFloor+"F 완료 시나리오 재도전 · "+formationLabel(party,"dungeon")+" · "+plan.label+" · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
     setPaused(false);setScreen("battle");setDecision(elitePack?"재도전 중 정예 무리의 전투 성향을 분석 중...":"완료 시나리오의 적 행동을 다시 분석 중...");
   };
 
@@ -533,7 +556,8 @@ export default function App(){
     const label=nextMode==="defense"
       ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · ${formationLabel(party,nextMode)} · 30초 동안 웨이브가 계속됩니다.`
       : `보스 레이드 시작 · ${raidBossForFloor(save.floor)} 보스 · ${formationLabel(party,nextMode)} · 페이즈는 AI가 자동 전환됩니다.`;
-    setBattle({units,log:[label+" · "+environmentInfo[env].name],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1,objectiveKind,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
+    const plan=battlePlanFor(party,nextMode);
+    setBattle({units,plan,log:[label+" · "+plan.label+" · "+environmentInfo[env].name],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1,objectiveKind,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
     setPaused(false);setScreen("battle");
     setDecision(nextMode==="defense"?"방어 목표와 생존 경로를 계산 중...":"보스 패턴과 페이즈 전환을 분석 중...");
   };
@@ -550,7 +574,7 @@ export default function App(){
         let actorRoll=Math.random()*actorTotalSpeed;
         let actor=actorPool[actorPool.length-1];
         for(const candidate of actorPool){actorRoll-=Math.max(.25,candidate.speed);if(actorRoll<=0){actor=candidate;break;}}
-        const out=doAI(prev.units,actor.id,prev.environment,prev.partyMemory);
+        const out=doAI(prev.units,actor.id,prev.environment,prev.partyMemory,prev.plan);
         let wave=prev.wave,objectiveHp=prev.objectiveHp,phase=prev.phase,ended=false,result:string|undefined;
         const now=Date.now();
         const environmentLog=prev.environment?environmentTick(out.units,prev.environment,prev.tick,phase):undefined;
@@ -819,7 +843,7 @@ export default function App(){
     {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="evilCave"?"악의 동굴 · 세계의 구멍":battle.room==="boss"?"심층 관문":battle.repeatScenarioFloor!==undefined?"시나리오 재도전":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
       <div className="battle-tools"><button className="ghost-btn" onClick={()=>setPaused(x=>!x)}>{paused?<CirclePlay size={17}/>:<CirclePause size={17}/>} {paused?"재생":"일시정지"}</button>{[.5,1,2,4].map(x=><button key={x} className={speed===x?"speed-on":"speed-btn"} onClick={()=>setSpeed(x)}>{x}x</button>)}</div></div>
       <div className="battle-summary-strip">
-        <span>MODE · {battle.repeatScenarioFloor!==undefined?"SCENARIO REPLAY":battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span><span>진형 · {formationLabel(party,battle.mode)}</span>{battle.repeatScenarioFloor!==undefined&&<><span>재도전 · {battle.repeatScenarioFloor}F</span><span>반복 {battle.repeatCount}회</span><span>보상 {Math.round((battle.rewardMultiplier||1)*100)}%</span>{battle.elitePack&&<span>정예 무리 출현</span>}</>}
+        <span>MODE · {battle.repeatScenarioFloor!==undefined?"SCENARIO REPLAY":battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span><span>진형 · {formationLabel(party,battle.mode)}</span>{battle.plan&&<span>방침 · {battle.plan.label}</span>}{battle.repeatScenarioFloor!==undefined&&<><span>재도전 · {battle.repeatScenarioFloor}F</span><span>반복 {battle.repeatCount}회</span><span>보상 {Math.round((battle.rewardMultiplier||1)*100)}%</span>{battle.elitePack&&<span>정예 무리 출현</span>}</>}
         {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>{defenseObjectiveDetail[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
         {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase}</span><span>종족 전용 패턴 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.species||"—"}</span></>}
         {battle.environment&&<span>환경 · {environmentInfo[battle.environment].name}</span>}
@@ -830,7 +854,7 @@ export default function App(){
         {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")+" "+(u.fxKind?"fx-"+u.fxKind:"")} style={{left:(u.pos*9.3)+"%"}}>
           <div className="unit-token">{u.team==="player"?jobIcon[u.job!]:u.grade==="Boss"?"♛":"👹"}</div><b>{u.name}</b>{u.mutation&&<small className="mutation-label">{u.mutation}</small>}{u.fx&&<span className="combat-fx">{u.fx}</span>}<div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
       </div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
-      <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · 장비 {equippedItemsOf(hero).length}/3</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>{behaviorSummary(hero)}</small><small>장기 전투 습관 · {profileInsight(hero)}</small><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
+      <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{battle.plan&&<><b>{battle.plan.label}</b><span> · {battle.plan.detail}</span><br/></>}{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · 장비 {equippedItemsOf(hero).length}/3</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>{behaviorSummary(hero)}</small><small>장기 전투 습관 · {profileInsight(hero)}</small><div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div></div></aside></div>
       {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p><div className="battle-report"><b>AI 전투 리포트</b><div className="battle-report-grid">{battle.units.filter(u=>u.team==="player").map(u=><div className="report-card" key={u.id}><strong>{u.name}</strong><span>행동 {u.battleStats?.actions||0}회</span><span>피해 {u.battleStats?.damage||0}</span><span>회복 {u.battleStats?.healing||0}</span><small>{Object.entries(u.behaviorCounts||{}).sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>x[0]).join(" · ")||"기록 없음"}</small></div>)}</div></div>{battle.result==="victory"&&lastLoot.length>0&&<div className="loot-summary"><b>획득 전리품</b><span>{lastLoot.map(x=>x.name).join(" · ")}</span></div>}</div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
     {screen==="inventory"&&<section className="page"><div className="section-head"><div><span className="eyebrow">GUILD WAREHOUSE</span><h2>용사단 창고</h2><p className="muted">장비 획득은 전투 전리품과 보물방으로만 이루어집니다. 창고에서 보관, 장착, 해제가 가능하며 필요 없는 장비는 판매할 수 있습니다.</p></div><span className="counter">{save.items.length}개</span></div>
