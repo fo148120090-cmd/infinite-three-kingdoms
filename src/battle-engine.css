@@ -35,3 +35,6 @@
 .be-target-info em{grid-column:1/-1;color:#f0c66b;font-size:10px;font-style:normal;font-weight:900;margin-top:3px}
 
 .be-target-info em{display:block;grid-column:1/-1;padding-top:2px}.be-target-info em+em{margin-top:1px}
+
+.be-cell.skill-targetable{outline:3px solid #c18cff;box-shadow:inset 0 0 0 3px #c18cff,0 0 12px #9d5ee477;background-image:linear-gradient(#7643a855,#7643a855)}
+.be-cell.skill-targetable .be-unit-image{filter:drop-shadow(0 0 7px #c18cff)}
