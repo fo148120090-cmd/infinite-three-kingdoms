@@ -275,7 +275,8 @@ function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
   const boss=enemies.find(x=>x.grade==="Boss"&&x.alive);
-  const attackTarget=(context?.mode==="raid"&&boss)?boss:weak;
+  const goalThreat=context?.mode==="defense"?enemies.slice().sort((x,y)=>x.pos-y.pos)[0]:undefined;
+  const attackTarget=(context?.mode==="raid"&&boss)?boss:(context?.mode==="defense"&&goalThreat?goalThreat:weak);
   const ally=allies.slice().sort((x,y)=>pct(x)-pct(y))[0];
   const t=a.tendencies; const arr:Decision[]=[];
   const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
@@ -598,7 +599,7 @@ export default function App(){
         let actorRoll=Math.random()*actorTotalSpeed;
         let actor=actorPool[actorPool.length-1];
         for(const candidate of actorPool){actorRoll-=Math.max(.25,candidate.speed);if(actorRoll<=0){actor=candidate;break;}}
-        const out=doAI(prev.units,actor.id,prev.environment,prev.partyMemory,prev.plan);
+        const out=doAI(prev.units,actor.id,prev.environment,prev.partyMemory,prev.plan,{mode:prev.mode,objectiveKind:prev.objectiveKind,objectiveHp:prev.objectiveHp,phase:prev.phase});
         let wave=prev.wave,objectiveHp=prev.objectiveHp,phase=prev.phase,ended=false,result:string|undefined;
         const now=Date.now();
         const environmentLog=prev.environment?environmentTick(out.units,prev.environment,prev.tick,phase):undefined;
