@@ -1,5 +1,6 @@
 import type { General, Unit } from '../types';
 import { getFormationBonus } from './formation';
+import { getActiveRelationships } from './relationships';
 import { getRelationshipBonus } from './relationships';
 import { getDamageReductionPct, getPassive } from './passives';
 
