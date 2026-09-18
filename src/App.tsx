@@ -8,6 +8,7 @@ import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recor
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
 import { resolveDungeonEvent } from "./dungeonEvents";
+import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -75,7 +76,7 @@ function asEnemy(e:ReturnType<typeof createMonster>,suffix="",lineage?:MonsterLi
   return {id:m.id+suffix,name:m.name,species:m.species,grade:m.grade,team:"enemy" as const,hp:m.hp,maxHp:m.maxHp,attack:m.attack,defense:m.defense,speed:m.speed,range:m.range,pos:m.pos,alive:true,tendencies:m.tendencies,mutation:m.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
 }
 
-function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
+function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind):Decision[] {
   const allies=live(u,a.team), enemies=live(u,a.team==="player"?"enemy":"player");
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -84,6 +85,7 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
   const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
   const mod=a.item?.aiMods||{};
   const lossBias=(a.memories||[]).filter(m=>m.text.includes("전사")).reduce((n,m)=>n+m.weight,0);
+  const envBonus=env?environmentDecisionBonus(a,env):0;
   if(a.cooldown<=0) for(const p of promotionActions(a.promotionPath)){
     let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08;
     if((p.name.includes("대회복")||p.name.includes("수호"))&&ally) score+=Math.max(0,(1-pct(ally))*55);
@@ -102,7 +104,7 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
   }
 
   if(nearest){
-    let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40;
+    let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40+envBonus;
     if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
     arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협과 마무리 가능성을 계산",score:s});
   }
@@ -115,8 +117,8 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
     const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
     arr.push({action:"보스 패턴",detail:"페이즈 "+phase+" 패턴을 선택하고 전장을 압박",score:42+t.focus*.25+t.bravery*.25+(phase-1)*18});
   }
-  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25+(pct(a)<.12?20:0)-(a.item?.id==="berserker-heart"?35:0)});
-  arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05});
+  arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25+envBonus+(pct(a)<.12?20:0)-(a.item?.id==="berserker-heart"?35:0)});
+  arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05+envBonus*.2});
   return arr;
 }
 
@@ -133,15 +135,16 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
   return Math.max(4,Math.round((a.attack*m-b.defense*.58)*crit*(.93+Math.random()*.14)));
 }
 
-function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})}})); const a=n.find(x=>x.id===id)!; const d=weighted(decisions(a,n));
+function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind):{units:BattleUnit[];decision:Decision;line:string}{
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})}})); const a=n.find(x=>x.id===id)!; const d=weighted(decisions(a,n,env));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
   a.behaviorCounts![d.action]=(a.behaviorCounts![d.action]||0)+1;
   const by=(x?:string)=>n.find(q=>q.id===x&&q.alive);
   const move=(target:BattleUnit)=>{
-    const step=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric") ? .65 : .9;
+    const baseStep=(a.job==="Archer"||a.job==="Mage"||a.job==="Cleric") ? .65 : .9;
+    const step=env==="narrow"?baseStep*.72:env==="water"&&a.species!=="Lizardman"?baseStep*.86:baseStep;
     a.pos+=(target.pos>a.pos?step:-step); a.pos=Math.max(.3,Math.min(9.7,a.pos));
   };
   let line="";
@@ -249,7 +252,7 @@ export default function App(){
   const [screen,setScreen]=useState<Screen>("home");
   const [mode,setMode]=useState<BattleMode>("dungeon");
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
-  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
@@ -292,9 +295,10 @@ export default function App(){
     let lineages=save.monsterLineages;
     if(kind==="boss" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
     if(kind==="boss" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
+    const env=environmentFor(save.floor,kind,"dungeon");
     const units=spawn(save.heroes,save.party,kind,save.floor,lineages);
     setMode("dungeon");
-    setBattle({units,log:[roomKo[kind]+" 시작 · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
+    setBattle({units,log:[roomKo[kind]+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
   };
 
@@ -304,12 +308,13 @@ export default function App(){
     let lineages=save.monsterLineages;
     if(nextMode==="raid" && raidBossForFloor(save.floor)==="Uruk" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
     if(nextMode==="raid" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
+    const env=environmentFor(save.floor,room,nextMode);
     const units=spawn(save.heroes,save.party,room,save.floor,lineages);
     const objectiveKind=defenseObjectiveForFloor(save.floor);
     const label=nextMode==="defense"
       ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · 30초 동안 웨이브가 계속됩니다.`
       : `보스 레이드 시작 · ${raidBossForFloor(save.floor)} 보스 · 페이즈는 AI가 자동 전환됩니다.`;
-    setBattle({units,log:[label],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1,objectiveKind});
+    setBattle({units,log:[label+" · "+environmentInfo[env].name],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1,objectiveKind,environment:env});
     setPaused(false);setScreen("battle");
     setDecision(nextMode==="defense"?"방어 목표와 생존 경로를 계산 중...":"보스 패턴과 페이즈 전환을 분석 중...");
   };
@@ -322,10 +327,11 @@ export default function App(){
         const alive=prev.units.filter(x=>x.alive);
         if(!alive.length)return {...prev,ended:true,result:"defeat"};
         const actor=alive.sort((a,b)=>a.pos-b.pos||b.speed-a.speed)[Math.floor(Math.random()*Math.min(2,alive.length))];
-        const out=doAI(prev.units,actor.id);
+        const out=doAI(prev.units,actor.id,prev.environment);
         let p=live(out.units,"player"),e=live(out.units,"enemy");
         let wave=prev.wave,objectiveHp=prev.objectiveHp,phase=prev.phase,ended=false,result:string|undefined;
         const now=Date.now();
+        const environmentLog=prev.environment?environmentTick(out.units,prev.environment,prev.tick,phase):undefined;
 
         if(prev.mode==="defense"){
           e.forEach(x=>{if(x.pos>0.45)x.pos=Math.max(0.45,x.pos-(0.075+wave*.006));});
@@ -359,7 +365,7 @@ export default function App(){
         if(out.decision) setDecision(out.decision.detail+" · 후보점수 "+Math.round(out.decision.score));
         const logLine=out.line+(out.decision.detail?" / "+out.decision.detail:"");
         const waveLine=prev.mode==="defense"&&wave>prev.wave?" / WAVE "+wave+" 증원":"";
-        return {...prev,units:out.units,log:[logLine+waveLine].concat(prev.log).slice(0,12),round:prev.round+(actor.team==="enemy"?1:0),tick:prev.tick+1,ended,result,next:out.units.find(x=>x.id===actor.id&&x.alive)?.id,wave,objectiveHp,phase};
+        return {...prev,units:out.units,log:[(environmentLog?environmentLog+" / ":"")+logLine+waveLine].concat(prev.log).slice(0,12),round:prev.round+(actor.team==="enemy"?1:0),tick:prev.tick+1,ended,result,next:out.units.find(x=>x.id===actor.id&&x.alive)?.id,wave,objectiveHp,phase};
       });
     },Math.max(150,850/speed));
     return ()=>window.clearTimeout(timer);
@@ -470,6 +476,7 @@ export default function App(){
         <span>MODE · {battle.mode==="defense"?"DEFENSE":battle.mode==="raid"?"BOSS RAID":"DUNGEON"}</span>
         {battle.mode==="defense"&&<><span>목표 · {defenseObjectiveKo[battle.objectiveKind||"gate"]}</span><span>WAVE {battle.wave}</span><span>목표 내구도 {battle.objectiveHp}%</span><span>남은 시간 {Math.max(0,Math.ceil(((battle.deadline||Date.now())-Date.now())/1000))}초</span></>}
         {battle.mode==="raid"&&<><span>보스 · {battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss")?.name||"—"}</span><span>PHASE {battle.phase} · 종족별 패턴 AI</span></>}
+        {battle.environment&&<span>환경 · {environmentInfo[battle.environment].name}</span>}
       </div>
       <div className="battle-layout"><div className="cave-panel"><div className="cave-label"><span>입구</span><span>심층</span></div><div className="cave-lane"><div className="cave-floor"/>
         {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")} style={{left:(u.pos*9.3)+"%"}}>
