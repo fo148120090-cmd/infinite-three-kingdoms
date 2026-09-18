@@ -26,6 +26,7 @@ const defenseObjectiveKo: Record<DefenseObjective,string> = {gate:"성문",relic
 const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
 const defenseObjectiveForFloor=(floor:number):DefenseObjective=>floor%3===1?"gate":floor%3===2?"relic":"escort";
 const raidBossForFloor=(floor:number)=>floor%3===1?"Uruk":floor%3===2?"Arachne":"Demon";
+const bossLineageId=(species:string)=>species.toLowerCase()+"-boss";
 
 function load(): Save {
   try {
@@ -62,9 +63,9 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   let es=Array.from({length:count},(_,i)=>createMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i));
   if(room==="boss"){
     const bossSpecies=raidBossForFloor(floor);
-    const bossId=bossSpecies.toLowerCase()+"-boss";
+    const bossId=bossLineageId(bossSpecies);
     const base=createMonster(bossSpecies,Math.max(8,floor+5),"Boss",0);
-    const lineage=bossSpecies==="Uruk" ? (lineages.find(x=>x.id==="uruk-boss")||emptyLineage("uruk-boss","Uruk")) : undefined;
+    const lineage=lineages.find(x=>x.id===bossId)||emptyLineage(bossId,bossSpecies);
     const bossName=bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
     es[0]=applyLineage({...base,id:bossId,name:bossName,pos:8.8},lineage);
   }
@@ -316,7 +317,11 @@ export default function App(){
       return;
     }
     let lineages=save.monsterLineages;
-    if(kind==="boss" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
+    if(kind==="boss"){
+      const species=raidBossForFloor(save.floor);
+      const id=bossLineageId(species);
+      if(!lineages.some(x=>x.id===id))lineages=lineages.concat(emptyLineage(id,species));
+    }
     if(kind==="boss" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
     const env=environmentFor(save.floor,kind,"dungeon");
     const units=spawn(save.heroes,save.party,kind,save.floor,lineages);
@@ -329,8 +334,11 @@ export default function App(){
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
     let lineages=save.monsterLineages;
-    if(nextMode==="raid" && raidBossForFloor(save.floor)==="Uruk" && !lineages.some(x=>x.id==="uruk-boss")) lineages=lineages.concat(emptyLineage("uruk-boss","Uruk"));
-    if(nextMode==="raid" && lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
+    if(nextMode==="raid"){
+      const species=raidBossForFloor(save.floor),id=bossLineageId(species);
+      if(!lineages.some(x=>x.id===id))lineages=lineages.concat(emptyLineage(id,species));
+      if(lineages!==save.monsterLineages)setSave(s=>({...s,monsterLineages:lineages}));
+    }
     const env=environmentFor(save.floor,room,nextMode);
     const units=spawn(save.heroes,save.party,room,save.floor,lineages);
     const objectiveKind=defenseObjectiveForFloor(save.floor);
@@ -402,10 +410,11 @@ export default function App(){
       setSave(s=>{
         const boss=battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss");
         let monsterLineages=s.monsterLineages;
-        if(boss){
-          let lineage=s.monsterLineages.find(x=>x.id==="uruk-boss") || emptyLineage("uruk-boss","Uruk");
+        if(boss&&boss.species){
+          const id=bossLineageId(boss.species);
+          let lineage=s.monsterLineages.find(x=>x.id===id) || emptyLineage(id,boss.species);
           for(const [action,count] of Object.entries(boss.behaviorCounts||{})) for(let i=0;i<count;i++) lineage=recordLineage(lineage,action,false);
-          monsterLineages=s.monsterLineages.filter(x=>x.id!=="uruk-boss").concat(lineage);
+          monsterLineages=s.monsterLineages.filter(x=>x.id!==id).concat(lineage);
         }
         const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
         const updatedHeroes=s.heroes.map(h=>{
@@ -423,12 +432,13 @@ export default function App(){
       setSave(s=>{
         const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
         const boss=battle.units.find(u=>u.team==="enemy"&&u.grade==="Boss");
-        const nextLineages=boss ? (() => {
-          let lineage=s.monsterLineages.find(x=>x.id==="uruk-boss") || emptyLineage("uruk-boss","Uruk");
+        const nextLineages=boss&&boss.species ? (() => {
+          const id=bossLineageId(boss.species);
+          let lineage=s.monsterLineages.find(x=>x.id===id) || emptyLineage(id,boss.species);
           for(const [action,count] of Object.entries(boss.behaviorCounts||{})){
             for(let i=0;i<count;i++) lineage=recordLineage(lineage,action,victory);
           }
-          return s.monsterLineages.filter(x=>x.id!=="uruk-boss").concat(lineage);
+          return s.monsterLineages.filter(x=>x.id!==id).concat(lineage);
         })() : s.monsterLineages;
         return {...s,monsterLineages:nextLineages,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
         heroes:s.heroes.map(h=>{
