@@ -130,6 +130,11 @@ export function canEndPlayerTurn(state: BattleState): boolean {
 
 export function endPlayerTurn(state: BattleState, terrain: Terrain[], floor = 1): BattleActionResult {
   if (state.phase !== 'player') return { state, success: false, message: '플레이어 턴이 아닙니다.' };
+  return { state: { ...state, turn: 'enemy', phase: 'enemy', selectedId: null, targetId: null, log: [...state.log, '몬스터 턴'] }, success: true, message: '몬스터 턴 시작' };
+}
+
+export function resolveEnemyTurnPhase(state: BattleState, terrain: Terrain[], floor = 1): BattleActionResult {
+  if (state.phase !== 'enemy' || state.turn !== 'enemy') return { state, success: false, message: '몬스터 턴이 아닙니다.' };
   const workingUnits = normalizeDefeatedUnits(cloneUnits(state.units));
   const monsterTurn = state.log.filter((entry) => entry === '몬스터 턴').length;
   const bossEffects: Array<{message:string}> = [];
@@ -140,7 +145,7 @@ export function endPlayerTurn(state: BattleState, terrain: Terrain[], floor = 1)
   const normalizedReset = normalizeDefeatedUnits(reset);
   const enemyMessages = [...bossEffects.map((effect) => effect.message), ...enemyResult.messages];
   const enemyLog = enemyMessages.length ? enemyMessages.join(' / ') : '몬스터가 행동하지 않았습니다.';
-  const log = [...state.log, '몬스터 턴', enemyLog];
+  const log = [...state.log, enemyLog];
   const outcome = isBattleOver(normalizedReset);
   if (outcome === 'enemy') {
     return { state: { ...state, units: normalizedReset, turn: 'player', phase: 'defeat', turnNumber: state.turnNumber, targetId: null, log: [...log, '전투 패배...'] }, success: true, message: enemyLog };
