@@ -28,6 +28,7 @@ function buildPlayers(save:SaveLike):Unit[]{
   const stats=getGeneralEffectiveStats(g,{level,star,equipment:eq});
   const base:Unit={...g,skillPower:stats.skillPower,hp:stats.hp,atk:stats.atk,defense:stats.defense,maxHp:stats.hp,currentHp:stats.hp,team:'player',x:1+(i%3),y:8-Math.floor(i/3),acted:false,rage:0,buff:0,movePoints:g.move,status:'none',statusTurns:0,critChance:stats.critChance};
   return applyBattleModifiers(base,formation);
+ });
 }
 function terrainClass(t:Terrain){return `be-terrain-${t}`}
 function isPlayerActionUnavailable(u:Unit){return u.currentHp<=0||(u.status==='stun'&&u.statusTurns>0)}
