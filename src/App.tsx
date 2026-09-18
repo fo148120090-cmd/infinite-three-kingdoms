@@ -4,6 +4,7 @@ import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, P
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
+type BattleMode = "dungeon" | "defense" | "raid";
 type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[] };
 type Decision = { action: string; target?: string; detail: string; score: number };
 
@@ -119,8 +120,9 @@ function route(stage:number,floor:number){
 export default function App(){
   const [save,setSave]=useState<Save>(load);
   const [screen,setScreen]=useState<Screen>("home");
+  const [mode,setMode]=useState<BattleMode>("dungeon");
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
-  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false});
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
@@ -136,8 +138,19 @@ export default function App(){
     if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));notify("보물: "+item.name+" 획득");return;}
     if(kind==="rest"){setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...h,experience:h.experience+4}:h),stage:s.stage+1}));notify("휴식: 경험 기록 +4");return;}
     const units=spawn(save.heroes,save.party,kind,save.floor);
-    setBattle({units,log:[roomKo[kind]+" 시작 · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id});
+    setMode("dungeon");
+    setBattle({units,log:[roomKo[kind]+" 시작 · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
+  };
+
+  const startMode=(nextMode:BattleMode)=>{
+    setMode(nextMode);
+    const room:RoomKind=nextMode==="raid"?"boss":"battle";
+    const units=spawn(save.heroes,save.party,room,save.floor);
+    const label=nextMode==="defense"?"방어전 시작 · 30초 동안 웨이브가 계속됩니다.":"보스 레이드 시작 · 보스 페이즈는 AI가 자동 전환됩니다.";
+    setBattle({units,log:[label],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1});
+    setPaused(false);setScreen("battle");
+    setDecision(nextMode==="defense"?"방어 목표와 생존 경로를 계산 중...":"보스 패턴과 페이즈 전환을 분석 중...");
   };
 
   useEffect(()=>{
