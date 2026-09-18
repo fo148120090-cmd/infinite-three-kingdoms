@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserRound, Zap } from "lucide-react";
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionLabel } from "./promotion";
+import { bondAfterBattle, relationshipFromMap } from "./relationships";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -38,7 +39,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number): BattleU
   const ps: BattleUnit[] = heroes.filter(h=>party.includes(h.id)).map((h,i)=>({
     id:h.id,name:h.name,job:h.job,team:"player" as const,hp:h.hp,maxHp:h.hp,attack:h.attack,defense:h.defense,
     speed:h.speed,range:h.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
-    actionText:"대기",cooldown:0,guard:0,xp:0
+    relationships:h.relationships,memories:h.memories,actionText:"대기",cooldown:0,guard:0,xp:0
   }));
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"?3:room==="elite"?4:3;
@@ -60,14 +61,16 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
   const t=a.tendencies; const arr:Decision[]=[];
   const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
   const mod=a.item?.aiMods||{};
+  const lossBias=(a.memories||[]).filter(m=>m.text.includes("전사")).reduce((n,m)=>n+m.weight,0);
+
   if(nearest){
     let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40;
     if(pct(weak)<.2)s+=25; if(dist(a,nearest)<=a.range)s+=30; s+=(mod.aggression||0)*.7;
     arr.push({action:"일반 공격",target:(a.job==="Archer"||a.job==="Mage"?weak.id:nearest.id),detail:"위협과 마무리 가능성을 계산",score:s});
   }
   if(a.job==="Warrior") arr.push({action:"추격",target:weak?.id,detail:"약해진 적을 끝까지 압박",score:25+t.pursuit*.5+t.aggression*.2+t.bravery*.15-threat*.2+(mod.pursuit||0)*.8});
-  if(a.job==="Guardian"&&ally) arr.push({action:"아군 보호",target:ally.id,detail:"위험한 아군 쪽으로 접근해 피해를 줄임",score:20+t.protect*.5+t.cooperation*.25+(1-pct(ally))*55+(mod.protect||0)*.8});
-  if(a.job==="Cleric"&&ally) arr.push({action:"회복",target:ally.id,detail:"가장 위험한 아군을 먼저 치료",score:30+t.protect*.35+t.cooperation*.25+(1-pct(ally))*75+(mod.protect||0)*.7-(pct(ally)>.78?35:0)});
+  if(a.job==="Guardian"&&ally) arr.push({action:"아군 보호",target:ally.id,detail:"위험한 아군 쪽으로 접근해 피해를 줄임",score:20+t.protect*.5+t.cooperation*.25+(1-pct(ally))*55+relationshipFromMap(a.relationships,ally.id).trust*.22+relationshipFromMap(a.relationships,ally.id).bond*.12+(mod.protect||0)*.8+Math.min(12,lossBias*.2)});
+  if(a.job==="Cleric"&&ally) arr.push({action:"회복",target:ally.id,detail:"가장 위험한 아군을 먼저 치료",score:30+t.protect*.35+t.cooperation*.25+(1-pct(ally))*75+relationshipFromMap(a.relationships,ally.id).trust*.16+relationshipFromMap(a.relationships,ally.id).bond*.1+(mod.protect||0)*.7-(pct(ally)>.78?35:0)+Math.min(8,lossBias*.15)});
   if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8});
   if(a.team==="enemy"&&a.species==="Goblin") arr.push({action:"기습 후퇴",target:nearest?.id,detail:"위험해지면 생존을 위해 물러남",score:20+t.greed*.2+t.caution*.35+(1-pct(a))*60});
   if(a.team==="enemy"&&a.grade==="Boss"){
@@ -223,18 +226,23 @@ export default function App(){
     if(victory){
       const gain=180+battle.units.filter(u=>u.team==="enemy").length*55+(battle.room==="boss"?900:0);
       const exp=22+(battle.room==="elite"?15:0)+(battle.room==="boss"?70:0);
-      setSave(s=>({...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
+      const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
+      setSave(s=>{
+        const bonded=bondAfterBattle(s.heroes,s.party,deadIds);
+        return {...s,gold:s.gold+gain,materials:s.materials+(battle.room==="boss"?60:18),floor:s.floor+(battle.room==="boss"?1:0),stage:battle.room==="boss"?0:s.stage+1,
         heroes:s.heroes.map(h=>{
           if(!s.party.includes(h.id))return h;
-          const unit=battle.units.find(u=>u.id===h.id); const t={...h.tendencies};
+          const base=bonded.find(x=>x.id===h.id)||h;
+          const unit=battle.units.find(u=>u.id===h.id); const t={...base.tendencies};
           const action=unit?.actionText||"";
           if(action.includes("공격")||action.includes("추격"))t.aggression=clamp(t.aggression+.8);
           if(action.includes("보호")||action.includes("회복")){t.protect=clamp(t.protect+.8);t.cooperation=clamp(t.cooperation+.5);}
           if(action.includes("후퇴")){t.caution=clamp(t.caution+.6);t.survival=clamp(t.survival+.8);}
-          const behavioral={...h,tendencies:t,history:[action,...h.history].slice(0,6)};
+          const behavioral={...base,tendencies:t,history:[action,...base.history].slice(0,6)};
           return grantExperience(behavioral,exp).hero;
         })
-      }));
+        };
+      });
     }
   },[battle.ended,battle.result]);
 
