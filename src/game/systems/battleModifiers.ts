@@ -51,6 +51,7 @@ export function applyBattleModifiers(unit: Unit, generals: General[]): Unit {
     atk: Math.floor(unit.atk * attackMultiplier),
     maxHp: nextMaxHp,
     currentHp: Math.min(nextMaxHp, Math.floor(unit.currentHp * hpMultiplier)),
+    critChance: Math.max(0, Math.min(100, (unit.critChance ?? 0) + modifiers.critPct)),
   };
 }
 
