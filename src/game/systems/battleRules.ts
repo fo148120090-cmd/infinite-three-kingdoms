@@ -5,18 +5,18 @@ export { BOARD_WIDTH, BOARD_HEIGHT };
 
 export const TERRAIN_COST: Record<Terrain, number> = {
   plain: 1,
-  forest: 2,
+  forest: 1,
   hill: 1,
-  water: 99,
+  water: 1,
   fort: 1,
 };
 
 export const TERRAIN_ATTACK_BONUS: Record<Terrain, number> = {
   plain: 0,
   forest: 0,
-  hill: 4,
+  hill: 0,
   water: 0,
-  fort: 8,
+  fort: 0,
 };
 
 export type BattleAction = 'move' | 'attack' | 'skill' | 'wait';
@@ -108,10 +108,10 @@ export function getEffectiveDefense(unit: Pick<Unit, 'defense' | 'role' | 'statu
 export function calculateDamage(
   attacker: Pick<Unit, 'atk' | 'buff'>,
   defender: Pick<Unit, 'defense' | 'role' | 'status'>,
-  terrainType: Terrain,
+  _terrainType: Terrain,
   power = 0,
 ): number {
-  const terrainBonus = TERRAIN_ATTACK_BONUS[terrainType];
+  const terrainBonus = 0;
   const defense = getEffectiveDefense(defender);
   return Math.max(
     1,
