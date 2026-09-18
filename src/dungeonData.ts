@@ -35,7 +35,7 @@ export type MonsterLineage = {
 export type Monster = {
   id:string; name:string; species:string; grade:Grade; level:number; hp:number; attack:number;
   defense:number; speed:number; range:number; tendencies:Tendencies; pos:number; maxHp:number;
-  behavior:string[]; mutation?:string; evolutionStage?:number; evolutionPath?:string[]; evolutionStage?:number; evolutionPath?:string[];
+  behavior:string[]; mutation?:string; evolutionStage?:number; evolutionPath?:string[]; evolutionFocus?:string;
 };
 
 export type BattleUnit = {
