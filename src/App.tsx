@@ -7,6 +7,7 @@ import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } fr
 import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
+import { resolveDungeonEvent } from "./dungeonEvents";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -16,8 +17,8 @@ type Decision = { action: string; target?: string; detail: string; score: number
 const KEY = "autonomous-dungeon-demo-v1";
 const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
 const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
-const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",boss:"👑"};
-const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",boss:"심층 보스"};
+const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",boss:"👑"};
+const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",event:"던전 이벤트",boss:"심층 보스"};
 const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
 
 function load(): Save {
@@ -214,9 +215,9 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
 function route(stage:number,floor:number){
   if(stage>=5)return [{kind:"boss" as RoomKind,title:"심층 관문",summary:"던전 최심부의 지휘관이 길을 막고 있다."}];
   const rows=[
-    [{kind:"battle" as RoomKind,title:"정찰 통로",summary:"좁은 통로에서 정찰 무리가 다가온다."},{kind:"treasure" as RoomKind,title:"낡은 보급창",summary:"장비 상자와 자원이 남아 있다."},{kind:"rest" as RoomKind,title:"안전한 움푹한 곳",summary:"잠시 숨을 고를 수 있는 공간."}],
-    [{kind:"battle" as RoomKind,title:"수정 동굴",summary:"슬라임과 코볼트가 길을 막는다."},{kind:"elite" as RoomKind,title:"거미 둥지",summary:"정예 아라크네가 통로를 봉쇄했다."},{kind:"treasure" as RoomKind,title:"봉인 상자",summary:"높은 등급 장비가 잠든 상자."}],
-    [{kind:"rest" as RoomKind,title:"폐허 야영지",summary:"남은 모닥불로 상처를 추스를 수 있다."},{kind:"elite" as RoomKind,title:"전쟁 통로",summary:"규율 잡힌 우르크 부대가 기다린다."},{kind:"battle" as RoomKind,title:"검은 균열",summary:"오거의 발걸음이 벽을 흔든다."}]
+    [{kind:"battle" as RoomKind,title:"정찰 통로",summary:"좁은 통로에서 정찰 무리가 다가온다."},{kind:"treasure" as RoomKind,title:"낡은 보급창",summary:"장비 상자와 자원이 남아 있다."},{kind:"event" as RoomKind,title:"붕괴 직전의 갈림길",summary:"탐욕과 신중함에 따라 다른 결과가 열린다."}],
+    [{kind:"battle" as RoomKind,title:"수정 동굴",summary:"슬라임과 코볼트가 길을 막는다."},{kind:"elite" as RoomKind,title:"거미 둥지",summary:"정예 아라크네가 통로를 봉쇄했다."},{kind:"event" as RoomKind,title:"봉인된 제단",summary:"호기심이 강한 파티일수록 더 많은 것을 발견한다."}],
+    [{kind:"rest" as RoomKind,title:"폐허 야영지",summary:"남은 모닥불로 상처를 추스를 수 있다."},{kind:"elite" as RoomKind,title:"전쟁 통로",summary:"규율 잡힌 우르크 부대가 기다린다."},{kind:"event" as RoomKind,title:"불안정한 지맥",summary:"생존본능과 용맹에 따라 위험을 감수할 수 있다."}]
   ];
   return rows[stage%3].map((x,i)=>({...x,title:x.title+" · "+floor+"F"}));
 }
@@ -239,6 +240,16 @@ export default function App(){
   useEffect(()=>localStorage.setItem(KEY,JSON.stringify(save)),[save]);
 
   const start=(kind:RoomKind)=>{
+    if(kind==="event"){
+      const outcome=resolveDungeonEvent(save.heroes,save.party,save.floor);
+      setSave(s=>({...s,
+        heroes:s.heroes.map(h=>outcome.heroUpdates[h.id]?{...h,...outcome.heroUpdates[h.id]}:h),
+        gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,
+        items:outcome.item?[...s.items,outcome.item]:s.items,stage:s.stage+1
+      }));
+      notify(outcome.text);
+      return;
+    }
     if(kind==="treasure"){const item=randomGeneralItem(save.floor+2);setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,stage:s.stage+1}));notify("보물: "+item.name+" 획득");return;}
     if(kind==="rest"){
       setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...grantExperience(h,4).hero,hp:Math.round(h.hp*1.15)}:h),stage:s.stage+1}));
