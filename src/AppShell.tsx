@@ -3,6 +3,7 @@ import App from './App';
 import BattleEngine from './BattleEngine';
 import GeneralStatusModal from './GeneralStatusModal';
 import GeneralGrowthPanel from './GeneralGrowthPanel';
+import GeneralFormationPanel from './GeneralFormationPanel';
 import EquipmentPanel from './EquipmentPanel';
 import './battle-engine.css';
 import './general-status.css';
@@ -61,4 +62,4 @@ function BattleEngineBridge(){
  useEffect(()=>{const detect=()=>setActive(Boolean(document.querySelector('.battle-layout')));const observer=new MutationObserver(detect);observer.observe(document.body,{childList:true,subtree:true});const timer=window.setInterval(detect,400);detect();return()=>{observer.disconnect();window.clearInterval(timer)}},[]);
  return active?<div className="be-overlay"><BattleEngine/></div>:null;
 }
-export default function AppShell(){return <><App/><BattleEngineBridge/><Settings/><TowerRewardNotice/><GeneralStatusModal/><GeneralGrowthPanel/><EquipmentPanel/></>}
+export default function AppShell(){return <><App/><BattleEngineBridge/><Settings/><TowerRewardNotice/><GeneralStatusModal/><GeneralGrowthPanel/><GeneralFormationPanel/><EquipmentPanel/></>}
