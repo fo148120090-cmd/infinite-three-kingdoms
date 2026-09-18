@@ -34,9 +34,7 @@ export function environmentTick(units:BattleUnit[],env:EnvironmentKind,tick:numb
     units.forEach(u=>{if(u.alive){u.hp=Math.max(0,u.hp-3);u.alive=u.hp>0;changed++;}});
     return changed?"독성 지맥 · 생존 중인 전투원 "+changed+"명에게 지속 피해":"독성 지맥 · 전투 종료";
   }
-  if(env==="water"){
-    units.forEach(u=>{if(u.alive)u.speed=Math.max(.35,u.speed+(u.species==="Lizardman"?.03:-.01));});
-  }
+  // 수로의 이동 보정은 전투 틱마다 누적하지 않고 doAI의 이동 계산에서 적용한다.
   if(env==="unstable"&&tick%8===0){
     const damage=phase>=3?7:phase>=2?5:3;
     units.forEach(u=>{if(u.alive&&Math.random()<.45){u.hp=Math.max(0,u.hp-damage);u.alive=u.hp>0;}});
