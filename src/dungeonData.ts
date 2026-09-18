@@ -114,7 +114,8 @@ function rollMutation(species:string,grade:Grade){
 export function createMonster(species:string, level:number, grade:Grade, index:number): Monster {
   const b=speciesDefaults[species] ?? speciesDefaults.Goblin;
   const mutation=rollMutation(species,grade);
-  const tendencies={...b.tendencies};
+  const aggressionBoost=grade==="Boss"?18:grade==="Named"?16:grade==="Elite"?14:12;
+  const tendencies={...b.tendencies,aggression:Math.min(100,b.tendencies.aggression+aggressionBoost),bravery:Math.min(100,b.tendencies.bravery+5)};
   if(mutation) for(const [k,v] of Object.entries(mutation.mods)) tendencies[k as keyof Tendencies]=Math.max(0,Math.min(100,tendencies[k as keyof Tendencies]+(v||0)));
   const baseName=grade==="Boss"?species+" 군주":grade==="Named"?species+" 사냥꾼":species;
   return {
