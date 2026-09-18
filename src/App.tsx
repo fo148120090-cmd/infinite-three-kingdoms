@@ -65,6 +65,10 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
   if(a.job==="Cleric"&&ally) arr.push({action:"회복",target:ally.id,detail:"가장 위험한 아군을 먼저 치료",score:30+t.protect*.35+t.cooperation*.25+(1-pct(ally))*75+(mod.protect||0)*.7-(pct(ally)>.78?35:0)});
   if(a.job==="Mage") arr.push({action:"광역 마법",detail:"사거리에 들어온 적 수를 계산",score:40+t.aggression*.2+t.focus*.2+enemies.filter(x=>dist(a,x)<=5).length*14+(mod.focus||0)*.8});
   if(a.team==="enemy"&&a.species==="Goblin") arr.push({action:"기습 후퇴",target:nearest?.id,detail:"위험해지면 생존을 위해 물러남",score:20+t.greed*.2+t.caution*.35+(1-pct(a))*60});
+  if(a.team==="enemy"&&a.grade==="Boss"){
+    const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
+    arr.push({action:"보스 패턴",detail:"페이즈 "+phase+" 패턴을 선택하고 전장을 압박",score:42+t.focus*.25+t.bravery*.25+(phase-1)*18});
+  }
   arr.push({action:"후퇴",detail:"현재 HP와 적 위협을 기준으로 생존 판단",score:20+t.survival*.45+t.caution*.3+threat*.4-t.bravery*.25+(pct(a)<.12?20:0)-(a.item?.id==="berserker-heart"?35:0)});
   arr.push({action:"대기",detail:"즉시 행동의 가치가 낮다고 판단",score:16+t.caution*.05});
   return arr;
@@ -102,6 +106,14 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
   } else if(d.action==="광역 마법"){
     const ts=enemies.filter(x=>dist(a,x)<=5).slice(0,3); if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,.72);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText="광역 마법 → "+bits.join(", ");line=a.actionText;} else if(enemies[0])move(enemies[0]),a.actionText="광역 사거리 확보";
   } else if(d.action==="기습 후퇴"||d.action==="후퇴"){a.pos=Math.max(.3,a.pos-.95);a.actionText=d.action+" · 생존 우선";line=a.actionText;
+  } else if(d.action==="보스 패턴"){
+    const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
+    const minions=live(n,"enemy").filter(x=>x.id!==a.id);
+    const boost=phase===1?1.05:phase===2?1.16:1.3;
+    minions.forEach(x=>{x.attack=Math.round(x.attack*boost);if(phase>=2)x.speed+=1;});
+    a.guard=phase===3?1:0;
+    a.actionText="보스 패턴 · PHASE "+phase;
+    line=a.actionText+" · 부하 강화";
   } else {a.guard=1;a.actionText="대기 · 다음 판단 준비";line=a.actionText;}
   n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2});
   return {units:n,decision:d,line:line||a.actionText};
