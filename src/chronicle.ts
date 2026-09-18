@@ -10,7 +10,7 @@ export const chronicleCatalog:ChronicleDef[]=[
   {id:"guardian-oath",kind:"achievement",name:"수호의 맹세",description:"반복되는 보호 행동으로 동료를 지키는 영웅이 되었다.",bonus:{defense:3,hpPct:2},check:h=>(h.behaviorCounts?.["아군 보호"]||0)+(h.behaviorCounts?.["수호 맹세"]||0)+(h.behaviorCounts?.["철벽 진형"]||0)>=20},
   {id:"relentless",kind:"achievement",name:"멈추지 않는 칼날",description:"추격과 공격을 반복해 압박을 이어갔다.",bonus:{attack:3,speedPct:2},check:h=>(h.behaviorCounts?.["추격"]||0)+(h.behaviorCounts?.["광폭 돌격"]||0)>=25},
   {id:"deep-explorer",kind:"achievement",name:"심층 개척자",description:"깊은 층으로 향하는 원정을 계속했다.",bonus:{speedPct:3},check:h=>(h.campaignStats?.bossWins||0)>=2},
-  {id:"abyss-breaker",kind:"achievement",name:"악의 문 파쇄자",description:"악의 동굴의 수문장을 쓰러뜨렸다.",bonus:{attack:5,defense:5,hpPct:5},check:h=>(h.campaignStats?.finalWins||0)>=1},
+  {id:"abyss-breaker",kind:"achievement",name:"악의 문 파쇄자",description:"악의 동굴의 수문장을 쓰러뜨렸다.",bonus:{attack:5,defense:5,hpPct:5},check:h=>h.statusNote==="세계의 구멍 봉인 완료"},
 
   {id:"dungeon-vanguard",kind:"title",name:"동굴의 선봉장",description:"심층 관문을 돌파한 원정대의 선봉장.",bonus:{attack:2,hpPct:2},check:h=>(h.campaignStats?.bossWins||0)>=1},
   {id:"iron-heart",kind:"title",name:"철의 심장",description:"패배를 겪어도 원정을 이어 간 불굴의 용사.",bonus:{defense:3,hpPct:3},check:h=>(h.campaignStats?.losses||0)>=1&&(h.campaignStats?.wins||0)>=3},
