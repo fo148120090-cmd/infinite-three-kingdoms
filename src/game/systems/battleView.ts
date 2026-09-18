@@ -10,6 +10,8 @@ export type BattleCellView = {
   reachable: boolean;
   targetable: boolean;
   skillTargetable: boolean;
+  attackRange: boolean;
+  skillRange: boolean;
   selected: boolean;
 };
 
@@ -30,6 +32,19 @@ export function buildBattleCellViews(
     ? new Set(getReachableCells(mover, terrain, occupied).map((cell) => `${cell.x},${cell.y}`))
     : new Set<string>();
   const skillTargetIds = actionable ? new Set(getGeneralSkillTargetIds(units, selected!.id, terrain)) : new Set<string>();
+  const attackRange = actionable ? new Set(terrain.map((_, index) => {
+    const x = index % BOARD_WIDTH, y = Math.floor(index / BOARD_WIDTH);
+    return Math.abs(x - selected!.x) + Math.abs(y - selected!.y) <= selected!.range ? `${x},${y}` : '';
+  }).filter(Boolean)) : new Set<string>();
+  const skillRange = actionable ? new Set(terrain.map((_, index) => {
+    const x = index % BOARD_WIDTH, y = Math.floor(index / BOARD_WIDTH);
+    const distance = Math.abs(x - selected!.x) + Math.abs(y - selected!.y);
+    const name = selected!.skill;
+    if (name === '인덕의 격려' || name === '강동의 결의' || name === '간웅의 명령') return '';
+    if (name === '맹격' || name === '호통') return distance <= 1 ? `${x},${y}` : '';
+    if (name === '용진') return distance <= selected!.range && (x === selected!.x || y === selected!.y) ? `${x},${y}` : '';
+    return distance <= selected!.range ? `${x},${y}` : '';
+  }).filter(Boolean)) : new Set<string>();
 
   return terrain.map((tile, index) => {
     const x = index % BOARD_WIDTH;
@@ -37,6 +52,7 @@ export function buildBattleCellViews(
     const unit = units.find((candidate) => candidate.currentHp > 0 && candidate.x === x && candidate.y === y) ?? null;
     const targetable = Boolean(actionable && unit && unit.team === 'enemy' && isInRange(selected!, unit, selected!.range));
     const skillTargetable = Boolean(actionable && unit && unit.team === 'enemy' && skillTargetIds.has(unit.id));
+    const cellKey = `${x},${y}`;
     return {
       x,
       y,
@@ -45,6 +61,8 @@ export function buildBattleCellViews(
       reachable: reachable.has(`${x},${y}`),
       targetable,
       skillTargetable,
+      attackRange: attackRange.has(cellKey),
+      skillRange: skillRange.has(cellKey),
       selected: unit?.id === selectedId,
     };
   });
