@@ -25,14 +25,14 @@ export type Hero = {
 export type Monster = {
   id:string; name:string; species:string; grade:Grade; level:number; hp:number; attack:number;
   defense:number; speed:number; range:number; tendencies:Tendencies; pos:number; maxHp:number;
-  behavior:string[];
+  behavior:string[]; mutation?:string;
 };
 
 export type BattleUnit = {
   id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade;
   hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
   pos:number; alive:boolean; tendencies:Tendencies; item?:Item; actionText:string;
-  cooldown:number; guard:number; xp:number; relationships?:Record<string,Relationship>; memories?:Memory[];
+  cooldown:number; guard:number; xp:number; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string;
 };
 
 export const defaultTendencies: Record<Job,Tendencies> = {
@@ -83,14 +83,40 @@ const scale = (n:number,level:number,grade:Grade) => {
   return Math.round(n*(1+(level-1)*.075)*g);
 };
 
+const mutations:Record<string,{name:string;mods:Partial<Tendencies>;attack:number;defense:number;speed:number;behavior:string}> = {
+  "공격성 폭주":{name:"광폭",mods:{aggression:12,bravery:7,caution:-8},attack:7,defense:-2,speed:.06,behavior:"공격 우선"},
+  "생존형":{name:"기민",mods:{caution:12,survival:14,pursuit:-6},attack:-2,defense:4,speed:.1,behavior:"위험 회피"},
+  "협동형":{name:"무리",mods:{cooperation:14,focus:8},attack:3,defense:3,speed:.02,behavior:"협공 강화"},
+  "집중형":{name:"집중",mods:{focus:14,pursuit:8},attack:4,defense:1,speed:.01,behavior:"약점 집중"}
+};
+
+function rollMutation(species:string,grade:Grade){
+  const chance=grade==="Boss"?.9:grade==="Named"?.75:grade==="Elite"?.5:.3;
+  if(Math.random()>chance)return undefined;
+  const preferred=species==="Goblin"||species==="Kobold"||species==="Harpy"?"생존형":
+    species==="Gnoll"||species==="Orc"||species==="Ogre"?"공격성 폭주":
+    species==="Uruk"||species==="Lizardman"?"협동형":
+    species==="Naga"||species==="Siren"||species==="Demon"||species==="Arachne"?"집중형":
+    ["공격성 폭주","생존형","협동형","집중형"][Math.floor(Math.random()*4)];
+  return mutations[preferred];
+}
+
 export function createMonster(species:string, level:number, grade:Grade, index:number): Monster {
   const b=speciesDefaults[species] ?? speciesDefaults.Goblin;
+  const mutation=rollMutation(species,grade);
+  const tendencies={...b.tendencies};
+  if(mutation) for(const [k,v] of Object.entries(mutation.mods)) tendencies[k as keyof Tendencies]=Math.max(0,Math.min(100,tendencies[k as keyof Tendencies]+(v||0)));
+  const baseName=grade==="Boss"?species+" 군주":grade==="Named"?species+" 사냥꾼":species;
   return {
-    id:`${species}-${index}`, name:grade==="Boss"?`${species} 군주`:grade==="Named"?`${species} 사냥꾼`:species,
-    species,grade,level,hp:scale(95,level,grade),maxHp:scale(95,level,grade),
-    attack:scale(b.attack,level,grade),defense:scale(b.defense,level,grade),
-    speed:grade==="Boss"?1.08:.9+Math.random()*.25,range:species==="Harpy"||species==="Siren"?4:species==="Darkworm"?2.2:1.5,
-    tendencies:{...b.tendencies},pos:7-index*0.65,behavior:b.behavior
+    id:species+"-"+index+"-"+Math.random().toString(36).slice(2,7),
+    name:mutation?baseName+" ["+mutation.name+"]":baseName,
+    species,grade,level,
+    hp:Math.max(1,scale(95,level,grade)),maxHp:Math.max(1,scale(95,level,grade)),
+    attack:Math.max(1,scale(b.attack+(mutation?.attack||0),level,grade)),
+    defense:Math.max(1,scale(b.defense+(mutation?.defense||0),level,grade)),
+    speed:(grade==="Boss"?1.08:.9+Math.random()*.25)+(mutation?.speed||0),
+    range:species==="Harpy"||species==="Siren"?4:species==="Darkworm"?2.2:1.5,
+    tendencies,pos:7-index*0.65,behavior:mutation?[...b.behavior,mutation.behavior]:b.behavior,mutation:mutation?.name
   };
 }
 
