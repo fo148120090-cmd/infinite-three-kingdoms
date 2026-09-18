@@ -23,6 +23,18 @@ const partyPreference=(party:Hero[]):Partial<Tendencies>=>{
   (Object.keys(party[0].tendencies) as (keyof Tendencies)[]).forEach(k=>out[k]=party.reduce((n,h)=>n+h.tendencies[k],0)/party.length);
   return out;
 };
+
+export const eventTraitEffects:Record<string,{detail:string;aiMods:Partial<Tendencies>}> = {
+  "어둠 적응":{detail:"암흑 환경에서 신중함과 집중력이 높아집니다.",aiMods:{caution:4,focus:6}},
+  "함정 감지":{detail:"함정과 붕괴 위험을 미리 읽는 판단이 강화됩니다.",aiMods:{caution:6,focus:5}},
+  "독성 내성":{detail:"독성 환경에서 생존본능과 신중함이 강화됩니다.",aiMods:{survival:8,caution:4}},
+  "수중 적응":{detail:"수중 탐색에서 협동성과 호기심이 강화됩니다.",aiMods:{cooperation:6,curiosity:4}},
+  "공명 감응":{detail:"불안정한 에너지의 패턴을 읽는 집중력이 높아집니다.",aiMods:{focus:8,curiosity:5}},
+  "협동 전술가":{detail:"동료와 함께할수록 보호와 협동 판단이 강화됩니다.",aiMods:{cooperation:8,protect:4}},
+  "고대 약초학":{detail:"회복과 보급을 판단하는 능력이 강화됩니다.",aiMods:{survival:4,protect:6}},
+  "과감한 돌파자":{detail:"위험을 감수한 돌파 행동을 더 쉽게 선택합니다.",aiMods:{bravery:8,aggression:5}},
+  "보물 감식가":{detail:"희귀 보상을 찾는 탐색 판단이 강화됩니다.",aiMods:{greed:5,curiosity:7}}
+};
 const eventEquipment=(floor:number,kind:EnvironmentKind,choiceId:string):Item=>{
   const baseLevel=Math.max(1,floor+1);
   const data=kind==="dark"?{name:"암흑 기록관의 렌즈",slot:"ring" as const,rarity:"희귀",stats:["집중력 +6","사거리 +0.2"],aiMods:{focus:6,caution:4},combatMods:{range:.2},description:"어둠 속 기록과 약점을 읽는 이벤트 기재."}:
