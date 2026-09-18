@@ -92,3 +92,15 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 @keyframes floatFx{0%{opacity:0;transform:translate(-50%,8px) scale(.8)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-24px) scale(1.08)}}
 .battle-unit.dead .unit-token{filter:grayscale(1);opacity:.35}
 .battle-unit.dead b{opacity:.45;text-decoration:line-through}
+
+
+.battle-report{margin-top:14px;padding-top:12px;border-top:1px solid #28344c;display:grid;gap:9px}
+.battle-report>b{font-size:11px;letter-spacing:.08em;color:#d0b66f}
+.battle-report-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.report-card{padding:9px;border:1px solid #27344b;border-radius:10px;background:#101a29;display:grid;gap:3px;min-width:0}
+.report-card strong{font-size:11px;color:#dbe4f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.report-card span{font-size:9px;color:#8f9eb7}
+.report-card span:nth-of-type(2){color:#c99b9b}
+.report-card span:nth-of-type(3){color:#97c9aa}
+.report-card small{font-size:9px;color:#aebbd0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:900px){.battle-report-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.battle-report-grid{grid-template-columns:1fr 1fr}.report-card{padding:8px}}
