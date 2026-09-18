@@ -38,7 +38,7 @@ export default function BattleEngine(){
  const start=()=>{const nextSeed=createBattleFieldSeed();const nextTerrain=createBattleField(nextSeed);const enemies=createMonsterEnemies(floor);setSeed(nextSeed);setTerrain(nextTerrain);setEngine(createBattleState([...players,...enemies],[`천탑 ${floor}층 · ${rule.kind==='boss'?'BOSS':'일반'} 전투`,`지형 시드 ${nextSeed}`]));};
  useEffect(()=>{start()},[floor,formationKey]);if(!engine||terrain.length!==BOARD_WIDTH*BOARD_HEIGHT)return null;
  const presentation=buildBattlePresentation(engine.units,terrain,engine.selectedId),selected=presentation.selected;
- const enemyMovement=getEnemyMovementCells(engine.units,terrain);const reachable=new Set(presentation.cells.filter(c=>c.reachable).map(c=>`${c.x},${c.y}`)),targets=new Set(presentation.cells.filter(c=>c.targetable).map(c=>`${c.x},${c.y}`)),skillTargets=new Set(presentation.cells.filter(c=>c.skillTargetable).map(c=>`${c.x},${c.y}`));
+ const enemyMovement=engine.turn==='enemy'?getEnemyMovementCells(engine.units,terrain):new Set<string>();const reachable=new Set(presentation.cells.filter(c=>c.reachable).map(c=>`${c.x},${c.y}`)),targets=new Set(presentation.cells.filter(c=>c.targetable).map(c=>`${c.x},${c.y}`)),skillTargets=new Set(presentation.cells.filter(c=>c.skillTargetable).map(c=>`${c.x},${c.y}`));
  const skillAvailability=selected?getGeneralSkillAvailability(engine.units,selected.id,terrain):null;
  const skillDescription=selected?getSkillDescription(selected):null;
  const selectedTarget=engine.targetId?engine.units.find(u=>u.id===engine.targetId&&u.team==='enemy'&&u.currentHp>0):null;
