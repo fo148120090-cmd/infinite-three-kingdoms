@@ -84,6 +84,31 @@ const combatStats=(hero:Hero)=>{
   return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)};
 };
 
+function routeForecast(kind:RoomKind,floor:number,heroes:Hero[]){
+  const avg=(key:keyof Tendencies)=>heroes.length?heroes.reduce((n,h)=>n+h.tendencies[key],0)/heroes.length:50;
+  const jobs=new Set(heroes.map(h=>h.job));
+  let risk=30, reward=40, fit=60;
+  if(kind==="battle"){risk=42+floor*2;reward=55+floor*6;}
+  if(kind==="elite"){risk=68+floor*2;reward=105+floor*10;}
+  if(kind==="treasure"){risk=8;reward=145+avg("greed")*.7;}
+  if(kind==="rest"){risk=2;reward=30+avg("survival")*.25;}
+  if(kind==="event"){risk=28;reward=75+avg("curiosity")*.55;}
+  if(kind==="hidden"){risk=18;reward=125+avg("curiosity")*.8;}
+  if(kind==="boss"){risk=86+floor*2;reward=260+floor*18;}
+  if(kind==="evilCave"){risk=96;reward=520;}
+  if(kind==="battle"||kind==="elite"||kind==="boss"||kind==="evilCave") risk-=avg("survival")*.12+avg("caution")*.08;
+  if(kind==="event") risk-=avg("caution")*.12;
+  if(kind==="hidden") risk-=avg("curiosity")*.18;
+  if(kind==="treasure") fit+=avg("greed")*.18;
+  const env=environmentFor(floor,kind,"dungeon");
+  if(env==="dark")fit+=avg("caution")*.18-(jobs.has("Archer")?8:0);
+  if(env==="narrow")fit+=avg("aggression")*.16+avg("pursuit")*.12;
+  if(env==="toxic")fit+=avg("survival")*.2+avg("caution")*.1;
+  if(env==="water")fit+=jobs.has("Warrior")||jobs.has("Guardian")?4:0;
+  if(env==="unstable")fit+=avg("focus")*.16;
+  return {risk:Math.max(0,Math.min(100,Math.round(risk))),reward:Math.max(0,Math.round(reward)),fit:Math.max(0,Math.min(100,Math.round(fit))),environment:env};
+}
+
 function actionForecast(hero:Hero,partyHeroes:Hero[],partyMemory?:PartyMemory):{action:string;score:number;detail:string}[]{
   const t=hero.tendencies;
   const items=equippedItemsOf(hero);
@@ -718,7 +743,7 @@ export default function App(){
     {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
       {Object.keys(save.scenarioClears).length>0&&<div className="repeat-panel"><div><b>완료 시나리오 재도전</b><span>성장을 위해 완료한 시나리오를 반복할 수 있습니다. 반복할수록 보상이 감소하고 25% 확률로 정예 몬스터 무리가 등장합니다.</span></div><div className="repeat-list">{Object.keys(save.scenarioClears).sort((a,b)=>Number(b)-Number(a)).map(k=>{const n=save.scenarioClears[k];const mult=Math.max(.3,.6-.1*Math.max(0,n-1));return <button key={k} className="repeat-card" onClick={()=>startRepeat(Number(k))}><b>{k}F 시나리오</b><span>클리어 {n}회 · 다음 보상 {Math.round(mult*100)}%</span><ChevronRight size={16}/></button>})}</div></div>}
-      <div className="route-grid">{route(save.stage,save.floor,party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0).map((r,i)=><button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p></div><ChevronRight size={20}/></button>)}</div>
+      <div className="route-grid">{route(save.stage,save.floor,party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0).map((r,i)=>{const f=routeForecast(r.kind,save.floor,party);return <button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p><div className="route-intel"><span>위험 {f.risk}</span><span>예상 보상 {f.reward}G</span><span>적합도 {f.fit}</span><span>{environmentInfo[f.environment].name}</span></div></div><ChevronRight size={20}/></button>})}</div>
       <div className="dungeon-meta"><div><b>현재 파티</b>{party.map(h=><span key={h.id}>{jobIcon[h.job]} {h.name}</span>)}</div><div><b>대서사의 목표</b><span>{save.worldSealed?"세계의 구멍 봉인 완료":"동굴을 돌파해 악의 동굴을 찾고 세계의 구멍을 봉인하세요."}</span></div></div></section>}
 
     {screen==="battle"&&<section className="page"><div className="battle-header"><div><span className="eyebrow">{roomKo[battle.room]}</span><h2>{battle.room==="evilCave"?"악의 동굴 · 세계의 구멍":battle.room==="boss"?"심층 관문":battle.repeatScenarioFloor!==undefined?"시나리오 재도전":"자동 전투 진행 중"}</h2><p className="muted">전투 명령 없음 · 일시정지와 재생 속도만 조절할 수 있습니다.</p></div>
