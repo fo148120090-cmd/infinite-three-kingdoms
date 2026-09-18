@@ -368,7 +368,7 @@ export default function App(){
     const env=environmentFor(save.floor,kind,"dungeon");
     const units=spawn(save.heroes,save.party,kind,save.floor,save.monsterLineages);
     setMode("dungeon");
-    setBattle({units,log:[roomKo[kind]+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env});
+    setBattle({units,log:[roomKo[kind]+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
     setPaused(false);setScreen("battle");setDecision("AI가 첫 행동을 분석 중...");
   };
 
@@ -380,7 +380,7 @@ export default function App(){
     const env=environmentFor(scenarioFloor,room,"dungeon");
     const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages);
     const rewardMultiplier=Math.max(.3,.6-.1*Math.max(0,repeatCount-1));
-    setBattle({units,log:[scenarioFloor+"F 완료 시나리오 재도전 · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
+    setBattle({units,log:[scenarioFloor+"F 완료 시나리오 재도전 · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
     setPaused(false);setScreen("battle");setDecision(elitePack?"재도전 중 정예 무리의 전투 성향을 분석 중...":"완료 시나리오의 적 행동을 다시 분석 중...");
   };
 
