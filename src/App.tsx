@@ -469,7 +469,7 @@ export default function App(){
   };
   const randomEquip=()=>{
     if(save.materials<12){notify("재료가 부족합니다.");return;}
-    const item=randomGeneralItem(hero.level); setSave(s=>({...s,materials:s.materials-12,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,item}:h)}));notify("무작위 장비 옵션을 새로 굴렸습니다.");
+    const item=randomGeneralItem(hero.level,hero.tendencies); setSave(s=>({...s,materials:s.materials-12,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,item}:h)}));notify("장기 성향에 맞춰 장비 옵션을 새로 굴렸습니다.");
   };
   const reset=()=>{localStorage.removeItem(KEY);setSave(load());setScreen("home");notify("데모 초기화 완료");};
 
