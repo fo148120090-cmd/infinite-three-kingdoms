@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserRound, Zap } from "lucide-react";
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
-import { grantExperience, promotionLabel } from "./promotion";
+import { grantExperience, promotionActions, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 import { applyLineage, emptyLineage, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
@@ -47,7 +47,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
       speed:s.speed,range:s.range,pos:1.1+i*.62,alive:true,tendencies:aiT(h.tendencies,h.item),item:h.item,
-      relationships:h.relationships,memories:h.memories,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
+      relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"?3:room==="elite"?4:3;
@@ -74,6 +74,13 @@ function decisions(a:BattleUnit,u:BattleUnit[]):Decision[] {
   const threat=nearest?Math.min(100,(1-pct(a))*100+60):0;
   const mod=a.item?.aiMods||{};
   const lossBias=(a.memories||[]).filter(m=>m.text.includes("전사")).reduce((n,m)=>n+m.weight,0);
+  for(const p of promotionActions(a.promotionPath)){
+    let score=p.bonus+(t.focus+t.bravery+t.protect+t.aggression)*.08;
+    if((p.name.includes("대회복")||p.name.includes("수호"))&&ally) score+=Math.max(0,(1-pct(ally))*55);
+    if((p.name.includes("사격")||p.name.includes("사냥")||p.name.includes("심판"))&&weak) score+=Math.max(0,(1-pct(weak))*45);
+    if((p.name.includes("폭발")||p.name.includes("저주"))&&enemies.length>=2) score+=enemies.length*10;
+    arr.push({action:p.name,detail:p.detail,score});
+  }
 
   if(nearest){
     let s=50+t.aggression*.35+t.bravery*.2+t.focus*.1+(1-pct(weak))*40;
@@ -116,7 +123,21 @@ function doAI(u:BattleUnit[],id:string):{units:BattleUnit[];decision:Decision;li
     a.pos+=(target.pos>a.pos?step:-step); a.pos=Math.max(.3,Math.min(9.7,a.pos));
   };
   let line="";
-  if(d.action==="일반 공격"){
+  if(d.action==="광폭 돌격"){
+    const t=by(d.target)||nearest; if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.35);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.pos=Math.min(9.7,a.pos+.25);a.actionText="광폭 돌격 → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="수호 맹세"){
+    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){a.pos += t.pos>a.pos?.55:-.55;a.guard=3;t.guard=Math.max(t.guard,2);a.actionText="수호 맹세 → "+t.name;line=a.actionText;}
+  } else if(d.action==="결투 집중"||d.action==="정밀 사격"||d.action==="사냥 본능"||d.action==="심판"){
+    const t=by(d.target)||weak||nearest; if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,d.action==="정밀 사격"?1.25:1.12);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="철벽 진형"){
+    const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){a.guard=4;t.guard=3;a.pos += t.pos>a.pos?.45:-.45;a.actionText="철벽 진형 → "+t.name;line=a.actionText;}
+  } else if(d.action==="원소 폭발"||d.action==="저주 확산"){
+    const ts=enemies.filter(x=>dist(a,x)<=5).slice(0,4); if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,d.action==="원소 폭발"?0.9:0.7);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText=d.action+" → "+bits.join(", ");line=a.actionText;}
+  } else if(d.action==="비전 해방"){
+    const t=weak||nearest; if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.45);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="비전 해방 → "+t.name+" (-"+x+")";line=a.actionText;}}
+  } else if(d.action==="대회복"){
+    const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+(a.item?.combatMods?.healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+  } else if(d.action==="일반 공격"){
     const t=by(d.target)||enemies[0]; if(t){if(dist(a,t)>a.range) move(t),a.actionText="접근 → "+t.name; else {const x=hit(a,t);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="일반 공격 → "+t.name+" (-"+x+")";line=a.actionText;}}
   } else if(d.action==="추격"){
     const t=by(d.target)||enemies[0]; if(t){if(dist(a,t)>a.range)move(t),a.actionText="추격 → "+t.name;else{const x=hit(a,t,1.18);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText="추격 공격 → "+t.name+" (-"+x+")";line=a.actionText;}}
