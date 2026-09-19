@@ -52,6 +52,15 @@ const traitFor=(environment:EnvironmentKind,choiceId:string)=>{
   if(environment==="unstable")return "공명 감응";
   return choiceId==="study"?"보물 감식가":"협동 전술가";
 };
+export function eventRewardPreview(heroes:Hero[],partyIds:string[],environment:EnvironmentKind,choice:DungeonChoice){
+  const party=heroes.filter(h=>partyIds.includes(h.id));
+  const ranked=party.slice().sort((a,b)=>(b.tendencies[choice.tendency]||0)-(a.tendencies[choice.tendency]||0));
+  const trait=choice.rewardKind==="trait"?traitFor(environment,choice.id):undefined;
+  const recipient=choice.rewardKind==="trait"
+    ?(ranked.find(h=>!(h.traits||[]).includes(trait!))||ranked[0])
+    :ranked[0];
+  return {recipient,trait};
+}
 
 
 
@@ -241,7 +250,8 @@ export function resolveDungeonChoice(heroes:Hero[],partyIds:string[],floor:numbe
   const recipient=party.slice().sort((a,b)=>(b.tendencies[choice.tendency]||0)-(a.tendencies[choice.tendency]||0))[0];
   if(choice.rewardKind==="trait" && recipient){
     const trait=traitFor(environment,choice.id);
-    if(!(recipient.traits||[]).includes(trait)) return {text:text+" · "+recipient.name+"이(가) 특성 「"+trait+"」 획득",gold:reward,materials,heroUpdates,rewardKind:"trait",rewardHeroId:recipient.id,rewardName:trait};
+    const traitRecipient=[...party].sort((a,b)=>(b.tendencies[choice.tendency]||0)-(a.tendencies[choice.tendency]||0)).find(h=>!(h.traits||[]).includes(trait))||recipient;
+    if(!(traitRecipient.traits||[]).includes(trait)) return {text:text+" · "+traitRecipient.name+"이(가) 특성 「"+trait+"」 획득",gold:reward,materials,heroUpdates,rewardKind:"trait",rewardHeroId:traitRecipient.id,rewardName:trait};
   }
   if(choice.rewardKind==="equipment") return {text:text+" · 이벤트 기재 획득",gold:reward,materials,heroUpdates,rewardKind:"equipment",rewardItem:eventEquipment(floor,environment,choice.id),rewardHeroId:recipient?.id};
   return {text,gold:reward,materials,heroUpdates};
