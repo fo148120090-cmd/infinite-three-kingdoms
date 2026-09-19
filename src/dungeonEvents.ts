@@ -57,7 +57,7 @@ const traitFor=(environment:EnvironmentKind,choiceId:string)=>{
   if(environment==="unstable")return "공명 감응";
   return choiceId==="study"?"보물 감식가":"협동 전술가";
 };
-export function eventRewardPreview(heroes:Hero[],partyIds:string[],environment:EnvironmentKind,choice:DungeonChoice){
+export function eventRewardPreview(heroes:Hero[],partyIds:string[],floor:number,environment:EnvironmentKind,choice:DungeonChoice){
   const party=heroes.filter(h=>partyIds.includes(h.id));
   const ranked=party.slice().sort((a,b)=>(b.tendencies[choice.tendency]||0)-(a.tendencies[choice.tendency]||0));
   const trait=choice.rewardKind==="trait"?traitFor(environment,choice.id):undefined;
