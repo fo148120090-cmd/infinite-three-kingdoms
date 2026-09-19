@@ -64,7 +64,7 @@ export function eventRewardPreview(heroes:Hero[],partyIds:string[],environment:E
   const recipient=choice.rewardKind==="trait"
     ?(ranked.find(h=>!(h.traits||[]).includes(trait!))||ranked[0])
     :ranked[0];
-  return {recipient,trait, equipment:choice.rewardKind==="equipment"?eventEquipmentPreview(0,environment,choice.id):undefined};
+  return {recipient,trait, equipment:choice.rewardKind==="equipment"?eventEquipmentPreview(floor,environment,choice.id):undefined};
 }
 
 
