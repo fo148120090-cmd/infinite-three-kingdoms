@@ -35,15 +35,20 @@ export const eventTraitEffects:Record<string,{detail:string;aiMods:Partial<Tende
   "과감한 돌파자":{detail:"위험을 감수한 돌파 행동을 더 쉽게 선택합니다.",aiMods:{bravery:8,aggression:5}},
   "보물 감식가":{detail:"희귀 보상을 찾는 탐색 판단이 강화됩니다.",aiMods:{greed:5,curiosity:7}}
 };
-const eventEquipment=(floor:number,kind:EnvironmentKind,choiceId:string):Item=>{
+const eventEquipmentTemplate=(floor:number,kind:EnvironmentKind,choiceId:string):Item=>{
   const baseLevel=Math.max(1,floor+1);
   const data=kind==="dark"?{name:"암흑 기록관의 렌즈",slot:"ring" as const,rarity:"희귀",stats:["집중력 +6","사거리 +0.2"],aiMods:{focus:6,caution:4},combatMods:{range:.2},description:"어둠 속 기록과 약점을 읽는 이벤트 기재."}:
     kind==="narrow"?{name:"붕괴 방지 도구",slot:"accessory" as const,rarity:"희귀",stats:["방어력 +4","생존본능 +5"],aiMods:{survival:5,caution:5},combatMods:{defense:4},description:"좁은 통로의 위험을 줄이는 탐사 기재."}:
     kind==="toxic"?{name:"해독 연금 키트",slot:"accessory" as const,rarity:"영웅",stats:["치유량 +8%","생존본능 +7"],aiMods:{survival:7,protect:4},combatMods:{healPct:8},description:"독성 지대에서 얻은 희귀 약품 제작 기재."}:
     kind==="water"?{name:"수중 호흡 장치",slot:"accessory" as const,rarity:"희귀",stats:["속도 +4%","협동성 +5"],aiMods:{cooperation:5,curiosity:5},combatMods:{speedPct:4},description:"수중 봉인고에서 회수한 탐사 기재."}:
     {name:"공명 제어 곡괭이",slot:"weapon" as const,rarity:"영웅",stats:["공격력 +5","집중력 +6"],aiMods:{focus:6,curiosity:5},combatMods:{attack:5},description:"공명 수정맥에서 제작한 채굴 기재."};
-  return {...data,id:"event-"+kind+"-"+choiceId+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),level:baseLevel,unique:false};
+  return {...data,id:"event-preview-"+kind+"-"+choiceId,level:baseLevel,unique:false};
 };
+const eventEquipment=(floor:number,kind:EnvironmentKind,choiceId:string):Item=>{
+  const preview=eventEquipmentTemplate(floor,kind,choiceId);
+  return {...preview,id:"event-"+kind+"-"+choiceId+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)};
+};
+export const eventEquipmentPreview=(floor:number,kind:EnvironmentKind,choiceId:string)=>eventEquipmentTemplate(floor,kind,choiceId);
 const traitFor=(environment:EnvironmentKind,choiceId:string)=>{
   if(environment==="dark")return choiceId==="read"?"어둠 적응":"보물 감식가";
   if(environment==="narrow")return choiceId==="rush"?"과감한 돌파자":"함정 감지";
@@ -59,7 +64,7 @@ export function eventRewardPreview(heroes:Hero[],partyIds:string[],environment:E
   const recipient=choice.rewardKind==="trait"
     ?(ranked.find(h=>!(h.traits||[]).includes(trait!))||ranked[0])
     :ranked[0];
-  return {recipient,trait};
+  return {recipient,trait, equipment:choice.rewardKind==="equipment"?eventEquipmentPreview(0,environment,choice.id):undefined};
 }
 
 
