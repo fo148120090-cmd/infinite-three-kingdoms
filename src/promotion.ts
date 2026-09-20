@@ -95,6 +95,32 @@ function applyPromotion(h:Hero,level:number){
   return next;
 }
 
+
+const endgameAwakening=(hero:Hero,level:number):Hero=>{
+  const definitions:{level:50|70|100;name:string;detail:string;hp:number;attack:number;defense:number;speed:number;range:number}[]=[
+    {level:50,name:"초월 각성 · 개화",detail:"50레벨에 도달해 영웅의 잠재력이 개화합니다.",hp:1.08,attack:3,defense:2,speed:.04,range:.03},
+    {level:70,name:"초월 각성 · 극점",detail:"70레벨에 도달해 전투 특성이 극점에 도달합니다.",hp:1.12,attack:5,defense:3,speed:.05,range:.04},
+    {level:100,name:"초월 각성 · 무한",detail:"100레벨 최종 각성. 영웅의 성장 한계를 넘어섭니다.",hp:1.18,attack:8,defense:5,speed:.08,range:.06}
+  ];
+  const unlocked=new Set((hero.awakenings||[]).map(x=>x.level));
+  let next=hero; const entries=[...(hero.awakenings||[])];
+  for(const d of definitions){
+    if(level<d.level||unlocked.has(d.level))continue;
+    next={...next,hp:Math.round(next.hp*d.hp),attack:next.attack+d.attack,defense:next.defense+d.defense,speed:next.speed+d.speed,range:next.range+d.range};
+    entries.push({level:d.level,name:d.name,detail:d.detail,earnedAt:Date.now()});
+    next.history=[d.name+" 해금",...(next.history||[])].slice(0,6);
+  }
+  return {...next,awakenings:entries};
+};
+
+export function awakeningSummary(hero:Hero):string{
+  const levels=(hero.awakenings||[]).map(x=>x.level);
+  if(levels.includes(100))return "무한 각성 완료";
+  if(levels.includes(70))return "극점 각성 완료 · Lv.100 대기";
+  if(levels.includes(50))return "개화 각성 완료 · Lv.70 대기";
+  return "최종 각성 미해금 · Lv.50부터 시작";
+}
+
 export function grantExperience(hero:Hero,gain:number){
   const safeLevel=Math.max(1,Math.floor(Number(hero.level)||1));
   const rawExperience=Number(hero.experience);
@@ -111,6 +137,7 @@ export function grantExperience(hero:Hero,gain:number){
     next.defense=Math.max(next.defense+1,Math.round(next.defense*1.02));
     leveled=true;
     next=applyPromotion(next,next.level);
+    next=endgameAwakening(next,next.level);
     next.history=["레벨 업 · Lv."+next.level,...next.history].slice(0,6);
   }
   return {hero:next,leveled};

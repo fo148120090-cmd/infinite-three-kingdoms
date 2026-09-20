@@ -35,6 +35,7 @@ export type Hero = {
   campaignStats?:{wins:number;losses:number;eliteWins:number;bossWins:number;repeatWins:number;finalWins:number}; combatProfile?:{actions:number;damage:number;healing:number;battles:number;topActions?:Record<string,number>};
   costumeId?:string;
   skillPoints?:number; passiveSkills?:Record<string,number>;
+  awakenings?:{level:50|70|100;name:string;detail:string;earnedAt:number}[];
 };
 
 export type MonsterLineage = {
