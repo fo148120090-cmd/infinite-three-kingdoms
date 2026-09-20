@@ -3,7 +3,7 @@ import type { EnvironmentKind } from "./dungeonEnvironment";
 
 
 type EventUpdate={hpDelta?:number;tendencies?:Partial<Tendencies>};
-export type EventRewardKind="trait"|"equipment";
+export type EventRewardKind="trait"|"artifact"|"equipment";
 export type DungeonEventOutcome={
   text:string;
   gold:number;
@@ -13,6 +13,22 @@ export type DungeonEventOutcome={
   rewardHeroId?:string;
   rewardName?:string;
   rewardItem?:Item;
+};
+export const eventArtifactEffects:Record<string,{detail:string;aiMods:Partial<Tendencies>;combatMods?:{attack?:number;defense?:number;hpPct?:number;speedPct?:number;range?:number;healPct?:number;critPct?:number}}> = {
+  "암흑 기록":{detail:"어둠 속 약점과 흔적을 읽는 경험이 전투 판단에 남습니다.",aiMods:{focus:5,caution:3},combatMods:{range:.1}},
+  "돌파 기재":{detail:"붕괴 지형을 뚫어낸 경험이 전열 압박 능력으로 남습니다.",aiMods:{bravery:5,aggression:4},combatMods:{attack:3}},
+  "해독 기재":{detail:"독성 지대를 극복한 지식이 생존과 회복 판단에 남습니다.",aiMods:{survival:6,protect:3},combatMods:{healPct:5}},
+  "수중 기재":{detail:"수중 봉인고를 탐사한 경험이 협동과 기동 능력으로 남습니다.",aiMods:{cooperation:5,curiosity:4},combatMods:{speedPct:3}},
+  "공명 기재":{detail:"불안정한 수정의 공명을 제어한 경험이 집중력에 남습니다.",aiMods:{focus:6,curiosity:4},combatMods:{critPct:3}},
+  "협동 기재":{detail:"동료와 통로를 보강한 경험이 방어와 연계 판단에 남습니다.",aiMods:{cooperation:7,protect:3},combatMods:{defense:2}}
+};
+export const eventArtifactFor=(environment:EnvironmentKind,choiceId:string)=>{
+  if(environment==="dark")return choiceId==="loot"?"암흑 기록":"";
+  if(environment==="narrow")return choiceId==="cooperate"?"협동 기재":"돌파 기재";
+  if(environment==="toxic")return choiceId==="rare"?"해독 기재":"";
+  if(environment==="water")return choiceId==="team"?"수중 기재":"";
+  if(environment==="unstable")return choiceId==="break"?"공명 기재":"";
+  return choiceId==="take"?"협동 기재":"";
 };
 
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
@@ -64,7 +80,8 @@ export function eventRewardPreview(heroes:Hero[],partyIds:string[],floor:number,
   const recipient=choice.rewardKind==="trait"
     ?(ranked.find(h=>!(h.traits||[]).includes(trait!))||ranked[0])
     :ranked[0];
-  return {recipient,trait, equipment:choice.rewardKind==="equipment"?eventEquipmentPreview(floor,environment,choice.id):undefined};
+  const artifact=choice.rewardKind==="artifact"?eventArtifactFor(environment,choice.id)||undefined:undefined;
+  return {recipient,trait,artifact, equipment:choice.rewardKind==="equipment"?eventEquipmentPreview(floor,environment,choice.id):undefined};
 }
 
 
@@ -172,7 +189,7 @@ export function dungeonChoiceEvent(floor:number,environment:EnvironmentKind):Dun
       text:"희미한 봉인문 너머에서 오래된 원정 기록과 보급 상자가 보인다. 무엇을 할까?",
       choices:[
         {id:"read",label:"기록을 해독한다",detail:"집중력을 요구하지만 숨겨진 정보를 얻을 가능성이 높다.",tendency:"focus",risk:6,reward:170+floor*8,rewardKind:"trait"},
-        {id:"loot",label:"보급 상자를 연다",detail:"탐욕스럽게 보상을 챙기지만 함정에 노출될 수 있다.",tendency:"greed",risk:14,reward:230+floor*10,rewardKind:"equipment"},
+        {id:"loot",label:"보급 상자를 연다",detail:"탐욕스럽게 보상을 챙기지만 함정에 노출될 수 있다.",tendency:"greed",risk:14,reward:230+floor*10,rewardKind:"artifact"},
         {id:"leave",label:"안전하게 지나간다",detail:"보상은 작지만 불필요한 위험을 피한다.",tendency:"caution",risk:0,reward:70+floor*4}
       ]
     };
@@ -258,6 +275,10 @@ export function resolveDungeonChoice(heroes:Hero[],partyIds:string[],floor:numbe
     const traitRecipient=[...party].sort((a,b)=>(b.tendencies[choice.tendency]||0)-(a.tendencies[choice.tendency]||0)).find(h=>!(h.traits||[]).includes(trait))||recipient;
     if(!(traitRecipient.traits||[]).includes(trait)) return {text:text+" · "+traitRecipient.name+"이(가) 특성 「"+trait+"」 획득",gold:reward,materials,heroUpdates,rewardKind:"trait",rewardHeroId:traitRecipient.id,rewardName:trait};
   }
-  if(choice.rewardKind==="equipment") return {text:text+" · 이벤트 기재 획득",gold:reward,materials,heroUpdates,rewardKind:"equipment",rewardItem:eventEquipment(floor,environment,choice.id),rewardHeroId:recipient?.id};
+  if(choice.rewardKind==="artifact" && recipient){
+    const artifact=eventArtifactFor(environment,choice.id);
+    if(artifact) return {text:text+" · "+recipient.name+"이(가) 기재 「"+artifact+"」 획득",gold:reward,materials,heroUpdates,rewardKind:"artifact",rewardHeroId:recipient.id,rewardName:artifact};
+  }
+  if(choice.rewardKind==="equipment") return {text:text+" · 이벤트 장비 획득",gold:reward,materials,heroUpdates,rewardKind:"equipment",rewardItem:eventEquipment(floor,environment,choice.id),rewardHeroId:recipient?.id};
   return {text,gold:reward,materials,heroUpdates};
 }
