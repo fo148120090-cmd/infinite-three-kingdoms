@@ -594,7 +594,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+(combinedCombatMods(equippedItemsOf(a)).healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);fx(t,"heal","+"+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="분열"){
     if(pct(a)>.55 && n.filter(x=>x.team==="enemy").length<8){
-      const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true,behaviorCounts:{...(a.behaviorCounts||{})},battleStats:{...(a.battleStats||{damage:0,healing:0,actions:0})}};
+      const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true,behaviorCounts:{},battleStats:{damage:0,healing:0,actions:0}};
       n.push(child);a.hp=Math.round(a.hp*.72);a.actionText="분열 → "+child.name;line=a.actionText;
     } else {a.actionText="분열 대기";line=a.actionText;}
   } else if(d.action==="함정 투척"||d.action==="매복 함정"||d.action==="거미줄"){
@@ -989,7 +989,7 @@ export default function App(){
     const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
     const isRepeat=battle.repeatScenarioFloor!==undefined;
     const isElite=battle.room==="elite"||!!battle.elitePack;
-    const isBoss=battle.room==="boss";
+    const isBoss=battle.room==="boss"||battle.room==="evilCave";
     const isFinal=battle.room==="evilCave";
     const baseStats={wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0};
     const buildHero=(h:Hero,unit:BattleUnit|undefined,won:boolean,stats:any,experienceGain:number)=>{
@@ -997,7 +997,7 @@ export default function App(){
       const base={...h,campaignStats:stats};
       const previousProfile=h.combatProfile||{actions:0,damage:0,healing:0,battles:0,topActions:{}};
       const actionCounts={...previousProfile.topActions};
-      Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>{const before=h.behaviorCounts?.[name]||0;const gained=Math.max(0,count-before);if(gained)actionCounts[name]=(actionCounts[name]||0)+gained;});
+      Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>{const gained=Math.max(0,count);if(gained)actionCounts[name]=(actionCounts[name]||0)+gained;});
       const combatProfile={actions:previousProfile.actions+(unit.battleStats?.actions||0),damage:previousProfile.damage+(unit.battleStats?.damage||0),healing:previousProfile.healing+(unit.battleStats?.healing||0),battles:previousProfile.battles+1,topActions:actionCounts};
       const withProfile={...base,combatProfile};
       const beforePromotion=promotionLabel(withProfile);
@@ -1059,7 +1059,7 @@ export default function App(){
         const unit=battle.units.find(u=>u.id===id);
         if(!heroBefore||!unit)return m;
         Object.entries(unit.behaviorCounts||{}).forEach(([action,count])=>{
-          const gained=Math.max(0,count-(heroBefore.behaviorCounts?.[action]||0));
+          const gained=Math.max(0,count);
           if(action==="아군 보호"||action==="수호 맹세"||action==="철벽 진형")m.protection+=gained;
           if(action==="회복"||action==="대회복")m.recovery+=gained;
         });
