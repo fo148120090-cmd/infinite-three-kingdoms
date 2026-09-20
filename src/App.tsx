@@ -24,6 +24,21 @@ type Decision = { action: string; target?: string; detail: string; score: number
 type BattlePlan = { key:"aggressive"|"defensive"|"focused"|"balanced"; label:string; detail:string };
 type BattleContext = { mode:BattleMode; objectiveKind?:DefenseObjective; objectiveHp:number; phase:number };
 
+const KEY = "autonomous-dungeon-demo-v1";
+const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
+const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
+const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",hidden:"◇",boss:"👑",evilCave:"🕳"};
+const roomKo: Record<RoomKind,string> = {battle:"일반 전투",elite:"정예 전투",treasure:"보물방",rest:"휴식처",event:"던전 이벤트",hidden:"숨은 방",boss:"심층 보스",evilCave:"악의 동굴"};
+const defenseObjectiveKo: Record<DefenseObjective,string> = {gate:"성문",relic:"성유물",escort:"호위 대상"};
+const tendencyKo: Record<keyof Tendencies,string> = {aggression:"공격성",bravery:"용맹",caution:"신중함",survival:"생존본능",protect:"아군보호",pursuit:"추적성",focus:"집중력",greed:"탐욕",curiosity:"호기심",cooperation:"협동성"};
+const defenseObjectiveForFloor=(floor:number):DefenseObjective=>floor%3===1?"gate":floor%3===2?"relic":"escort";
+const defenseObjectiveDetail:Record<DefenseObjective,string>={
+  gate:"성문 · Guardian이 근처를 지키면 받는 압박이 감소합니다.",
+  relic:"성유물 · Mage가 보호하고 Cleric이 회복할 수 있습니다.",
+  escort:"호위 대상 · Guardian 생존 시 내구도가 주기적으로 회복됩니다."
+};
+const raidBossForFloor=(floor:number)=>floor%3===1?"Uruk":floor%3===2?"Arachne":"Demon";
+
 const NPC_IMAGE = "/npc/seraphina.webp";
 const npcLineFor = (floor:number, mode:BattleMode, dialogueIndex=0) => {
   const common = [
