@@ -105,6 +105,75 @@ export function evolutionActionBonus(lineage:MonsterLineage|undefined,action:str
   return (focus&&match[focus]?.some(x=>action===x))?stage*10:0;
 }
 
+type MonsterPromotionChoice={name:string;focus:string};
+
+export const monsterPromotionPools:Record<string,MonsterPromotionChoice[]>={
+  Slime:[{name:"흡수체",focus:"absorb"},{name:"군체체",focus:"split"},{name:"독성체",focus:"poison"}],
+  Goblin:[{name:"전투형",focus:"combat"},{name:"지휘형",focus:"command"},{name:"암습형",focus:"greed"}],
+  Kobold:[{name:"공병형",focus:"trap"},{name:"전사형",focus:"combat"},{name:"정찰형",focus:"scout"}],
+  Gnoll:[{name:"사냥형",focus:"hunt"},{name:"전쟁형",focus:"combat"},{name:"주술형",focus:"command"}],
+  Orc:[{name:"전사형",focus:"combat"},{name:"수호형",focus:"defense"},{name:"광전형",focus:"berserk"}],
+  Lizardman:[{name:"사냥형",focus:"hunt"},{name:"독술형",focus:"poison"},{name:"심해형",focus:"aquatic"}],
+  Naga:[{name:"전사형",focus:"combat"},{name:"독술형",focus:"poison"},{name:"마도형",focus:"magic"}],
+  Harpy:[{name:"폭풍형",focus:"speed"},{name:"전투형",focus:"combat"},{name:"정신형",focus:"mental"}],
+  Uruk:[{name:"군사형",focus:"soldier"},{name:"장교형",focus:"officer"},{name:"중장형",focus:"armor"}],
+  Ogre:[{name:"거구형",focus:"strength"},{name:"장갑형",focus:"defense"},{name:"광폭형",focus:"berserk"}],
+  Arachne:[{name:"사냥형",focus:"hunt"},{name:"독거미형",focus:"poison"},{name:"둥지형",focus:"web"}],
+  Siren:[{name:"매혹형",focus:"charm"},{name:"환영형",focus:"illusion"},{name:"지배형",focus:"control"}],
+  Darkworm:[{name:"잠복형",focus:"ambush"},{name:"거대형",focus:"size"},{name:"공허형",focus:"mana"}],
+  Demon:[{name:"전쟁형",focus:"war"},{name:"화염형",focus:"flame"},{name:"지배형",focus:"domination"}]
+};
+
+const promotionStages=[
+  {label:"상급",hp:1.12,attack:1.08,defense:1.08},
+  {label:"정예",hp:1.28,attack:1.17,defense:1.17},
+  {label:"왕",hp:1.48,attack:1.30,defense:1.30},
+  {label:"군단장",hp:1.72,attack:1.48,defense:1.45},
+  {label:"군주",hp:2.00,attack:1.70,defense:1.65},
+  {label:"초월",hp:2.35,attack:1.98,defense:1.90}
+] as const;
+const promotionLevels=[10,20,30,50,70,100];
+
+const promotionRoot=(species:string,choice:string)=>{
+  const roots:Record<string,Record<string,string>>={
+    Slime:{"흡수체":"메가 슬라임","군체체":"슬라임 콜로니","독성체":"데스 슬라임"},
+    Goblin:{"전투형":"고블린 전사","지휘형":"고블린 족장","암습형":"고블린 암살자"},
+    Kobold:{"공병형":"함정 장인 코볼트","전사형":"코볼트 경비대장","정찰형":"코볼트 사냥꾼"},
+    Gnoll:{"사냥형":"늑대 놀","전쟁형":"놀 전쟁군주","주술형":"놀 주술사"},
+    Orc:{"전사형":"오크 챔피언","수호형":"철벽 오크","광전형":"오크 광전사"},
+    Lizardman:{"사냥형":"리자드맨 전사","독술형":"맹독 리자드","심해형":"심해 리자드"},
+    Naga:{"전사형":"나가 장군","독술형":"맹독의 주인","마도형":"나가 대마도사"},
+    Harpy:{"폭풍형":"폭풍 하피","전투형":"하피 전사장","정신형":"매혹의 하피"},
+    Uruk:{"군사형":"우르크 챔피언","장교형":"우르크 장군","중장형":"철갑군"},
+    Ogre:{"거구형":"오거 왕","장갑형":"오거 요새","광폭형":"오거 파괴자"},
+    Arachne:{"사냥형":"살인 거미","독거미형":"맹독 아라크네","둥지형":"둥지 여왕"},
+    Siren:{"매혹형":"매혹의 여왕","환영형":"악몽 사이렌","지배형":"정신 지배자"},
+    Darkworm:{"잠복형":"밤의 벌레","거대형":"고대 웜","공허형":"공허 웜"},
+    Demon:{"전쟁형":"고급 악마","화염형":"화염 군주","지배형":"악마 군주"}
+  };
+  return roots[species]?.[choice]||species+" "+choice;
+};
+
+export function monsterPromotionInfo(monster:Monster,lineage?:MonsterLineage){
+  const choices=monsterPromotionPools[monster.species]||[];
+  const tier=promotionLevels.filter(level=>monster.level>=level).length;
+  if(tier===0||choices.length===0)return {tier:0,name:monster.name,hp:monster.hp,maxHp:monster.maxHp,attack:monster.attack,defense:monster.defense,focus:undefined as string|undefined};
+  const best=choices.slice().sort((a,b)=>(lineage?.focus[b.focus]||0)-(lineage?.focus[a.focus]||0))[0];
+  const stage=promotionStages[tier-1];
+  const root=promotionRoot(monster.species,best.name);
+  return {tier,name:stage.label+" "+root,hp:Math.round(monster.hp*stage.hp),maxHp:Math.round(monster.maxHp*stage.hp),attack:Math.round(monster.attack*stage.attack),defense:Math.round(monster.defense*stage.defense),focus:best.focus};
+}
+
+export function applyMonsterPromotion(monster:Monster,lineage?:MonsterLineage):Monster{
+  const info=monsterPromotionInfo(monster,lineage);
+  if(info.tier===0)return {...monster,promotionTier:0};
+  const tendencies={...monster.tendencies};
+  const focusMap:Record<string,keyof Tendencies>={combat:"aggression",command:"cooperation",greed:"greed",trap:"caution",scout:"pursuit",hunt:"pursuit",berserk:"aggression",defense:"caution",poison:"focus",aquatic:"survival",magic:"focus",speed:"bravery",mental:"focus",soldier:"aggression",officer:"focus",armor:"caution",strength:"aggression",web:"caution",charm:"focus",illusion:"caution",control:"cooperation",ambush:"pursuit",size:"aggression",mana:"focus",war:"aggression",flame:"aggression",domination:"cooperation",absorb:"aggression",split:"cooperation"};
+  const key=info.focus?focusMap[info.focus]:undefined;
+  if(key)tendencies[key]=Math.min(100,tendencies[key]+info.tier*3);
+  return {...monster,name:info.name,promotionTier:info.tier,promotionPath:[...(monster.promotionPath||[]),info.name].slice(-6),hp:info.hp,maxHp:info.maxHp,attack:info.attack,defense:info.defense,tendencies};
+}
+
 export function evolutionHint(lineage:MonsterLineage):string{
   const branches=monsterEvolutionTrees[lineage.species]||[];
   const best=branches.slice().sort((a,b)=>(lineage.focus[b.focus]||0)-(lineage.focus[a.focus]||0))[0];
