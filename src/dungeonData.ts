@@ -34,6 +34,7 @@ export type Hero = {
   mood?:string; statusNote?:string; evaluation?:string;
   campaignStats?:{wins:number;losses:number;eliteWins:number;bossWins:number;repeatWins:number;finalWins:number}; combatProfile?:{actions:number;damage:number;healing:number;battles:number;topActions?:Record<string,number>};
   costumeId?:string;
+  skillPoints?:number; passiveSkills?:Record<string,number>;
 };
 
 export type MonsterLineage = {
@@ -51,7 +52,7 @@ export type BattleUnit = {
   id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade; level?:number;
   hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
   pos:number; alive:boolean; tendencies:Tendencies; item?:Item; equipment?:Item[]; actionText:string;
-  cooldown:number; guard:number; xp:number; statusEffects?:StatusEffect[]; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>; personality?:CharacterPersonality; skinId?:string; promotionPath?:string[]; evolutionStage?:number; evolutionPath?:string[]; evolutionFocus?:string; fx?:string; fxKind?:"damage"|"heal"|"critical"|"status"; battleStats?:{damage:number;healing:number;actions:number};
+  cooldown:number; guard:number; xp:number; statusEffects?:StatusEffect[]; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>; personality?:CharacterPersonality; skinId?:string; promotionPath?:string[]; evolutionStage?:number; evolutionPath?:string[]; evolutionFocus?:string; promotionTier?:number; passiveHealPct?:number; fx?:string; fxKind?:"damage"|"heal"|"critical"|"status"; battleStats?:{damage:number;healing:number;actions:number};
 };
 
 export const defaultTendencies: Record<Job,Tendencies> = {
@@ -268,7 +269,7 @@ export function createRecruitHero(job:Job):Hero{
     return {
     id:"recruit-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
     name,job,level:1,star:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
-    tendencies,equipment:[],experience:0,history:["모집된 신규 용사"],color:"#6f819b",personality:buildPersonality({id:"recruit-temp",name,job,tendencies}),skinIds:[job.toLowerCase()+"-base"],equippedSkinId:job.toLowerCase()+"-base",
+    tendencies,equipment:[],experience:0,skillPoints:0,passiveSkills:{},history:["모집된 신규 용사"],color:"#6f819b",personality:buildPersonality({id:"recruit-temp",name,job,tendencies}),skinIds:[job.toLowerCase()+"-base"],equippedSkinId:job.toLowerCase()+"-base",
     campaignStats:{wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0},
     chronicle:[]
   };
