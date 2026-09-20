@@ -663,6 +663,25 @@ function route(stage:number,floor:number,curiosity=0){
   return base;
 }
 
+const growthOptionsFor=(hero:Hero,primary:GrowthReward):GrowthReward[]=>{
+  const traitByJob:Record<Job,string[]>={
+    Warrior:["정예 토벌자","재도전 숙련자","전장 분석가"],
+    Guardian:["수호 전술가","전장 분석가","재도전 숙련자"],
+    Archer:["전장 분석가","정예 토벌자","재도전 숙련자"],
+    Mage:["전장 분석가","정예 토벌자","재도전 숙련자"],
+    Cleric:["연전 회복관","수호 전술가","재도전 숙련자"]
+  };
+  const artifactNames=["보스의 핵편","심층 탐사 기록","생환자의 표식","연전의 깃발","보물 탐사의 인장","정예 토벌의 훈장"];
+  const names=primary.kind==="trait"?traitByJob[hero.job]:artifactNames;
+  const candidates=names
+    .filter(name=>name!==primary.name)
+    .map(name=>primary.kind==="trait"
+      ? ({kind:"trait" as const,name,detail:growthTraitCatalog[name]?.detail||"전투 경험으로 형성된 특성입니다.",source:"전투 성장 후보",heroId:hero.id})
+      : ({kind:"artifact" as const,name,detail:growthArtifactCatalog[name]?.detail||"전투 경험으로 얻은 기재입니다.",source:"전투 성장 후보",heroId:hero.id}))
+    .filter(x=>x.kind==="trait"?!(hero.traits||[]).includes(x.name):!(hero.artifacts||[]).includes(x.name));
+  return [primary,...candidates].slice(0,2);
+};
+
 function applyGrowthRewardHeroes(heroes:Hero[],reward:GrowthReward,heroId:string,floor:number):Hero[]{
   return heroes.map(h=>{
     if(h.id!==heroId)return h;
@@ -896,6 +915,8 @@ export default function App(){
   useEffect(()=>{
     if(screen!=="battle"||!battle.ended)return;
     const progressionNotices:string[]=[];
+    let pendingGrowthReward:GrowthReward|undefined;
+    let pendingGrowthHeroId:string|undefined;
     const victory=battle.result==="victory";
     const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
     const isRepeat=battle.repeatScenarioFloor!==undefined;
@@ -992,8 +1013,8 @@ export default function App(){
           }
         }
         if(growthReward&&growthReward.heroId){
-          nextHeroes=applyGrowthRewardHeroes(nextHeroes,growthReward,growthReward.heroId,s.floor);
-          window.setTimeout(()=>notify(growthReward!.name+" 획득 · "+growthReward!.source),0);
+          pendingGrowthReward=growthReward;
+          pendingGrowthHeroId=growthReward.heroId;
         }
       }
       return {...s,
@@ -1008,8 +1029,21 @@ export default function App(){
         heroes:nextHeroes
       };
     });
+    if(pendingGrowthReward&&pendingGrowthHeroId){
+      const targetHero=save.heroes.find(h=>h.id===pendingGrowthHeroId);
+      if(targetHero){
+        setPendingGrowth({heroId:pendingGrowthHeroId,options:growthOptionsFor(targetHero,pendingGrowthReward),source:pendingGrowthReward.source});
+      }
+    }
     if(progressionNotices.length) window.setTimeout(()=>notify("성장 갱신 · "+progressionNotices.join(" · ")),0);
   },[battle.ended,battle.result]);
+
+  const chooseGrowth=(reward:GrowthReward)=>{
+    if(!pendingGrowth)return;
+    setSave(s=>applyGrowthRewardHeroes(s.heroes,reward,pendingGrowth.heroId,s.floor)===s.heroes?s:{...s,heroes:applyGrowthRewardHeroes(s.heroes,reward,pendingGrowth.heroId,s.floor)});
+    setPendingGrowth(undefined);
+    notify(reward.name+" 습득 · "+reward.source);
+  };
 
   const toggleParty=(id:string)=>{
     if(save.party.includes(id)){if(save.party.length===1)return;setSave(s=>({...s,party:s.party.filter(x=>x!==id)}));}
@@ -1184,6 +1218,8 @@ export default function App(){
         <button className="primary-btn" onClick={()=>setNpcOpen(false)}>대화 닫기</button>
       </div>
     </div></div>}
+
+    {pendingGrowth&&<div className="event-overlay"><div className="event-dialog growth-dialog"><span className="eyebrow">BATTLE GROWTH</span><h2>전투 성장 선택</h2><p>이번 전투에서 형성된 성장 후보입니다. 하나를 선택하면 캐릭터에게 영구 적용됩니다.</p><div className="growth-choice-list">{pendingGrowth.options.map((reward,index)=><button key={reward.kind+"-"+reward.name} className="growth-choice" onClick={()=>chooseGrowth(reward)}><span className="growth-choice-index">{index===0?"★":"+"}</span><span><b>{reward.name}</b><small>{reward.detail}</small><em>{reward.kind==="trait"?"특성 · AI 성향에 영구 반영":"기재 · AI 성향과 전투 보정에 영구 반영"}</em></span><ChevronRight size={17}/></button>)}</div><small className="event-note">전투 명령은 여전히 AI가 결정합니다. 여기서는 전투 결과를 어떻게 장기 성장으로 남길지만 선택합니다.</small></div></div>}
 
     {pendingEvent&&<div className="event-overlay"><div className="event-dialog"><span className="eyebrow">DUNGEON EVENT</span><h2>{pendingEvent.title}</h2><p>{pendingEvent.text}</p><div className="event-choice-list">{pendingEvent.choices.map(ch=>{const preview=eventRewardPreview(save.heroes,save.party,save.floor,environmentFor(save.floor,"event","dungeon"),ch);let recipientText=" · 이벤트 보상";if(ch.rewardKind==="trait"&&preview.trait)recipientText=" · 「"+preview.trait+"」";else if(ch.rewardKind==="artifact"&&preview.artifact)recipientText=" · 「"+preview.artifact+"」";else if(ch.rewardKind==="equipment"&&preview.equipment)recipientText=" · "+preview.equipment.name+" · "+preview.equipment.stats.slice(0,2).join(" · ");return <button key={ch.id} className="event-choice" onClick={()=>chooseDungeonEvent(ch.id)}><div><b>{ch.label}</b><small>{ch.detail}</small>{ch.rewardKind&&<small className="event-recipient">획득 대상 · {preview.recipient?.name||"파티"}{recipientText}</small>}</div><span>{ch.risk>0?"위험 "+ch.risk:"안전"} · 예상 {ch.reward}G{ch.rewardKind&&<em className="event-reward-label">{ch.rewardKind==="trait"?"특성 획득":ch.rewardKind==="artifact"?"기재 획득":"장비 획득"}</em>}</span></button>})}</div><small className="event-note">선택한 방식이 파티의 해당 성향과 이후 행동 기록에 누적되며, 일부 선택은 성향이 가장 높은 캐릭터에게 특성 또는 기재가 영구 귀속됩니다.</small></div></div>}
 
