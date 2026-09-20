@@ -591,7 +591,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
   } else if(d.action==="비전 해방"){
     const t=weak||nearest; if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.45);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;fx(t,"critical","-"+x);a.actionText="비전 해방 → "+t.name+" (-"+x+")";line=a.actionText;}}
   } else if(d.action==="대회복"){
-    const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+(combinedCombatMods(equippedItemsOf(a)).healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);fx(t,"heal","+"+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+    const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+((combinedCombatMods(equippedItemsOf(a)).healPct||0)+passiveCombatBonus(save.heroes.find(h=>h.id===a.id)||({} as Hero)).healPct)/100)));t.hp=Math.min(t.maxHp,t.hp+x);fx(t,"heal","+"+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="분열"){
     if(pct(a)>.55 && n.filter(x=>x.team==="enemy").length<8){
       const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true,behaviorCounts:{},battleStats:{damage:0,healing:0,actions:0}};
@@ -659,7 +659,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
   } else if(d.action==="아군 보호"){
     const t=by(d.target)||allies[0]; if(t){a.pos += t.pos > a.pos ? .5 : -.5;a.guard=2;t.guard=Math.max(t.guard,1);a.actionText="아군 보호 → "+t.name;line=a.actionText;}
   } else if(d.action==="회복"){
-    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.18+a.tendencies.cooperation*.001)*(1+(combinedCombatMods(equippedItemsOf(a)).healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);fx(t,"heal","+"+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
+    const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.18+a.tendencies.cooperation*.001)*(1+((combinedCombatMods(equippedItemsOf(a)).healPct||0)+passiveCombatBonus(save.heroes.find(h=>h.id===a.id)||({} as Hero)).healPct)/100)));t.hp=Math.min(t.maxHp,t.hp+x);fx(t,"heal","+"+x);a.actionText="회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="광역 마법"){
     const ts=enemies.filter(x=>dist(a,x)<=5).slice(0,3); if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,.72);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText="광역 마법 → "+bits.join(", ");line=a.actionText;} else if(enemies[0])move(enemies[0]),a.actionText="광역 사거리 확보";
   } else if(d.action==="기습 후퇴"||d.action==="후퇴"){a.pos=Math.max(.3,a.pos-.95);a.actionText=d.action+" · 생존 우선";line=a.actionText;
