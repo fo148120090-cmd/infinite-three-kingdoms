@@ -7,7 +7,7 @@ import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } fr
 import { applyLineage, emptyLineage, evolutionActionBonus, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
 import type { MonsterLineage } from "./dungeonData";
 import { monsterActions } from "./monsterAbilities";
-import { dungeonChoiceEvent, resolveDungeonChoice, resolveDungeonEvent, resolveHiddenRoom, eventTraitEffects, eventRewardPreview, type DungeonChoiceEvent } from "./dungeonEvents";
+import { dungeonChoiceEvent, resolveDungeonChoice, resolveDungeonEvent, resolveHiddenRoom, eventTraitEffects, eventArtifactEffects, eventRewardPreview, type DungeonChoiceEvent } from "./dungeonEvents";
 import { applyBehaviorHistory, behaviorSummary, buildProfile, habitBias, partyHabitBias, partyMemorySummary, partyPreference, partyTacticalLinks, profileInsight, type PartyMemory } from "./progression";
 import { awardChronicle, chronicleBonuses, chronicleLabel, systemEvaluation, systemMood, systemStatus } from "./chronicle";
 import { costumeLabel, costumesForJob } from "./costumes";
@@ -86,17 +86,23 @@ const combinedCombatMods=(items:Item[])=>{
   for(const item of items) for(const [k,v] of Object.entries(item.combatMods||{})) mods[k]=(mods[k]||0)+(v||0);
   return mods;
 };
-const aiT=(t:Tendencies,items:Item[]=[]):Tendencies=>{
+const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[]):Tendencies=>{
   const n={...t}; const mods=combinedAiMods(items);
   (Object.keys(mods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(mods[k]||0)));
+  artifacts.forEach(name=>{
+    const effect=eventArtifactEffects[name];
+    if(effect)Object.entries(effect.aiMods).forEach(([k,v])=>{n[k as keyof Tendencies]=clamp(n[k as keyof Tendencies]+(v||0));});
+  });
   return n;
 };
 const equipmentNames=(hero:Hero)=>equipmentSlotsOf(hero).map(x=>x?.name||"장비 없음");
 const combatStats=(hero:Hero)=>{
   const m=combinedCombatMods(equippedItemsOf(hero));
+  const artifactMods:Record<string,number>={};
+  (hero.artifacts||[]).forEach(name=>Object.entries(eventArtifactEffects[name]?.combatMods||{}).forEach(([k,v])=>artifactMods[k]=(artifactMods[k]||0)+(v||0)));
   const bonus=chronicleBonuses(hero);
-  const hp=Math.round(hero.hp*(1+((m.hpPct||0)+(bonus.hpPct||0))/100));
-  return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)};
+  const hp=Math.round(hero.hp*(1+((m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0))/100));
+  return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)+(artifactMods.range||0)};
 };
 function autoFormation(heroes:Hero[],mode:BattleMode):Hero[]{
   const rank=(h:Hero)=>{
@@ -250,7 +256,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   const ps: BattleUnit[] = ordered.map((h,i)=>{
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
-      speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h)),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
+      speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[]),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
       relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
@@ -798,7 +804,9 @@ export default function App(){
     const outcome=resolveDungeonChoice(save.heroes,save.party,save.floor,env,choice);
     setSave(s=>{
       const earnedTrait=outcome.rewardKind==="trait"&&outcome.rewardHeroId&&outcome.rewardName;
+      const earnedArtifact=outcome.rewardKind==="artifact"&&outcome.rewardHeroId&&outcome.rewardName;
       const traitEffect=earnedTrait?eventTraitEffects[outcome.rewardName!]:undefined;
+      const artifactEffect=earnedArtifact?eventArtifactEffects[outcome.rewardName!]:undefined;
       const nextHeroes=s.heroes.map(h=>{
         const update=outcome.heroUpdates[h.id];
         const baseT={...h.tendencies,...Object.fromEntries(Object.entries(update?.tendencies||{}).map(([k,v])=>[k,clamp(v as number)]))};
@@ -806,18 +814,18 @@ export default function App(){
           Object.entries(traitEffect.aiMods).forEach(([k,v])=>{baseT[k as keyof Tendencies]=clamp(baseT[k as keyof Tendencies]+(v||0));});
           return {...h,hp:Math.max(1,h.hp+(update?.hpDelta||0)),tendencies:baseT,traits:Array.from(new Set([...(h.traits||[]),outcome.rewardName!])).slice(0,4)};
         }
+        if(earnedArtifact&&h.id===outcome.rewardHeroId&&artifactEffect){
+          return {...h,hp:Math.max(1,h.hp+(update?.hpDelta||0)),tendencies:baseT,artifacts:Array.from(new Set([...(h.artifacts||[]),outcome.rewardName!])).slice(0,4)};
+        }
         if(!update)return h;
         return {...h,hp:Math.max(1,h.hp+(update.hpDelta||0)),tendencies:baseT};
       });
-      return {
-        ...s,
+      return {...s,
         routeMemory:recordRouteMemory(s.routeMemory,"event",true,outcome.gold),
         heroes:nextHeroes.map(h=>{
           if(h.id!==outcome.rewardHeroId||!outcome.rewardKind||!outcome.rewardName)return h;
-          const detail=outcome.rewardKind==="trait"
-            ?(traitEffect?.detail||"던전 이벤트에서 획득한 특성입니다.")
-            :(outcome.rewardItem?.description||"던전 이벤트에서 획득한 기재입니다.");
-          const records=[...(h.eventRewards||[]),{kind:outcome.rewardKind,name:outcome.rewardName||outcome.rewardItem?.name||"획득 기록",floor:s.floor,detail}].slice(-8);
+          const detail=outcome.rewardKind==="trait"?(traitEffect?.detail||"던전 이벤트에서 획득한 특성입니다."):outcome.rewardKind==="artifact"?(artifactEffect?.detail||"던전 이벤트에서 획득한 기재입니다."):(outcome.rewardItem?.description||"던전 이벤트에서 획득한 장비입니다.");
+          const records=[...(h.eventRewards||[]),{kind:outcome.rewardKind,name:outcome.rewardName,floor:s.floor,detail}].slice(-8);
           return {...h,eventRewards:records};
         }),
         items:outcome.rewardKind==="equipment"&&outcome.rewardItem?[...s.items,outcome.rewardItem]:s.items,
@@ -825,7 +833,7 @@ export default function App(){
       };
     });
     setPendingEvent(undefined);
-    const rewardText=outcome.rewardKind==="trait"&&outcome.rewardName?" · "+outcome.rewardName+" 특성 획득":outcome.rewardKind==="equipment"&&outcome.rewardItem?" · "+outcome.rewardItem.name+" 획득":"";
+    const rewardText=outcome.rewardKind==="trait"&&outcome.rewardName?" · "+outcome.rewardName+" 특성 획득":outcome.rewardKind==="artifact"&&outcome.rewardName?" · "+outcome.rewardName+" 기재 획득":outcome.rewardKind==="equipment"&&outcome.rewardItem?" · "+outcome.rewardItem.name+" 장비 획득":"";
     notify(outcome.text+rewardText+" · +"+outcome.gold+"G");
   };
 
@@ -845,7 +853,7 @@ export default function App(){
       <div className="resources"><span><Coins size={15}/> {save.gold}</span><span><Gem size={15}/> {save.gems}</span><span>🧱 {save.materials}</span><span>심도 {save.floor}F</span></div></header>
     <nav className="main-nav">{([["home","대시보드"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"],["recruit","모집"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
     {toast&&<div className="toast">{toast}</div>}
-    {pendingEvent&&<div className="event-overlay"><div className="event-dialog"><span className="eyebrow">DUNGEON EVENT</span><h2>{pendingEvent.title}</h2><p>{pendingEvent.text}</p><div className="event-choice-list">{pendingEvent.choices.map(ch=>{const preview=eventRewardPreview(save.heroes,save.party,save.floor,environmentFor(save.floor,"event","dungeon"),ch);return <button key={ch.id} className="event-choice" onClick={()=>chooseDungeonEvent(ch.id)}><div><b>{ch.label}</b><small>{ch.detail}</small>{ch.rewardKind&&<small className="event-recipient">획득 대상 · {preview.recipient?.name||"파티"}{ch.rewardKind==="trait"&&preview.trait?" · 「"+preview.trait+"」":preview.equipment?" · "+preview.equipment.name+" · "+preview.equipment.stats.slice(0,2).join(" · "):" · 이벤트 보상"}</small>}</div><span>{ch.risk>0?"위험 "+ch.risk:"안전"} · 예상 {ch.reward}G{ch.rewardKind&&<em className="event-reward-label">{ch.rewardKind==="trait"?"특성 획득":"기재 획득"}</em>}</span></button>})}</div><small className="event-note">선택한 방식이 파티의 해당 성향과 이후 행동 기록에 누적되며, 일부 선택은 성향이 가장 높은 캐릭터에게 특성 또는 기재가 남습니다.</small></div></div>}
+    {pendingEvent&&<div className="event-overlay"><div className="event-dialog"><span className="eyebrow">DUNGEON EVENT</span><h2>{pendingEvent.title}</h2><p>{pendingEvent.text}</p><div className="event-choice-list">{pendingEvent.choices.map(ch=>{const preview=eventRewardPreview(save.heroes,save.party,save.floor,environmentFor(save.floor,"event","dungeon"),ch);return <button key={ch.id} className="event-choice" onClick={()=>chooseDungeonEvent(ch.id)}><div><b>{ch.label}</b><small>{ch.detail}</small>{ch.rewardKind&&<small className="event-recipient">획득 대상 · {preview.recipient?.name||"파티"}{ch.rewardKind==="trait"&&preview.trait?" · 「"+preview.trait+"」":ch.rewardKind==="artifact"&&preview.artifact?" · 「"+preview.artifact+"」":preview.equipment?" · "+preview.equipment.name+" · "+preview.equipment.stats.slice(0,2).join(" · "):" · 이벤트 보상"}</small></div><span>{ch.risk>0?"위험 "+ch.risk:"안전"} · 예상 {ch.reward}G{ch.rewardKind&&<em className="event-reward-label">{ch.rewardKind==="trait"?"특성 획득":ch.rewardKind==="artifact"?"기재 획득":"장비 획득"}</em>}</span></button>})}</div><small className="event-note">선택한 방식이 파티의 해당 성향과 이후 행동 기록에 누적되며, 일부 선택은 성향이 가장 높은 캐릭터에게 특성 또는 기재가 영구 귀속됩니다.</small></div></div>}
 
     {screen==="home"&&<section className="page"><div className="hero-panel"><div><span className="eyebrow">AUTONOMOUS DUNGEON</span>
       <h1>플레이어가 캐릭터를 조종하는 것이 아니라,<br/>캐릭터가 살아온 방식이 미래를 결정한다.</h1>
@@ -931,7 +939,7 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes
         <div className="status-modal-card"><div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div><div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div><p className="growth-reason">{growth.reason}</p><div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>주요 성향</b>{(Object.entries(hero.tendencies) as [keyof Tendencies,number][]).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>tendencyKo[x[0]]+" "+Math.round(x[1])).join(" · ")}</span></div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4</span></div><div className="modal-traits">{(hero.traits||[]).map(name=><div key={name}><b>{name}</b><span>{eventTraitEffects[name]?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>)}</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>던전 획득 기록</b><span>최근 8회</span></div><div className="modal-event-rewards">{(hero.eventRewards||[]).slice().reverse().map((r,i)=><div key={r.name+"-"+r.floor+"-"+i}><span>{r.kind==="trait"?"특성":"기재"} · {r.floor}F</span><b>{r.name}</b><small>{r.detail}</small></div>)}{(!hero.eventRewards||hero.eventRewards.length===0)&&<small>던전 이벤트에서 획득한 특성·기재가 여기에 기록됩니다.</small>}</div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 상태</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 특성 · 기재</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-collection"><div><small>특성</small><b>{(hero.traits||[]).join(" · ")||"없음"}</b></div><div><small>기재</small><b>{(hero.artifacts||[]).join(" · ")||"없음"}</b></div></div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
       </div>
       <div className="status-modal-bottom"><div className="modal-bottom-card"><b>장기 전투 기록</b><span>{hero.combatProfile?.battles||0}전투 · {hero.combatProfile?.actions||0}행동 · {hero.combatProfile?.damage||0}피해 · {hero.combatProfile?.healing||0}회복</span><small>{Object.entries(hero.combatProfile?.topActions||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+" · "+x[1]+"회").join("  /  ")||"기록 없음"}</small></div><div className="modal-bottom-card"><b>최근 기억</b><span>{(hero.memories||[]).slice(0,2).map(m=>m.text+" · 영향 "+Math.round(m.weight*10)/10).join("  /  ")||"강하게 남은 기억 없음"}</span><small>칭호 · {chronicleLabel(hero)}</small></div></div>
     </section>
