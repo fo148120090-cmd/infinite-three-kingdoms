@@ -33,7 +33,8 @@ export type Hero = {
   chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
   mood?:string; statusNote?:string; evaluation?:string;
   campaignStats?:{wins:number;losses:number;eliteWins:number;bossWins:number;repeatWins:number;finalWins:number}; combatProfile?:{actions:number;damage:number;healing:number;battles:number;topActions?:Record<string,number>};
-  costumeId?:string;\n  skillPoints?:number; passiveSkills?:Record<string,number>;
+  costumeId?:string;
+  skillPoints?:number; passiveSkills?:Record<string,number>;
 };
 
 export type MonsterLineage = {
