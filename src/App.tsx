@@ -91,7 +91,7 @@ const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[]):Tendencies=>{
   const n={...t}; const mods=combinedAiMods(items);
   (Object.keys(mods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(mods[k]||0)));
   artifacts.forEach(name=>{
-    const effect=eventArtifactEffects[name];
+    const effect=eventArtifactEffects[name]||growthArtifactCatalog[name];
     if(effect)Object.entries(effect.aiMods).forEach(([k,v])=>{n[k as keyof Tendencies]=clamp(n[k as keyof Tendencies]+(v||0));});
   });
   return n;
@@ -511,7 +511,26 @@ function route(stage:number,floor:number,curiosity=0){
   return base;
 }
 
+function applyGrowthRewardHeroes(heroes:Hero[],reward:GrowthReward,heroId:string):Hero[]{
+  return heroes.map(h=>{
+    if(h.id!==heroId)return h;
+    if(reward.kind==="trait"){
+      if((h.traits||[]).length>=4 || (h.traits||[]).includes(reward.name)) return h;
+      const effect=growthTraitCatalog[reward.name];
+      const tendencies={...h.tendencies};
+      Object.entries(effect?.aiMods||{}).forEach(([k,v])=>tendencies[k as keyof Tendencies]=clamp(tendencies[k as keyof Tendencies]+(v||0)));
+      const record={kind:"trait" as const,name:reward.name,floor:heroes.find(x=>x.id===h.id)?.level||0,detail:reward.detail,source:reward.source};
+      return {...h,tendencies,traits:[...(h.traits||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
+    }
+    if((h.artifacts||[]).length>=4 || (h.artifacts||[]).includes(reward.name)) return h;
+    const record={kind:"artifact" as const,name:reward.name,floor:h.level,detail:reward.detail,source:reward.source};
+    return {...h,artifacts:[...(h.artifacts||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
+  });
+}
+
 function applyGrowthRewardSave(s:Save,reward:GrowthReward,heroId:string):Save{
+  return {...s,heroes:applyGrowthRewardHeroes(s.heroes,reward,heroId)};
+}
   return {...s,heroes:s.heroes.map(h=>{
     if(h.id!==heroId)return h;
     if(reward.kind==="trait"){
@@ -766,6 +785,29 @@ export default function App(){
       const routeLearning=battle.mode==="dungeon"&&!isRepeat&&(battle.room==="battle"||battle.room==="elite"||battle.room==="boss"||battle.room==="evilCave");
       if(victory) setLastLoot(loot);
       if(victory&&loot.length) window.setTimeout(()=>notify("전리품 획득 · "+loot.map(x=>x.name).join(" · ")),0);
+      let nextHeroes=s.heroes.map(h=>{
+        if(!s.party.includes(h.id))return h;
+        return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id],experienceGain);
+      });
+      let growthReward:GrowthReward|undefined;
+      if(victory){
+        growthReward = isBoss ? bossClearReward(battle.units,s.heroes) :
+          isElite&&!isRepeat ? eliteClearReward(battle.units,s.heroes) :
+          isRepeat ? repeatClearReward(battle.units,s.heroes,battle.repeatCount||0) : undefined;
+        if(!growthReward){
+          for(const unit of battle.units.filter(u=>u.team==="player"&&u.alive)){
+            const h=s.heroes.find(x=>x.id===unit.id);
+            if(h){
+              const candidate=milestoneReward(h,unit.behaviorCounts||{});
+              if(candidate){growthReward=candidate;break;}
+            }
+          }
+        }
+        if(growthReward&&growthReward.heroId){
+          nextHeroes=applyGrowthRewardHeroes(nextHeroes,growthReward,growthReward.heroId);
+          window.setTimeout(()=>notify(growthReward!.name+" 획득 · "+growthReward!.source),0);
+        }
+      }
       return {...s,
         gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier):0),
         materials:s.materials+(victory?Math.max(5,Math.round(baseMaterials*rewardMultiplier)):0),
@@ -775,10 +817,7 @@ export default function App(){
         floor:victory&&isBoss?s.floor+1:s.floor,
         stage:victory?(isBoss?0:(isFinal?s.stage:s.stage+1)):s.stage,
         routeMemory:routeLearning?recordRouteMemory(s.routeMemory,battle.room,victory,victory?Math.round(baseGold*rewardMultiplier):0):s.routeMemory,
-        heroes:s.heroes.map(h=>{
-          if(!s.party.includes(h.id))return h;
-          return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id],experienceGain);
-        })
+        heroes:nextHeroes
       };
     });
   },[battle.ended,battle.result]);
