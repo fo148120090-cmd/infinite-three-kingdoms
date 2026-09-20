@@ -587,7 +587,7 @@ export default function App(){
       const uniqueDrop=Math.random()<.12 ? {...uniqueBase,id:uniqueBase.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)} : undefined;
       const item=uniqueDrop||randomGeneralItem(save.floor+2,partyPref);
       setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,routeMemory:recordRouteMemory(s.routeMemory,"treasure",true,180),stage:s.stage+1}));
-      const recipient=save.heroes.filter(h=>save.party.includes(h.id)&&((h.artifacts||[]).length<4)).sort((a,b)=>b.tendencies.greedy-a.tendencies.greedy)[0];
+      const recipient=save.heroes.filter(h=>save.party.includes(h.id)&&((h.artifacts||[]).length<4)).sort((a,b)=>b.tendencies.greed-a.tendencies.greed)[0];
       const growth=recipient&&treasureArtifactReward(recipient,save.floor);
       if(growth) setSave(s=>applyGrowthRewardSave(s,growth,recipient.id));
       notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득"+(growth?" · "+growth.name+" 발견":""));
