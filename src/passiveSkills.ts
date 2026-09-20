@@ -14,7 +14,7 @@ export type PassiveSkill = {
 
 type SkillSet = { characterId: string; title: string; skills: PassiveSkill[] };
 
-const make = (id:string,name:string,detail:string,aiMods:Partial<Tendencies>,combatPerLevel:PassiveSkill["combatPerLevel"],branch:string,tier:1|2|3,requires?:{skillId:string;level:number}):PassiveSkill =>
+const make = (id:string,name:string,detail:string,aiMods:Partial<Tendencies>,combatPerLevel:PassiveSkill["combatPerLevel"],branch:string="기본",tier:1|2|3=1,requires?:{skillId:string;level:number}):PassiveSkill =>
   ({id,name,detail,aiMods,combatPerLevel,maxLevel:30,branch,tier,requires});
 
 const named:Record<string,SkillSet> = {
@@ -103,8 +103,21 @@ const generic:Record<Job,SkillSet> = {
   ]}
 };
 
+function expandGenericTree(set:SkillSet):SkillSet {
+  if(set.skills.length>=9)return set;
+  const base=set.skills.slice(0,3);
+  const skills:PassiveSkill[]=[];
+  base.forEach((s,index)=>{
+    const branch=["전투","생존","전문화"][index]||("분기 "+(index+1));
+    const t1={...s,id:s.id+"-1",branch,tier:1,requires:undefined};
+    const t2={...s,id:s.id+"-2",name:s.name+" · 강화",detail:s.detail+" 한 단계 강화됩니다.",branch,tier:2,combatPerLevel:Object.fromEntries(Object.entries(s.combatPerLevel).map(([k,v])=>[k,(v||0)*1.2])) as PassiveSkill["combatPerLevel"],requires:{skillId:t1.id,level:5}};
+    const t3={...s,id:s.id+"-3",name:s.name+" · 극의",detail:s.detail+" 극한까지 끌어올립니다.",branch,tier:3,combatPerLevel:Object.fromEntries(Object.entries(s.combatPerLevel).map(([k,v])=>[k,(v||0)*1.5])) as PassiveSkill["combatPerLevel"],requires:{skillId:t2.id,level:5}};
+    skills.push(t1,t2,t3);
+  });
+  return {...set,skills};
+}
 export function passiveSetFor(hero:Hero):SkillSet {
-  return named[hero.id] || generic[hero.job];
+  return named[hero.id] || expandGenericTree(generic[hero.job]);
 }
 
 export function passiveLevels(hero:Hero):Record<string,number> {
