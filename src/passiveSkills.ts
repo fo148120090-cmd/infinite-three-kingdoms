@@ -93,12 +93,12 @@ export function normalizePassiveData(hero:Hero):Hero {
 
 export function upgradePassive(hero:Hero,skillId:string):Hero|null {
   const normalized=normalizePassiveData(hero);
-  if(normalized.skillPoints<=0)return null;
+  if((normalized.skillPoints||0)<=0)return null;
   const skill=passiveSetFor(normalized).skills.find(s=>s.id===skillId);
   if(!skill)return null;
   const current=normalized.passiveSkills?.[skillId]||0;
   if(current>=skill.maxLevel)return null;
-  return {...normalized,skillPoints:normalized.skillPoints-1,passiveSkills:{...normalized.passiveSkills,[skillId]:current+1}};
+  return {...normalized,skillPoints:(normalized.skillPoints||0)-1,passiveSkills:{...normalized.passiveSkills,[skillId]:current+1}};
 }
 
 export function passiveAiBonus(hero:Hero):Partial<Tendencies> {
