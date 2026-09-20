@@ -519,3 +519,15 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
   .slot-stat-detail em{font-size:5px}
   .item-tooltip-compare{grid-template-columns:1fr}
 }
+
+
+/* Item enhancement */
+.slot-enhance-level{font-style:normal;color:#dbc678;font-size:10px;margin-left:3px}
+.slot-enhance-btn{width:25px;min-width:25px;padding:0!important;align-self:center;color:#d5bd71!important;border-color:#5a4b2b!important}
+.slot-enhance-btn:not(:disabled):hover{background:#2a2418!important;border-color:#8a713c!important}
+.slot-enhance-btn:disabled{opacity:.42}
+.inventory-enhance{position:absolute;right:17px;top:-5px;width:19px;height:19px;padding:0;border:1px solid #66562f;border-radius:50%;background:#2a2419;color:#e1ca79;font-size:13px;line-height:16px;cursor:pointer;opacity:.45;z-index:4}
+.inventory-icon-wrap:hover .inventory-enhance{opacity:1}
+.inventory-enhance:hover{background:#3b301b;border-color:#967942}
+.enhancement-line{color:#d4bd72!important;background:#1b1a13!important;border:1px solid #3f3925}
+.item-tooltip-head .enhance-badge{font-size:7px;padding:2px 4px;border-radius:4px;background:#3a301c;color:#e0c976}

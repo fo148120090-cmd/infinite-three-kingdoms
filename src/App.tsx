@@ -90,7 +90,7 @@ function load(): Save {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      return {...s, partyMemory:s.partyMemory||defaultPartyMemory, routeMemory:s.routeMemory||{}, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies},equipment:(h.equipment??(h.item?[h.item]:[])).slice(0,5) as [Item?,Item?,Item?,Item?,Item?]})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
+      return {...s, partyMemory:s.partyMemory||defaultPartyMemory, routeMemory:s.routeMemory||{}, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies},equipment:(h.equipment??(h.item?[h.item]:[])).slice(0,5).map(i=>i?{...i,enhancement:Math.max(0,Math.min(MAX_ENHANCEMENT,i.enhancement||0))}:undefined) as [Item?,Item?,Item?,Item?,Item?]})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
     }
   } catch {}
   return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[]})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false};
@@ -109,9 +109,36 @@ const combinedAiMods=(items:Item[])=>{
   for(const item of items) for(const [k,v] of Object.entries(item.aiMods)) mods[k as keyof Tendencies]=(mods[k as keyof Tendencies]||0)+(v||0);
   return mods;
 };
+const MAX_ENHANCEMENT=15;
+const enhancementLevel=(item:Item)=>Math.max(0,Math.min(MAX_ENHANCEMENT,item.enhancement||0));
+const enhancementCost=(item:Item)=>{
+  const lv=enhancementLevel(item);
+  return Math.round((80+item.level*22)*(lv+1));
+};
+const enhancementCombatMods=(item:Item)=>{
+  const n=enhancementLevel(item);
+  if(!n)return {};
+  if(item.slot==="weapon")return {attack:n*2};
+  if(item.slot==="armor")return {defense:n*2,hpPct:n};
+  if(item.slot==="ring")return {attack:n,critPct:n*.5};
+  return {defense:n,speedPct:n*.5};
+};
+const enhancementCombatLabels=(item:Item)=>{
+  return Object.entries(enhancementCombatMods(item)).map(([k,v])=>{
+    if(k==="attack")return "강화 공격 +"+v;
+    if(k==="defense")return "강화 방어 +"+v;
+    if(k==="hpPct")return "강화 HP +"+v+"%";
+    if(k==="speedPct")return "강화 속도 +"+v+"%";
+    if(k==="critPct")return "강화 치명타 +"+v+"%";
+    return "강화 "+k+" +"+v;
+  });
+};
 const combinedCombatMods=(items:Item[])=>{
   const mods:Record<string,number>={};
-  for(const item of items) for(const [k,v] of Object.entries(item.combatMods||{})) mods[k]=(mods[k]||0)+(v||0);
+  for(const item of items){
+    for(const [k,v] of Object.entries(item.combatMods||{})) mods[k]=(mods[k]||0)+(v||0);
+    for(const [k,v] of Object.entries(enhancementCombatMods(item))) mods[k]=(mods[k]||0)+(v||0);
+  }
   return mods;
 };
 const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[]):Tendencies=>{
@@ -922,6 +949,31 @@ export default function App(){
     notify(hero.name+" · 추천 장비 "+picks.length+"칸 자동 장착");
   };
 
+  const enhanceItem=(itemId:string)=>{
+    let target:Item|undefined;
+    for(const x of save.items)if(x.id===itemId){target=x;break;}
+    if(!target){
+      for(const h of save.heroes)for(const x of equipmentSlotsOf(h))if(x?.id===itemId){target=x;break;}
+    }
+    if(!target){notify("강화할 장비를 찾을 수 없습니다.");return;}
+    const current=enhancementLevel(target);
+    if(current>=MAX_ENHANCEMENT){notify(target.name+" · 이미 +15 최대 강화입니다.");return;}
+    const cost=enhancementCost(target);
+    if(save.gold<cost){notify("골드가 부족합니다. 필요 골드 "+cost+"G");return;}
+    const next=current+1;
+    setSave(s=>({
+      ...s,
+      gold:s.gold-cost,
+      items:s.items.map(x=>x.id===itemId?{...x,enhancement:next}:x),
+      heroes:s.heroes.map(h=>({
+        ...h,
+        equipment:equipmentSlotsOf(h).map(x=>x?.id===itemId?{...x,enhancement:next}:x) as [Item?,Item?,Item?,Item?,Item?],
+        item:equipmentSlotsOf(h)[0]?.id===itemId?{...equipmentSlotsOf(h)[0]!,enhancement:next}:h.item
+      }))
+    }));
+    notify(target.name+" · 강화 +"+next+" 성공 · -"+cost+"G");
+  };
+
   const equip=(item:Item,slot=selectedEquipSlot)=>{
     setSave(s=>{
       let replaced:Item|undefined;
@@ -1158,7 +1210,7 @@ export default function App(){
           <div className="character-equipment-sheet">
             <div className="character-equipment-identity"><div className="hero-avatar large" style={{background:hero.color}}>{jobIcon[hero.job]}</div><div><b>{hero.name}</b><span>{jobKo[hero.job]} · {promotionLabel(hero)}</span><small>AI 빌드 · {buildProfile(hero).name}</small></div></div>
             <div className="character-equipment-stats"><span><small>공격</small><b>{Math.round(heroCombatStats.attack)}</b></span><span><small>방어</small><b>{Math.round(heroCombatStats.defense)}</b></span><span><small>HP</small><b>{Math.round(heroCombatStats.maxHp)}</b></span><span><small>속도</small><b>{Math.round(heroCombatStats.speed*100)/100}</b></span></div>
-            <div className="character-equipment-slots">{[0,1,2,3,4].map(slot=>{const item=equipmentSlotsOf(hero)[slot];const combat=item?itemCombatLabels(item):[];const ai=item?itemAiLabels(item):[];return <div key={slot} className={"character-equipment-slot "+(selectedEquipSlot===slot?"active":"")}><button onClick={()=>setSelectedEquipSlot(slot)}><span>SLOT {slot+1}</span><strong>{item?.name||"장비 없음"}</strong><small>{item?item.rarity+" · Lv."+item.level:"인벤토리에서 장착"}</small>{item&&<div className="slot-stat-detail">{item.stats.slice(0,4).map(stat=><em key={stat}>{stat}</em>)}{combat.slice(0,3).map(stat=><em key={"c-"+stat}>{stat}</em>)}{ai.slice(0,2).map(stat=><em key={"a-"+stat}>{stat}</em>)}</div>}</button>{item&&<button className="ghost-btn" onClick={()=>unequip(slot)}>해제</button>}</div>})}</div>
+            <div className="character-equipment-slots">{[0,1,2,3,4].map(slot=>{const item=equipmentSlotsOf(hero)[slot];const combat=item?itemCombatLabels(item):[];const ai=item?itemAiLabels(item):[];const enh=item?enhancementCombatLabels(item):[];return <div key={slot} className={"character-equipment-slot "+(selectedEquipSlot===slot?"active":"")}><button onClick={()=>setSelectedEquipSlot(slot)}><span>SLOT {slot+1}</span><strong>{item?.name||"장비 없음"}{item&&<em className="slot-enhance-level"> +{enhancementLevel(item)}</em>}</strong><small>{item?item.rarity+" · Lv."+item.level+" · "+enhancementLevel(item)+"/"+MAX_ENHANCEMENT+" 강화":"인벤토리에서 장착"}</small>{item&&<div className="slot-stat-detail">{item.stats.slice(0,3).map(stat=><em key={stat}>{stat}</em>)}{combat.slice(0,2).map(stat=><em key={"c-"+stat}>{stat}</em>)}{enh.slice(0,2).map(stat=><em key={"e-"+stat}>{stat}</em>)}{ai.slice(0,2).map(stat=><em key={"a-"+stat}>{stat}</em>)}</div>}</button>{item&&<><button className="ghost-btn slot-enhance-btn" onClick={e=>{e.stopPropagation();enhanceItem(item.id)}} disabled={enhancementLevel(item)>=MAX_ENHANCEMENT||save.gold<enhancementCost(item)}>{enhancementLevel(item)>=MAX_ENHANCEMENT?"MAX":"+"}</button><button className="ghost-btn" onClick={()=>unequip(slot)}>해제</button></>}</div>})}</div>
           </div>
           <div className="character-equipment-inventory">
             <div className="character-inventory-head"><div><b>{hero.name} 인벤토리</b><span>선택 슬롯 · {selectedEquipSlot+1} · 아이콘 클릭으로 장착</span><small className="recommend-hint">{recommendedLoadout(hero,save.items).length>0?"추천 장비 "+recommendedLoadout(hero,save.items).length+"개 대기":"현재 장비 유지 권장"}</small></div><span>{save.items.length}/60</span></div>
@@ -1230,19 +1282,22 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes
     </section>
   </div>;
 }
-function InventoryIcon({item,onEquip,onSell,warehouse=false,compare}:{item:Item;onEquip:()=>void;onSell?:()=>void;warehouse?:boolean;compare?:ReturnType<typeof equipmentPreview>}){
+function InventoryIcon({item,onEquip,onEnhance,onSell,warehouse=false,compare}:{item:Item;onEquip:()=>void;onEnhance?:()=>void;onSell?:()=>void;warehouse?:boolean;compare?:ReturnType<typeof equipmentPreview>}){
   const icon=item.slot==="weapon"?"⚔":item.slot==="armor"?"🛡":item.slot==="ring"?"◈":"✦";
   const ai=itemAiLabels(item);
   const combat=itemCombatLabels(item);
+  const enhanced=enhancementLevel(item);
+  const enhanceLabels=enhancementCombatLabels(item);
   const deltaLabel=(label:string,value:number)=>label+" "+(value>0?"+":"")+Math.round(value*100)/100;
   return <div className="inventory-icon-wrap">
     <button className={"inventory-icon "+(warehouse?"warehouse-icon ":"")+(item.unique?"unique":"")} onClick={onEquip} aria-label={item.name+" 장착"}>
-      <span>{icon}</span><small>Lv.{item.level}</small>{item.unique&&<b>U</b>}
+      <span>{icon}</span><small>Lv.{item.level} · +{enhanced}</small>{item.unique&&<b>U</b>}
       <span className="item-tooltip-card" role="tooltip">
         <span className="item-tooltip-head"><b>{item.name}</b>{item.unique&&<em>UNIQUE</em>}</span>
-        <span className="item-tooltip-sub">{item.rarity} · {item.slot} · Lv.{item.level}</span>
+        <span className="item-tooltip-sub">{item.rarity} · {item.slot} · Lv.{item.level} · 강화 +{enhanced}/{MAX_ENHANCEMENT}</span>
         <span className="item-tooltip-stats">{item.stats.map(stat=><i key={stat}>{stat}</i>)}</span>
         {combat.length>0&&<span className="item-tooltip-combat">전투 적용 · {combat.join(" · ")}</span>}
+        {enhanceLabels.length>0&&<span className="item-tooltip-combat enhancement-line">{enhanceLabels.join(" · ")}</span>}
         {ai.length>0&&<span className="item-tooltip-ai">AI · {ai.join(" · ")}</span>}
         {compare&&(compare.attack!==0||compare.defense!==0||compare.hp!==0||compare.speed!==0||compare.range!==0||compare.aiDelta.length>0)&&
           <span className="item-tooltip-compare">
@@ -1255,10 +1310,11 @@ function InventoryIcon({item,onEquip,onSell,warehouse=false,compare}:{item:Item;
             {compare.aiDelta.map(x=><i key={x.key} className={x.value>0?"up":"down"}>{tendencyKo[x.key]} {x.value>0?"+":""}{Math.round(x.value*10)/10}</i>)}
           </span>}
         <span className="item-tooltip-desc">{item.description}</span>
-        <span className="item-tooltip-tip">클릭 · 현재 선택 슬롯에 장착</span>
+        <span className="item-tooltip-tip">{enhanced<MAX_ENHANCEMENT?(onEnhance?"⚒ 강화 가능":"강화 가능"):"MAX +15"} · 클릭하면 장착</span>
       </span>
     </button>
-    {warehouse&&onSell&&<button className="inventory-sell" onClick={onSell} aria-label={item.name+" 판매"}>×</button>}
+    {onEnhance&&enhanced<MAX_ENHANCEMENT&&<button className="inventory-enhance" onClick={e=>{e.stopPropagation();onEnhance();}} aria-label={item.name+" 강화"}>+</button>}
+    {warehouse&&onSell&&<button className="inventory-sell" onClick={e=>{e.stopPropagation();onSell();}} aria-label={item.name+" 판매"}>×</button>}
   </div>;
 }
 function NpcGuide({floor,mode,onOpen,compact=false,dialogueIndex=0}:{floor:number;mode:BattleMode;onOpen:()=>void;compact?:boolean;dialogueIndex?:number}){

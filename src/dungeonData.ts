@@ -10,7 +10,7 @@ export type Tendencies = {
 export type Item = {
   id:string; name:string; slot:"weapon"|"armor"|"ring"|"accessory"; level:number; rarity:string;
   stats:string[]; aiMods:Partial<Tendencies>; combatMods?:{attack?:number;defense?:number;hpPct?:number;speedPct?:number;range?:number;healPct?:number;critPct?:number};
-  unique?:boolean; description:string;
+  unique?:boolean; description:string; enhancement?:number;
 };
 
 export type Relationship = {trust:number; respect:number; fear:number; bond:number};
