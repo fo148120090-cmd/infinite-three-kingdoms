@@ -558,3 +558,15 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .personality-status-card{grid-column:span 2}.personality-quote{padding:10px 12px;border:1px solid #2b3a54;border-radius:10px;background:linear-gradient(145deg,#121c2d,#0e1623);display:grid;gap:5px}.personality-quote b{font-size:12px;color:#e4c984}.personality-quote small{color:#96a4ba;line-height:1.4}.personality-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px}.personality-detail-grid span{display:grid;gap:4px;padding:8px;border-radius:8px;background:#101927;border:1px solid #24344d;font-size:8px;color:#99a8bf}.personality-detail-grid b{font-size:8px;color:#d2d9e6}
 .skin-panel{margin-top:10px;padding:14px;border:1px solid #283852;border-radius:13px;background:#0c1420}.skin-panel>div:first-child{display:flex;justify-content:space-between;gap:10px;align-items:end}.skin-panel>div:first-child b{display:block}.skin-panel>div:first-child span{color:#8997ad;font-size:8px}.skin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.skin-card{display:grid;gap:6px;text-align:left;padding:11px;border:1px solid #26364f;border-radius:10px;background:#111b2b;color:#d9e1ef;cursor:pointer;transition:.15s}.skin-card:hover:not(:disabled){transform:translateY(-1px);border-color:#59719f}.skin-card.equipped{border-color:#b89955;background:linear-gradient(145deg,#231f15,#111a29)}.skin-card.locked{opacity:.72}.skin-card:disabled{cursor:not-allowed;filter:saturate(.6)}.skin-card-top{display:flex;justify-content:space-between;align-items:center}.skin-card-top i{font-style:normal;font-size:22px}.skin-card-top small{font-size:7px;color:#9ca9bd}.skin-card b{font-size:11px}.skin-card span{color:#8796ad;font-size:8px;line-height:1.4}.skin-card em{font-style:normal;color:#d3bd77;font-size:8px}
 @media(max-width:900px){.personality-status-card{grid-column:span 1}.personality-detail-grid{grid-template-columns:1fr}.skin-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.boss-intro-card{grid-template-columns:64px 1fr;padding:19px}.boss-intro-emblem{width:58px;height:58px;font-size:28px}.boss-intro-card h2{font-size:23px}.skin-grid{grid-template-columns:1fr}}
+
+/* Skin artwork */
+.skin-avatar{overflow:hidden!important;display:grid!important;place-items:center!important}
+.skin-portrait{display:block;width:100%;height:100%;filter:drop-shadow(0 5px 8px rgba(0,0,0,.28));}
+.skin-portrait.compact{width:34px;height:34px}
+.skin-card .skin-portrait{width:54px;height:54px}
+.skin-card-top i{display:grid;place-items:center}
+.skin-card.equipped .skin-card-top i{filter:drop-shadow(0 0 8px rgba(221,196,118,.22))}
+.hero-card .skin-avatar{border:1px solid rgba(255,255,255,.08)}
+.character-equipment-identity .skin-avatar{box-shadow:inset 0 0 24px rgba(255,255,255,.05)}
+.battle-unit.player .unit-token{display:grid;place-items:center}
+.battle-unit.player .unit-token .skin-portrait{width:34px;height:34px}
