@@ -1028,8 +1028,10 @@ export default function App(){
     });
     if(battleGrowthReward?.heroId){
       const targetHero=save.heroes.find(h=>h.id===battleGrowthReward!.heroId);
-      if(targetHero){
-        setPendingGrowth({heroId:targetHero.id,options:growthOptionsFor(targetHero,battleGrowthReward!),source:battleGrowthReward!.source});
+      const capacity=battleGrowthReward.kind==="trait" ? (targetHero?.traits||[]).length<4 : (targetHero?.artifacts||[]).length<4;
+      if(targetHero&&capacity){
+        const options=growthOptionsFor(targetHero,battleGrowthReward);
+        if(options.length) setPendingGrowth({heroId:targetHero.id,options,source:battleGrowthReward.source});
       }
     }
     if(progressionNotices.length) window.setTimeout(()=>notify("성장 갱신 · "+progressionNotices.join(" · ")),0);
