@@ -570,3 +570,14 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .character-equipment-identity .skin-avatar{box-shadow:inset 0 0 24px rgba(255,255,255,.05)}
 .battle-unit.player .unit-token{display:grid;place-items:center}
 .battle-unit.player .unit-token .skin-portrait{width:34px;height:34px}
+
+
+/* 2026-09-20 personality + skin presentation */
+.status-modal-title-row{display:flex;align-items:center;gap:12px}
+.status-modal-portrait{width:48px;height:48px;flex:0 0 48px;border:1px solid #35435d;border-radius:14px;overflow:hidden;display:grid;place-items:center}
+.status-modal-portrait .skin-portrait{width:48px;height:48px}
+.hero-card-portrait{display:grid;place-items:center;overflow:hidden}
+.hero-card-portrait .skin-portrait{width:48px;height:48px}
+.skin-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.skin-card-portrait{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;overflow:hidden;border:1px solid #35435d}
+.skin-card-portrait .skin-portrait{width:42px;height:42px}
