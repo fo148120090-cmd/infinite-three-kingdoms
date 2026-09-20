@@ -14,8 +14,9 @@ import { costumesForJob, skinCost, skinLabel, skinUnlockText, skinVisual, skinTh
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 import { bossClearReward, eliteClearReward, hiddenRoomReward, milestoneReward, repeatClearReward, treasureArtifactReward, growthArtifactCatalog, growthTraitCatalog, type GrowthReward } from "./growthRewards";
 import { buildPersonality, personalityActionBonus, personalityBattleLine, personalityEventReaction } from "./personality";
+import ThreeKingdoms from "./ThreeKingdoms";
 
-type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit";
+type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit" | "strategy";
 type BattleMode = "dungeon" | "defense" | "raid";
 type DefenseObjective = "gate" | "relic" | "escort";
 type RouteMemoryEntry = { attempts:number; clears:number; failures:number; rewardSamples:number; rewardGold:number };
@@ -447,8 +448,7 @@ function equipmentPreview(hero:Hero,item:Item,slot:number){
 }
 
 function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[],mode:BattleMode="dungeon",sealCount=0): BattleUnit[] {
-  const selected=heroes.filter(h=>party.includes(h.id));
-  const ordered=autoFormation(selected,mode);
+  const selected=heroes.filter(h=>party.includes(h.id));  const ordered=autoFormation(selected,mode);
   const ps: BattleUnit[] = ordered.map((h,i)=>{
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,level:h.level,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
@@ -897,8 +897,7 @@ export default function App(){
     const env=environmentFor(scenarioFloor,room,"dungeon");
     const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages,"dungeon",save.sealCount||0);
     const rewardMultiplier=Math.max(.3,.6-.1*Math.max(0,repeatCount-1));
-    const plan=battlePlanFor(party,"dungeon");
-    setBattle({units,plan,log:[scenarioFloor+"F 완료 시나리오 재도전 · "+formationLabel(party,"dungeon")+" · "+plan.label+" · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
+    const plan=battlePlanFor(party,"dungeon");    setBattle({units,plan,log:[scenarioFloor+"F 완료 시나리오 재도전 · "+formationLabel(party,"dungeon")+" · "+plan.label+" · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
     setPaused(false);setScreen("battle");setDecision(elitePack?"재도전 중 정예 무리의 전투 성향을 분석 중...":"완료 시나리오의 적 행동을 다시 분석 중...");
   };
 
@@ -1301,12 +1300,22 @@ export default function App(){
     setScreen("home");
     notify("세계의 구멍을 "+((save.sealCount||0)+1)+"회 봉인했습니다. 다음 세계의 적이 강화됩니다.");
   };
-  const reset=()=>{localStorage.removeItem(KEY);setSave(load());setScreen("home");notify("데모 초기화 완료");};
+  const strategySpendGold=(n:number)=>setSave(s=>({...s,gold:Math.max(0,s.gold-n)}));
+  const strategySpendMaterials=(n:number)=>setSave(s=>({...s,materials:Math.max(0,s.materials-n)}));
+  const strategyRewardGold=(n:number)=>setSave(s=>({...s,gold:s.gold+n}));
+  const strategyRewardMaterials=(n:number)=>setSave(s=>({...s,materials:s.materials+n}));
+  const strategyDispatch=(cityId:string)=>{
+    const cityBonus=cityId==="luoyang"?2:cityId==="xuchang"?3:cityId==="chengdu"?4:cityId==="jianye"?5:1;
+    setSave(s=>({...s,floor:Math.max(1,Math.min(99,s.floor+cityBonus)),stage:0}));
+    setMode("dungeon");setScreen("dungeon");
+    notify("전략 원정 출격 · "+cityId+" 전선으로 연결");
+  };
+  const reset=()=>{localStorage.removeItem(KEY);localStorage.removeItem("three-kingdoms-campaign-v1");setSave(load());setScreen("home");notify("데모 초기화 완료");};
 
   return <main className="game-shell">
     <header className="topbar"><div className="brand" onClick={()=>setScreen("home")}><div className="brand-mark"><Brain size={21}/></div><div><b>무한 던전 : AI Chronicle</b><small>자율 AI 던전 RPG / RTS 프로토타입</small></div></div>
       <div className="resources"><span><Coins size={15}/> {save.gold}</span><span><Gem size={15}/> {save.gems}</span><span>🧱 {save.materials}</span><span>심도 {save.floor}F</span></div></header>
-    <nav className="main-nav">{([["home","로비"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"],["recruit","모집"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
+    <nav className="main-nav">{([["home","로비"],["strategy","삼국전략"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"],["recruit","모집"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
     {toast&&<div className="toast">{toast}</div>}
     {npcOpen&&<div className="npc-overlay" onClick={()=>setNpcOpen(false)}><div className="npc-dialog" onClick={e=>e.stopPropagation()}>
       <div className="npc-dialog-art"><img src={NPC_IMAGE} alt="세라피나"/></div>
@@ -1326,6 +1335,17 @@ export default function App(){
     {pendingGrowth&&<div className="event-overlay"><div className="event-dialog growth-dialog"><span className="eyebrow">BATTLE GROWTH</span><h2>전투 성장 선택</h2><p>이번 전투에서 형성된 성장 후보입니다. 하나를 선택하면 캐릭터에게 영구 적용됩니다.</p><div className="growth-choice-list">{pendingGrowth.options.map((reward,index)=><button key={reward.kind+"-"+reward.name} className="growth-choice" onClick={()=>chooseGrowth(reward)}><span className="growth-choice-index">{index===0?"★":"+"}</span><span><b>{reward.name}</b><small>{reward.detail}</small><em>{reward.kind==="trait"?"특성 · AI 성향에 영구 반영":"기재 · AI 성향과 전투 보정에 영구 반영"}</em></span><ChevronRight size={17}/></button>)}</div><small className="event-note">전투 명령은 여전히 AI가 결정합니다. 여기서는 전투 결과를 어떻게 장기 성장으로 남길지만 선택합니다.</small></div></div>}
 
     {pendingEvent&&<div className="event-overlay"><div className="event-dialog"><span className="eyebrow">DUNGEON EVENT</span><h2>{pendingEvent.title}</h2><p>{pendingEvent.text}</p><div className="event-choice-list">{pendingEvent.choices.map(ch=>{const preview=eventRewardPreview(save.heroes,save.party,save.floor,environmentFor(save.floor,"event","dungeon"),ch);let recipientText=" · 이벤트 보상";if(ch.rewardKind==="trait"&&preview.trait)recipientText=" · 「"+preview.trait+"」";else if(ch.rewardKind==="artifact"&&preview.artifact)recipientText=" · 「"+preview.artifact+"」";else if(ch.rewardKind==="equipment"&&preview.equipment)recipientText=" · "+preview.equipment.name+" · "+preview.equipment.stats.slice(0,2).join(" · ");return <button key={ch.id} className="event-choice" onClick={()=>chooseDungeonEvent(ch.id)}><div><b>{ch.label}</b><small>{ch.detail}</small>{ch.rewardKind&&<small className="event-recipient">획득 대상 · {preview.recipient?.name||"파티"}{recipientText}</small>}</div><span>{ch.risk>0?"위험 "+ch.risk:"안전"} · 예상 {ch.reward}G{ch.rewardKind&&<em className="event-reward-label">{ch.rewardKind==="trait"?"특성 획득":ch.rewardKind==="artifact"?"기재 획득":"장비 획득"}</em>}</span></button>})}</div><small className="event-note">선택한 방식이 파티의 해당 성향과 이후 행동 기록에 누적되며, 일부 선택은 성향이 가장 높은 캐릭터에게 특성 또는 기재가 영구 귀속됩니다.</small></div></div>}
+
+    {screen==="strategy"&&<ThreeKingdoms
+      gold={save.gold}
+      materials={save.materials}
+      onSpendGold={strategySpendGold}
+      onSpendMaterials={strategySpendMaterials}
+      onRewardGold={strategyRewardGold}
+      onRewardMaterials={strategyRewardMaterials}
+      onDispatch={strategyDispatch}
+      onToast={notify}
+    />}
 
     {screen==="home"&&<section className="page fortress-lobby-page">
       <div className="fortress-header">
@@ -1347,8 +1367,7 @@ export default function App(){
           
         </div>
         <div className="fortress-map">
-          <div className="map-skyline"/>
-          <div className="map-mountain mountain-a"/>
+          <div className="map-skyline"/>          <div className="map-mountain mountain-a"/>
           <div className="map-mountain mountain-b"/>
           <div className="map-road road-main"/>
           <div className="map-road road-west"/>
