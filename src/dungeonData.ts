@@ -22,7 +22,8 @@ export type Hero = {
   history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   traits?:string[];
-  eventRewards?:{kind:"trait"|"equipment";name:string;floor:number;detail:string}[];
+  artifacts?:string[];
+  eventRewards?:{kind:"trait"|"artifact"|"equipment";name:string;floor:number;detail:string}[];
   chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
   mood?:string; statusNote?:string; evaluation?:string;
   campaignStats?:{wins:number;losses:number;eliteWins:number;bossWins:number;repeatWins:number;finalWins:number}; combatProfile?:{actions:number;damage:number;healing:number;battles:number;topActions?:Record<string,number>};
