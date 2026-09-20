@@ -121,8 +121,29 @@ function expandGenericTree(set:SkillSet):SkillSet {
   });
   return {...set,skills};
 }
+const uniqueUltimate:Record<string,{name:string;detail:string;combat:PassiveSkill["combatPerLevel"];ai?:Partial<Tendencies>}> = {
+  kael:{name:"무쌍전신",detail:"전장의 흐름을 힘으로 뒤집는 카엘 고유의 궁극 패시브. 공격 압박과 기동력을 극한까지 끌어올립니다.",combat:{attack:16,speedPct:1.2},ai:{aggression:.25,pursuit:.2}},
+  seren:{name:"불침성채",detail:"세린이 살아 있는 한 전선을 지키는 요새가 됩니다. 방어력과 생존력을 크게 강화합니다.",combat:{defense:10,hpPct:7.5},ai:{protect:.25,survival:.2}},
+  lyra:{name:"천궁무결",detail:"리라 고유의 궁극 사격. 초정밀 조준과 장거리 운용 능력을 완성합니다.",combat:{attack:13,range:.08,speedPct:.5},ai:{focus:.25,caution:.1}},
+  orion:{name:"대비전·종언",detail:"오리온이 비전의 한계를 넘어선 최종 단계. 압도적인 마력과 사거리로 전장을 장악합니다.",combat:{attack:15,range:.07,speedPct:.7},ai:{focus:.25,aggression:.12}},
+  mira:{name:"기적의 성역",detail:"미라 고유의 궁극 지원 능력. 회복과 생존을 동시에 극대화해 아군의 전투 지속력을 크게 높입니다.",combat:{healPct:10,hpPct:4,defense:4},ai:{cooperation:.25,protect:.2}}
+};
+
+function applyUniqueUltimates(set:SkillSet):SkillSet {
+  const ultimate=uniqueUltimate[set.characterId];
+  if(!ultimate)return set;
+  return {
+    ...set,
+    skills:set.skills.map(skill=>({
+      ...skill,
+      milestones:skill.milestones?.map(m=>m.level===30 ? {...m,name:ultimate.name,detail:ultimate.detail,combat:ultimate.combat,ai:ultimate.ai} : m)
+    }))
+  };
+}
+
 export function passiveSetFor(hero:Hero):SkillSet {
-  return named[hero.id] || expandGenericTree(generic[hero.job]);
+  const set=named[hero.id] || expandGenericTree(generic[hero.job]);
+  return applyUniqueUltimates(set);
 }
 
 export function passiveLevels(hero:Hero):Record<string,number> {
@@ -159,6 +180,9 @@ export function passiveAiBonus(hero:Hero):Partial<Tendencies> {
   for(const skill of set.skills){
     const lv=hero.passiveSkills?.[skill.id]||0;
     for(const [k,v] of Object.entries(skill.aiMods)) out[k as keyof Tendencies]=(out[k as keyof Tendencies]||0)+(v||0)*lv;
+    for(const milestone of skill.milestones||[]) if(lv>=milestone.level && milestone.ai){
+      for(const [k,v] of Object.entries(milestone.ai)) out[k as keyof Tendencies]=(out[k as keyof Tendencies]||0)+(v||0);
+    }
   }
   return out;
 }
