@@ -504,3 +504,18 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 @media(max-width:980px){.lobby-command-grid{grid-template-columns:1fr}.live2d-stage{height:390px}.lobby-quick-grid,.lobby-intel-grid{grid-template-columns:1fr 1fr}.lobby-quick-card:last-child,.lobby-intel-card:last-child{grid-column:1/-1}}
 @media(max-width:680px){.lobby-header{align-items:flex-start;flex-direction:column}.lobby-header h1{font-size:24px}.lobby-header-actions{width:100%}.lobby-header-actions>*{flex:1}.live2d-stage{height:350px}.live2d-character{width:78%}.situation-core{grid-template-columns:112px minmax(0,1fr);gap:10px}.situation-radar{width:102px;height:102px}.battle-metrics{grid-template-columns:repeat(2,1fr)}.lobby-quick-grid,.lobby-intel-grid,.mission-grid{grid-template-columns:1fr}.lobby-quick-card:last-child,.lobby-intel-card:last-child{grid-column:auto}}
 @media(max-width:430px){.live2d-stage{height:315px}.live2d-character{width:86%}.live2d-dialogue{grid-template-columns:20px minmax(0,1fr)}.live2d-dialogue .ghost-btn{display:none}.battle-room-head{align-items:flex-start}.battle-readiness{padding:5px}.room-party-row{grid-template-columns:18px 62px 30px minmax(40px,1fr) 28px}}
+
+
+/* Equipment stats & comparison */
+.slot-stat-detail{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.slot-stat-detail em{font-style:normal;padding:3px 4px;border-radius:4px;background:#172235;border:1px solid #273852;color:#8fa4c8;font-size:6px;line-height:1.2}
+.character-equipment-slot.active .slot-stat-detail em{border-color:#354a70;color:#a9bad7}
+.item-tooltip-compare{display:grid!important;grid-template-columns:1fr 1fr;gap:3px!important;margin-top:1px;padding-top:6px;border-top:1px solid #2a3850}
+.item-tooltip-compare>b{grid-column:1/-1;font-size:8px!important;color:#c3cee0!important}
+.item-tooltip-compare i{font-style:normal;padding:3px 4px;border-radius:4px;background:#151f2e;font-size:7px!important;color:#9aa9bf}
+.item-tooltip-compare i.up{color:#93d2ae;background:#13231d}
+.item-tooltip-compare i.down{color:#d99ca7;background:#24171c}
+@media(max-width:720px){
+  .slot-stat-detail em{font-size:5px}
+  .item-tooltip-compare{grid-template-columns:1fr}
+}

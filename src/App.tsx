@@ -272,6 +272,22 @@ function actionForecast(hero:Hero,partyHeroes:Hero[],partyMemory?:PartyMemory):{
   return result.map(x=>({...x,score:x.score+(x.action==="아군 보호"||x.action==="회복"?social:0)})).sort((a,b)=>b.score-a.score).slice(0,4);
 }
 
+const itemCombatLabels=(item:Item)=>{
+  return Object.entries(item.combatMods||{}).map(([k,v])=>{
+    if(k==="attack")return "공격 +"+v;
+    if(k==="defense")return "방어 +"+v;
+    if(k==="hpPct")return "HP +"+v+"%";
+    if(k==="speedPct")return "속도 +"+v+"%";
+    if(k==="range")return "사거리 +"+v;
+    if(k==="healPct")return "치유 +"+v+"%";
+    if(k==="critPct")return "치명타 +"+v+"%";
+    return k+" +"+v;
+  });
+};
+const itemAiLabels=(item:Item)=>{
+  return Object.entries(item.aiMods).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" "+((v||0)>0?"+":"")+(v||0));
+};
+
 function equipmentPreview(hero:Hero,item:Item,slot:number){
   const before=combatStats(hero);
   const slots=equipmentSlotsOf(hero); slots[slot]=item;
@@ -1142,11 +1158,11 @@ export default function App(){
           <div className="character-equipment-sheet">
             <div className="character-equipment-identity"><div className="hero-avatar large" style={{background:hero.color}}>{jobIcon[hero.job]}</div><div><b>{hero.name}</b><span>{jobKo[hero.job]} · {promotionLabel(hero)}</span><small>AI 빌드 · {buildProfile(hero).name}</small></div></div>
             <div className="character-equipment-stats"><span><small>공격</small><b>{Math.round(heroCombatStats.attack)}</b></span><span><small>방어</small><b>{Math.round(heroCombatStats.defense)}</b></span><span><small>HP</small><b>{Math.round(heroCombatStats.maxHp)}</b></span><span><small>속도</small><b>{Math.round(heroCombatStats.speed*100)/100}</b></span></div>
-            <div className="character-equipment-slots">{[0,1,2,3,4].map(slot=>{const item=equipmentSlotsOf(hero)[slot];return <div key={slot} className={"character-equipment-slot "+(selectedEquipSlot===slot?"active":"")}><button onClick={()=>setSelectedEquipSlot(slot)}><span>SLOT {slot+1}</span><strong>{item?.name||"장비 없음"}</strong><small>{item?item.rarity+" · Lv."+item.level:"인벤토리에서 장착"}</small></button>{item&&<button className="ghost-btn" onClick={()=>unequip(slot)}>해제</button>}</div>})}</div>
+            <div className="character-equipment-slots">{[0,1,2,3,4].map(slot=>{const item=equipmentSlotsOf(hero)[slot];const combat=item?itemCombatLabels(item):[];const ai=item?itemAiLabels(item):[];return <div key={slot} className={"character-equipment-slot "+(selectedEquipSlot===slot?"active":"")}><button onClick={()=>setSelectedEquipSlot(slot)}><span>SLOT {slot+1}</span><strong>{item?.name||"장비 없음"}</strong><small>{item?item.rarity+" · Lv."+item.level:"인벤토리에서 장착"}</small>{item&&<div className="slot-stat-detail">{item.stats.slice(0,4).map(stat=><em key={stat}>{stat}</em>)}{combat.slice(0,3).map(stat=><em key={"c-"+stat}>{stat}</em>)}{ai.slice(0,2).map(stat=><em key={"a-"+stat}>{stat}</em>)}</div>}</button>{item&&<button className="ghost-btn" onClick={()=>unequip(slot)}>해제</button>}</div>})}</div>
           </div>
           <div className="character-equipment-inventory">
             <div className="character-inventory-head"><div><b>{hero.name} 인벤토리</b><span>선택 슬롯 · {selectedEquipSlot+1} · 아이콘 클릭으로 장착</span><small className="recommend-hint">{recommendedLoadout(hero,save.items).length>0?"추천 장비 "+recommendedLoadout(hero,save.items).length+"개 대기":"현재 장비 유지 권장"}</small></div><span>{save.items.length}/60</span></div>
-            {save.items.length===0?<div className="quick-empty">인벤토리가 비어 있습니다. 전투 전리품과 보물방에서 장비를 획득하세요.</div>:<div className="character-inventory-grid">{save.items.map((item,idx)=><InventoryIcon item={item} key={item.id+"-"+idx} onEquip={()=>equip(item,selectedEquipSlot)}/>)}</div>}
+            {save.items.length===0?<div className="quick-empty">인벤토리가 비어 있습니다. 전투 전리품과 보물방에서 장비를 획득하세요.</div>:<div className="character-inventory-grid">{save.items.map((item,idx)=><InventoryIcon item={item} key={item.id+"-"+idx} compare={equipmentPreview(hero,item,selectedEquipSlot)} onEquip={()=>equip(item,selectedEquipSlot)}/>)}</div>}
           </div>        </div>
       </div>
       <div className="tendency-panel"><div className="tendency-head"><div><span className="eyebrow">AI PERSONALITY</span><b>{hero.name}의 현재 AI 성향</b><small>기본 성향과 장착 장비의 AI 보정을 합산한 실제 전투 판단 기준입니다.</small></div><span className="tendency-build">{buildProfile(hero).name}</span></div><div className="tendency-grid">{(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>{const mod=combinedAiMods(equippedItemsOf(hero))[k]||0;const value=clamp(hero.tendencies[k]+mod);const modText=mod===0?"기본 성향":"기본 "+Math.round(hero.tendencies[k])+" · 장비 "+(mod>0?"+":"")+Math.round(mod*10)/10;return <div className="tendency-row" key={k}><div className="tendency-label"><span>{tendencyKo[k]}</span><strong>{Math.round(value)}</strong></div><div className="tendency-track"><span style={{width:value+"%"}}/></div><small>{modText}</small></div>})}</div></div>
@@ -1183,7 +1199,7 @@ export default function App(){
       <div className="warehouse-toolbar"><div className="warehouse-tabs">{([["all","전체"],["weapon","무기"],["armor","방어구"],["ring","반지"],["accessory","장신구"]] as const).map(([key,label])=><button key={key} className={warehouseTab===key?"warehouse-tab active":"warehouse-tab"} onClick={()=>setWarehouseTab(key)}>{label}<small>{key==="all"?save.items.length:save.items.filter(i=>i.slot===key).length}</small></button>)}</div><div className="warehouse-sort"><span>정렬</span>{([["recent","최근"],["level","레벨"],["rarity","희귀도"]] as const).map(([key,label])=><button key={key} className={warehouseSort===key?"sort-btn active":"sort-btn"} onClick={()=>setWarehouseSort(key)}>{label}</button>)}</div></div>
       <div className="warehouse-target-panel"><div><b>장착 대상 캐릭터</b><span>캐릭터를 선택한 뒤 장비 아이콘을 클릭</span></div><div className="warehouse-targets">{save.heroes.map(h=><button key={h.id} className={"warehouse-target "+(selectedHero===h.id?"active":"")} onClick={()=>{setSelectedHero(h.id);setSelectedEquipSlot(0)}}><span className="warehouse-target-avatar" style={{background:h.color}}>{jobIcon[h.job]}</span><span><b>{h.name}</b><small>{jobKo[h.job]} · {equippedItemsOf(h).length}/5</small></span></button>)}</div></div>
       <div className="warehouse-equipment-strip"><div className="warehouse-strip-head"><div><b>{hero.name} 장비창</b><span>5칸 · 선택 슬롯 {selectedEquipSlot+1}</span></div><div className="equipment-head-actions"><button className="ghost-btn" onClick={recommendEquip}>✦ 추천 장착</button><button className="ghost-btn" onClick={()=>setSelectedEquipSlot((selectedEquipSlot+1)%5)}>다음 슬롯</button></div></div><div className="equipment-slots compact-five">{[0,1,2,3,4].map(slot=>{const item=equipmentSlotsOf(hero)[slot];return <div key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")}><button onClick={()=>setSelectedEquipSlot(slot)} className="slot-main"><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"아이콘을 선택해 장착"}</span></button>{item&&<button className="ghost-btn slot-action" onClick={()=>unequip(slot)}>해제</button>}</div>})}</div></div>
-      <div className="warehouse-icon-grid">{sorted.length===0?<div className="subpanel empty-warehouse"><b>해당 카테고리에 장비가 없습니다.</b><span>전투 전리품과 보물방에서 장비를 획득하세요.</span></div>:sorted.map((item,idx)=><InventoryIcon item={item} key={item.id+"-"+idx} warehouse onEquip={()=>equip(item,selectedEquipSlot)} onSell={()=>sellItem(item)}/>)}</div>
+      <div className="warehouse-icon-grid">{sorted.length===0?<div className="subpanel empty-warehouse"><b>해당 카테고리에 장비가 없습니다.</b><span>전투 전리품과 보물방에서 장비를 획득하세요.</span></div>:sorted.map((item,idx)=><InventoryIcon item={item} key={item.id+"-"+idx} warehouse compare={equipmentPreview(hero,item,selectedEquipSlot)} onEquip={()=>equip(item,selectedEquipSlot)} onSell={()=>sellItem(item)}/>)}</div>
     </section>})()}
     {statusHeroId&&save.heroes.find(h=>h.id===statusHeroId)&&<CharacterStatusModal heroes={save.heroes} hero={save.heroes.find(h=>h.id===statusHeroId)!} onClose={()=>setStatusHeroId(undefined)} onNavigate={id=>setStatusHeroId(id)}/>}
     <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
@@ -1214,11 +1230,11 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes
     </section>
   </div>;
 }
-function InventoryIcon({item,onEquip,onSell,warehouse=false}:{item:Item;onEquip:()=>void;onSell?:()=>void;warehouse?:boolean}){
+function InventoryIcon({item,onEquip,onSell,warehouse=false,compare}:{item:Item;onEquip:()=>void;onSell?:()=>void;warehouse?:boolean;compare?:ReturnType<typeof equipmentPreview>}){
   const icon=item.slot==="weapon"?"⚔":item.slot==="armor"?"🛡":item.slot==="ring"?"◈":"✦";
-  const ai=Object.entries(item.aiMods);
-  const combat=Object.entries(item.combatMods||{});
-  const combatLabel=combat.map(([k,v])=>k==="attack"?"공격 +"+v:k==="defense"?"방어 +"+v:k==="hpPct"?"HP +"+v+"%":k==="speedPct"?"속도 +"+v+"%":k==="range"?"사거리 +"+v:k==="healPct"?"치유 +"+v+"%":k==="critPct"?"치명타 +"+v+"%":k+" +"+v).join(" · ");
+  const ai=itemAiLabels(item);
+  const combat=itemCombatLabels(item);
+  const deltaLabel=(label:string,value:number)=>label+" "+(value>0?"+":"")+Math.round(value*100)/100;
   return <div className="inventory-icon-wrap">
     <button className={"inventory-icon "+(warehouse?"warehouse-icon ":"")+(item.unique?"unique":"")} onClick={onEquip} aria-label={item.name+" 장착"}>
       <span>{icon}</span><small>Lv.{item.level}</small>{item.unique&&<b>U</b>}
@@ -1226,8 +1242,18 @@ function InventoryIcon({item,onEquip,onSell,warehouse=false}:{item:Item;onEquip:
         <span className="item-tooltip-head"><b>{item.name}</b>{item.unique&&<em>UNIQUE</em>}</span>
         <span className="item-tooltip-sub">{item.rarity} · {item.slot} · Lv.{item.level}</span>
         <span className="item-tooltip-stats">{item.stats.map(stat=><i key={stat}>{stat}</i>)}</span>
-        {combatLabel&&<span className="item-tooltip-combat">{combatLabel}</span>}
-        {ai.length>0&&<span className="item-tooltip-ai">AI · {ai.map(([k,v])=>tendencyKo[k as keyof Tendencies]+" "+((v||0)>0?"+":"")+(v||0)).join(" · ")}</span>}
+        {combat.length>0&&<span className="item-tooltip-combat">전투 적용 · {combat.join(" · ")}</span>}
+        {ai.length>0&&<span className="item-tooltip-ai">AI · {ai.join(" · ")}</span>}
+        {compare&&(compare.attack!==0||compare.defense!==0||compare.hp!==0||compare.speed!==0||compare.range!==0||compare.aiDelta.length>0)&&
+          <span className="item-tooltip-compare">
+            <b>현재 슬롯 대비</b>
+            {compare.attack!==0&&<i className={compare.attack>0?"up":"down"}>{deltaLabel("공격",compare.attack)}</i>}
+            {compare.defense!==0&&<i className={compare.defense>0?"up":"down"}>{deltaLabel("방어",compare.defense)}</i>}
+            {compare.hp!==0&&<i className={compare.hp>0?"up":"down"}>{deltaLabel("HP",compare.hp)}</i>}
+            {compare.speed!==0&&<i className={compare.speed>0?"up":"down"}>{deltaLabel("속도",compare.speed)}</i>}
+            {compare.range!==0&&<i className={compare.range>0?"up":"down"}>{deltaLabel("사거리",compare.range)}</i>}
+            {compare.aiDelta.map(x=><i key={x.key} className={x.value>0?"up":"down"}>{tendencyKo[x.key]} {x.value>0?"+":""}{Math.round(x.value*10)/10}</i>)}
+          </span>}
         <span className="item-tooltip-desc">{item.description}</span>
         <span className="item-tooltip-tip">클릭 · 현재 선택 슬롯에 장착</span>
       </span>
