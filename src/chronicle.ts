@@ -15,7 +15,8 @@ export const chronicleCatalog:ChronicleDef[]=[
   {id:"dungeon-vanguard",kind:"title",name:"동굴의 선봉장",description:"심층 관문을 돌파한 원정대의 선봉장.",bonus:{attack:2,hpPct:2},check:h=>(h.campaignStats?.bossWins||0)>=1},
   {id:"iron-heart",kind:"title",name:"철의 심장",description:"패배를 겪어도 원정을 이어 간 불굴의 용사.",bonus:{defense:3,hpPct:3},check:h=>(h.campaignStats?.losses||0)>=1&&(h.campaignStats?.wins||0)>=3},
   {id:"scenario-veteran",kind:"title",name:"반복 도전의 전사",description:"완료한 시나리오를 다시 돌파하며 성장했다.",bonus:{speedPct:3,attack:2},check:h=>(h.campaignStats?.repeatWins||0)>=5},
-  {id:"world-saver",kind:"title",name:"세계의 봉인자",description:"세계의 구멍을 막아 악의 침입을 저지했다.",bonus:{attack:8,defense:8,hpPct:8},check:h=>h.statusNote?.startsWith("세계의 구멍 봉인 완료")===true}
+  {id:"world-saver",kind:"title",name:"세계의 봉인자",description:"세계의 구멍을 막아 악의 침입을 저지했다.",bonus:{attack:8,defense:8,hpPct:8},check:h=>h.statusNote?.startsWith("세계의 구멍 봉인 완료")===true},
+  {id:"infinite-awakening",kind:"title",name:"무한의 각성자",description:"100레벨 최종 각성과 전용 각성 스킬을 완성했다.",bonus:{attack:10,defense:10,hpPct:10,speedPct:3},check:h=>!!h.finalAwakening}
 ];
 
 export function chronicleBonuses(hero:Hero):Bonus{
