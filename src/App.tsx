@@ -10,10 +10,10 @@ import { monsterActions } from "./monsterAbilities";
 import { dungeonChoiceEvent, resolveDungeonChoice, resolveDungeonEvent, resolveHiddenRoom, eventTraitEffects, eventArtifactEffects, eventRewardPreview, type DungeonChoiceEvent } from "./dungeonEvents";
 import { applyBehaviorHistory, behaviorSummary, buildProfile, habitBias, partyHabitBias, partyMemorySummary, partyPreference, partyTacticalLinks, profileInsight, type PartyMemory } from "./progression";
 import { awardChronicle, chronicleBonuses, chronicleLabel, systemEvaluation, systemMood, systemStatus } from "./chronicle";
-import { costumeLabel, costumesForJob, skinCost, skinLabel, skinUnlockText, skinVisual } from "./costumes";
+import { costumesForJob, skinCost, skinLabel, skinUnlockText, skinVisual, skinTheme } from "./costumes";
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 import { bossClearReward, eliteClearReward, hiddenRoomReward, milestoneReward, repeatClearReward, treasureArtifactReward, growthArtifactCatalog, growthTraitCatalog, type GrowthReward } from "./growthRewards";
-import { buildPersonality, personalityActionBonus } from "./personality";
+import { buildPersonality, personalityActionBonus, personalityEventReaction } from "./personality";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -1272,7 +1272,9 @@ export default function App(){
     });
     setPendingEvent(undefined);
     const rewardText=outcome.rewardKind==="trait"&&outcome.rewardName?" · "+outcome.rewardName+" 특성 획득":outcome.rewardKind==="artifact"&&outcome.rewardName?" · "+outcome.rewardName+" 기재 획득":outcome.rewardKind==="equipment"&&outcome.rewardItem?" · "+outcome.rewardItem.name+" 장비 획득":"";
-    notify(outcome.text+rewardText+" · +"+outcome.gold+"G");
+    const reactionHero=save.heroes.filter(h=>save.party.includes(h.id)).slice().sort((x,y)=>(y.tendencies[choice.tendency]||0)-(x.tendencies[choice.tendency]||0))[0];
+    const reaction=reactionHero?personalityEventReaction(reactionHero,choice.id):"";
+    notify(outcome.text+rewardText+(reaction?" · "+reaction:"")+" · +"+outcome.gold+"G");
   };
 
   const sealWorld=()=>{
@@ -1411,13 +1413,13 @@ export default function App(){
           <div className="equipment-head-actions"><button className="ghost-btn" onClick={recommendEquip}>✦ 추천 장착</button><button className="ghost-btn" onClick={()=>setScreen("inventory")}><Package size={15}/> 인벤토리 열기</button></div>
         </div>
         <div className="character-selector">{save.heroes.map(h=><button key={h.id} className={"character-selector-card "+(selectedHero===h.id?"active":"")} onClick={()=>{setSelectedHero(h.id);setSelectedEquipSlot(0);setSelectedWarehouseItem(undefined)}}>
-          <span className="hero-avatar mini" style={{background:h.color}}>{jobIcon[h.job]}</span>
+          <span className="hero-avatar mini skin-avatar" style={{background:skinTheme(h.equippedSkinId||h.costumeId).background}}><SkinPortrait job={h.job} skinId={h.equippedSkinId||h.costumeId} compact /></span>
           <span><b>{h.name}</b><small>{jobKo[h.job]} · Lv.{h.level}</small></span>
           <em>{equippedItemsOf(h).length}/3</em>
         </button>)}</div>
         <div className="character-equipment-layout">
           <div className="character-equipment-sheet">
-            <div className="character-equipment-identity"><div className="hero-avatar large" style={{background:hero.color}}>{jobIcon[hero.job]}</div><div><b>{hero.name}</b><span>{jobKo[hero.job]} · {promotionLabel(hero)}</span><small>전투 방향 · {compactTendency(hero)}</small></div></div>
+            <div className="character-equipment-identity"><div className="hero-avatar large skin-avatar" style={{background:skinTheme(hero.equippedSkinId||hero.costumeId).background}}><SkinPortrait job={hero.job} skinId={hero.equippedSkinId||hero.costumeId} /></div><div><b>{hero.name}</b><span>{jobKo[hero.job]} · {promotionLabel(hero)}</span><small>전투 방향 · {compactTendency(hero)}</small></div></div>
             <div className="character-equipment-stats"><span><small>공격</small><b>{Math.round(heroCombatStats.attack)}</b></span><span><small>방어</small><b>{Math.round(heroCombatStats.defense)}</b></span><span><small>HP</small><b>{Math.round(heroCombatStats.maxHp)}</b></span><span><small>속도</small><b>{Math.round(heroCombatStats.speed*100)/100}</b></span></div>
             <div className="character-equipment-slots">{[0,1,2].map(slot=>{const item=equipmentSlotsOf(hero)[slot];const combat=item?itemCombatLabels(item):[];const enh=item?enhancementCombatLabels(item):[];return <div key={slot} className={"character-equipment-slot "+(selectedEquipSlot===slot?"active":"")}><button onClick={()=>setSelectedEquipSlot(slot)}><span>SLOT {slot+1}</span><strong>{item?.name||"장비 없음"}{item&&<em className="slot-enhance-level"> +{enhancementLevel(item)}</em>}</strong><small>{item?item.rarity+" · Lv."+item.level+" · "+enhancementLevel(item)+"/"+MAX_ENHANCEMENT+" 강화":"인벤토리에서 장착"}</small>{item&&<div className="slot-stat-detail">{item.stats.slice(0,3).map(stat=><em key={stat}>{stat}</em>)}{combat.slice(0,2).map(stat=><em key={"c-"+stat}>{stat}</em>)}{enh.slice(0,2).map(stat=><em key={"e-"+stat}>{stat}</em>)}</div>}</button>{item&&<><button className="ghost-btn slot-enhance-btn" onClick={e=>{e.stopPropagation();enhanceItem(item.id)}} disabled={enhancementLevel(item)>=MAX_ENHANCEMENT||save.gold<enhancementCost(item)}>{enhancementLevel(item)>=MAX_ENHANCEMENT?"MAX":"+"}</button><button className="ghost-btn" onClick={()=>unequip(slot)}>해제</button></>}</div>})}</div>
           </div>
@@ -1452,14 +1454,14 @@ export default function App(){
       {battle.environment&&<div className="environment-note"><b>{environmentInfo[battle.environment].name}</b><span>{environmentInfo[battle.environment].detail}</span></div>}
       <div className="battle-layout"><div className="cave-panel"><div className="cave-label"><span>입구</span><span>심층</span></div><div className="cave-lane"><div className="cave-floor"/>
         {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")+" "+(u.fxKind?"fx-"+u.fxKind:"")} style={{left:(u.pos*9.3)+"%"}}>
-          <div className="unit-token">{u.team==="player"?jobIcon[u.job!]:u.grade==="Boss"?"♛":"👹"}{u.team==="enemy"&&<span className={"monster-level-badge grade-"+String(u.grade||"Normal").toLowerCase()}>Lv.{u.level||1}</span>}</div><b>{u.name}</b>{u.team==="enemy"&&<small className="monster-meta">{u.species} · {u.grade||"Normal"}{u.promotionTier?(" · 승급 "+u.promotionTier+"단계"):""}</small>}{u.mutation&&<small className="mutation-label">{u.mutation}</small>}{u.fx&&<span className="combat-fx">{u.fx}</span>}<div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
+          <div className="unit-token">{u.team==="player"?<SkinPortrait job={u.job!} skinId={save.heroes.find(h=>h.id===u.id)?.equippedSkinId} compact />:u.grade==="Boss"?"♛":"👹"}{u.team==="enemy"&&<span className={"monster-level-badge grade-"+String(u.grade||"Normal").toLowerCase()}>Lv.{u.level||1}</span>}</div><b>{u.name}</b>{u.team==="enemy"&&<small className="monster-meta">{u.species} · {u.grade||"Normal"}{u.promotionTier?(" · 승급 "+u.promotionTier+"단계"):""}</small>}{u.mutation&&<small className="mutation-label">{u.mutation}</small>}{u.fx&&<span className="combat-fx">{u.fx}</span>}<div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
       </div><div className="battle-status-tags">{u.statusEffects&&u.statusEffects.length>0&&u.statusEffects.map(s=><span key={s.kind}>{statusEffectIcon[s.kind]} {statusEffectKo[s.kind]} {s.turns}T</span>)}</div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
       <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{battle.plan&&<><b>{battle.plan.label}</b><span> · {battle.plan.detail}</span><br/></>}{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · 장비 {equippedItemsOf(hero).length}/3</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>전투 방향 · {compactTendency(hero)}</small></div></aside></div>
       {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p><div className="battle-report"><b>AI 전투 리포트</b><div className="battle-report-grid">{battle.units.filter(u=>u.team==="player").map(u=><div className="report-card" key={u.id}><strong>{u.name}</strong><span>행동 {u.battleStats?.actions||0}회</span><span>피해 {u.battleStats?.damage||0}</span><span>회복 {u.battleStats?.healing||0}</span><small>{Object.entries(u.behaviorCounts||{}).sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>x[0]).join(" · ")||"기록 없음"}</small></div>)}</div></div>{battle.result==="victory"&&lastLoot.length>0&&<div className="loot-summary"><b>획득 전리품</b><span>{lastLoot.map(x=>x.name).join(" · ")}</span></div>}</div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 
     {screen==="inventory"&&(()=>{const filtered=save.items.filter(i=>warehouseTab==="all"||i.slot===warehouseTab);const rarityRank:Record<string,number>={신화:5,전설:4,영웅:3,희귀:2,일반:1};const sorted=filtered.slice().sort((a,b)=>warehouseSort==="level"?b.level-a.level:warehouseSort==="rarity"?(rarityRank[b.rarity]||0)-(rarityRank[a.rarity]||0):0);return <section className="page"><div className="section-head"><div><span className="eyebrow">GUILD WAREHOUSE · INVENTORY</span><h2>용사단 인벤토리</h2><p className="muted">아이콘 중심으로 간소화했습니다. 커서를 올리면 이름·희귀도·스탯·AI 보정·설명이 표시되고, 클릭하면 현재 선택 슬롯에 장착됩니다.</p></div><span className="counter">{save.items.length} / 60</span></div>
       <div className="warehouse-toolbar"><div className="warehouse-tabs">{([["all","전체"],["weapon","무기"],["armor","방어구"],["ring","반지"],["accessory","장신구"]] as const).map(([key,label])=><button key={key} className={warehouseTab===key?"warehouse-tab active":"warehouse-tab"} onClick={()=>setWarehouseTab(key)}>{label}<small>{key==="all"?save.items.length:save.items.filter(i=>i.slot===key).length}</small></button>)}</div><div className="warehouse-sort"><span>정렬</span>{([["recent","최근"],["level","레벨"],["rarity","희귀도"]] as const).map(([key,label])=><button key={key} className={warehouseSort===key?"sort-btn active":"sort-btn"} onClick={()=>setWarehouseSort(key)}>{label}</button>)}</div></div>
-      <div className="warehouse-target-panel"><div><b>장착 대상 캐릭터</b><span>캐릭터를 선택한 뒤 장비 아이콘을 클릭</span></div><div className="warehouse-targets">{save.heroes.map(h=><button key={h.id} className={"warehouse-target "+(selectedHero===h.id?"active":"")} onClick={()=>{setSelectedHero(h.id);setSelectedEquipSlot(0)}}><span className="warehouse-target-avatar" style={{background:h.color}}>{jobIcon[h.job]}</span><span><b>{h.name}</b><small>{jobKo[h.job]} · {equippedItemsOf(h).length}/3</small></span></button>)}</div></div>
+      <div className="warehouse-target-panel"><div><b>장착 대상 캐릭터</b><span>캐릭터를 선택한 뒤 장비 아이콘을 클릭</span></div><div className="warehouse-targets">{save.heroes.map(h=><button key={h.id} className={"warehouse-target "+(selectedHero===h.id?"active":"")} onClick={()=>{setSelectedHero(h.id);setSelectedEquipSlot(0)}}><span className="warehouse-target-avatar skin-avatar" style={{background:skinTheme(h.equippedSkinId||h.costumeId).background}}><SkinPortrait job={h.job} skinId={h.equippedSkinId||h.costumeId} compact /></span><span><b>{h.name}</b><small>{jobKo[h.job]} · {equippedItemsOf(h).length}/3</small></span></button>)}</div></div>
       <div className="warehouse-equipment-strip"><div className="warehouse-strip-head"><div><b>{hero.name} 장비창</b><span>3칸 · 선택 슬롯 {selectedEquipSlot+1}</span></div><div className="equipment-head-actions"><button className="ghost-btn" onClick={recommendEquip}>✦ 추천 장착</button><button className="ghost-btn" onClick={()=>setSelectedEquipSlot((selectedEquipSlot+1)%5)}>다음 슬롯</button></div></div><div className="equipment-slots compact-five">{[0,1,2].map(slot=>{const item=equipmentSlotsOf(hero)[slot];return <div key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")}><button onClick={()=>setSelectedEquipSlot(slot)} className="slot-main"><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"아이콘을 선택해 장착"}</span></button>{item&&<button className="ghost-btn slot-action" onClick={()=>unequip(slot)}>해제</button>}</div>})}</div></div>
       <div className="warehouse-icon-grid">{sorted.length===0?<div className="subpanel empty-warehouse"><b>해당 카테고리에 장비가 없습니다.</b><span>전투 전리품과 보물방에서 장비를 획득하세요.</span></div>:sorted.map((item,idx)=><InventoryIcon item={item} key={item.id+"-"+idx} warehouse compare={equipmentPreview(hero,item,selectedEquipSlot)} onEquip={()=>equip(item,selectedEquipSlot)} onSell={()=>sellItem(item)}/>)}</div>
     </section>})()}
@@ -1545,6 +1547,36 @@ function NpcGuide({floor,mode,onOpen,compact=false,dialogueIndex=0}:{floor:numbe
   </button>;
 }
 function Feature({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <article className="feature-card"><div className="feature-icon">{icon}</div><b>{title}</b><p>{text}</p></article>;}
+function SkinPortrait({job,skinId,compact=false}:{job:Job;skinId?:string;compact?:boolean}){
+  const theme=skinTheme(skinId);
+  const size=compact?34:62;
+  const skinKey=skinId?skinId.split("-").slice(1).join("-"):"base";
+  const icon=skinVisual(skinId);
+  const uid="skin-"+job.toLowerCase()+"-"+(skinKey||"base").replace(/[^a-z0-9]/gi,"-");
+  return <svg className={"skin-portrait "+(compact?"compact":"")} width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
+    <defs><linearGradient id={uid+"-bg"} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={theme.primary}/><stop offset="1" stopColor={theme.secondary}/></linearGradient></defs>
+    <circle cx="50" cy="48" r="40" fill={theme.background} opacity=".9"/>
+    <path d="M30 84 Q50 68 70 84 L76 96 L24 96 Z" fill={"url(#"+uid+"-bg)"} />
+    <circle cx="50" cy="39" r="18" fill={theme.primary}/>
+    <path d="M31 37 Q50 10 69 37 Q60 24 50 27 Q40 24 31 37" fill={theme.secondary}/>
+    <circle cx="43" cy="40" r="2.5" fill={theme.background}/><circle cx="57" cy="40" r="2.5" fill={theme.background}/>
+    <path d="M44 50 Q50 54 56 50" fill="none" stroke={theme.secondary} strokeWidth="3" strokeLinecap="round"/>
+    {job==="Warrior"&&<><path d="M27 70 L18 58 L23 54 L35 67" fill="none" stroke={theme.accent} strokeWidth="6" strokeLinecap="round"/><path d="M73 70 L82 58 L77 54 L65 67" fill="none" stroke={theme.accent} strokeWidth="6" strokeLinecap="round"/></>}
+    {job==="Guardian"&&<path d="M25 66 Q50 51 75 66 L70 88 Q50 98 30 88 Z" fill="none" stroke={theme.accent} strokeWidth="5"/>}
+    {job==="Archer"&&<><path d="M23 67 Q50 90 77 67" fill="none" stroke={theme.accent} strokeWidth="4"/><path d="M50 63 L50 89" stroke={theme.accent} strokeWidth="3"/></>}
+    {job==="Mage"&&<><circle cx="50" cy="74" r="13" fill="none" stroke={theme.accent} strokeWidth="4"/><path d="M50 58 V90 M34 74 H66" stroke={theme.accent} strokeWidth="2"/></>}
+    {job==="Cleric"&&<path d="M50 65 V91 M39 78 H61" stroke={theme.accent} strokeWidth="6" strokeLinecap="round"/>}
+    {skinKey==="monster-disguise"&&<path d="M35 28 L28 15 L41 23 M65 28 L72 15 L59 23" fill={theme.accent}/>}
+    {skinKey==="light-hero"&&<ellipse cx="50" cy="14" rx="21" ry="7" fill="none" stroke={theme.accent} strokeWidth="4"/>}
+    {skinKey==="fallen-hero"&&<circle cx="50" cy="48" r="27" fill="none" stroke={theme.accent} strokeWidth="2" strokeDasharray="4 5"/>}
+    {skinKey==="beach"&&<circle cx="79" cy="22" r="8" fill={theme.accent}/>}
+    {skinKey==="fur-winter"&&<path d="M78 72 L88 62 M83 57 V78 M74 67 H92" stroke={theme.accent} strokeWidth="2"/>}
+    {skinKey==="summer"&&<path d="M78 73 Q91 65 82 55 Q72 64 78 73" fill={theme.accent}/>}
+    {skinKey==="bodysuit"&&<><rect x="70" y="57" width="18" height="7" rx="3" fill={theme.accent}/><circle cx="79" cy="60" r="2" fill={theme.background}/></>}
+    <text x="50" y="98" textAnchor="middle" fontSize="12" fill={theme.accent} fontWeight="700">{icon}</text>
+  </svg>;
+}
+
 function starLabel(star:number){
   const n=Math.max(1,Math.min(6,Math.floor(star||1)));
   return "★".repeat(n)+"☆".repeat(6-n);
