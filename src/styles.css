@@ -268,3 +268,30 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .modal-collection b{display:block;color:#cbd6e7;font-size:8px;line-height:1.4;word-break:break-word}
 
 .modal-artifact-list{display:grid;gap:5px;margin-top:5px}.modal-artifact-list>div{padding:6px 7px;border:1px solid #2a3951;border-radius:7px;background:#0d1623;display:grid;gap:2px}.modal-artifact-list b{color:#d9e3f2!important;font-size:9px!important}.modal-artifact-list small{color:#7b8ca6;font-size:7px;line-height:1.35}.modal-artifact-list em{font-style:normal;color:#9fb6d8;font-size:7px;line-height:1.3}.modal-artifact-list em:last-child{color:#c8b77d}
+
+
+.warehouse-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;padding:10px;border:1px solid #283249;background:#0d1522;border-radius:14px}
+.warehouse-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.warehouse-tab,.sort-btn{border:1px solid #29364d;background:#111b2a;color:#8190a8;border-radius:8px;padding:7px 10px;font-size:11px;cursor:pointer}
+.warehouse-tab{display:flex;align-items:center;gap:6px}.warehouse-tab small{opacity:.55;font-size:9px}
+.warehouse-tab.active,.sort-btn.active{background:#1c2940;border-color:#647be2;color:#dce6f8}
+.warehouse-sort{display:flex;align-items:center;gap:6px}.warehouse-sort>span{font-size:10px;color:#65738a;margin-right:2px}
+.warehouse-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:14px;align-items:start}
+.warehouse-main{min-width:0}
+.warehouse-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.warehouse-item{position:relative;min-width:0;min-height:146px;padding:10px;text-align:left;border:1px solid #27344a;border-radius:12px;background:#101927;color:#d8e1ef;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:.12s}
+.warehouse-item:hover{transform:translateY(-1px);border-color:#43557a}
+.warehouse-item.selected{border-color:#788ff2;box-shadow:inset 0 0 0 1px #788ff2;background:#151f31}
+.warehouse-item.unique{background:linear-gradient(160deg,#181e30,#101723);border-color:#5a4d2c}
+.warehouse-item-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:#182337;color:#b9c8e6;font-size:17px}
+.warehouse-item-head{display:flex;justify-content:space-between;align-items:center;color:#8897b0;font-size:9px}
+.warehouse-item-head b{color:#d6bc6e}.warehouse-item strong{font-size:11px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.warehouse-item>small{font-size:9px;color:#69788f}
+.warehouse-item-stats{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto}.warehouse-item-stats span{font-size:8px;padding:3px 4px;border-radius:5px;background:#172338;color:#9db0d2}
+.warehouse-detail{position:sticky;top:16px;min-height:290px;padding:16px;border:1px solid #2b3850;background:#0f1725;border-radius:15px}
+.warehouse-detail-head{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#9dadc6}.warehouse-detail-head b{color:#d4ba69}
+.warehouse-detail h3{margin:7px 0 5px;font-size:20px}.warehouse-detail p{margin:0;color:#8490a6;font-size:11px;line-height:1.5}
+.warehouse-detail-meta{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0}.warehouse-detail-meta span{padding:5px 6px;border-radius:6px;background:#151f31;color:#8291aa;font-size:9px}
+.warehouse-detail-actions{display:flex;gap:7px;margin-top:15px}.warehouse-detail-actions .primary-btn{flex:1}.warehouse-empty-detail{min-height:258px;display:grid;place-content:center;text-align:center;gap:8px;color:#617089}.warehouse-empty-detail span{font-size:9px;letter-spacing:.16em}.warehouse-empty-detail b{color:#aebbd0;font-size:14px}.warehouse-empty-detail small{font-size:9px;line-height:1.45}
+@media(max-width:1050px){.warehouse-layout{grid-template-columns:1fr}.warehouse-detail{position:static}.warehouse-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.warehouse-toolbar{align-items:stretch;flex-direction:column}.warehouse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.warehouse-grid{grid-template-columns:1fr}.warehouse-item{min-height:118px}.warehouse-layout{gap:10px}}
