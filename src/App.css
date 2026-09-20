@@ -609,3 +609,171 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 
 /* Simplified control surfaces */
 .party-command-strip{display:flex;justify-content:space-between;align-items:center;gap:12px}.party-command-strip>div:first-child{display:grid;gap:3px}.party-command-strip>div:first-child span{font-size:8px;color:#7b899e}.party-command-strip>div:first-child small{font-size:7px;color:#68788f}.party-command-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.compact-tendency-card{padding:12px;border:1px solid #26374f;border-radius:9px;background:#0c1521}.compact-tendency-card b{display:block;font-size:15px;margin-bottom:5px}.compact-tendency-card p{margin:0;font-size:7px;line-height:1.6;color:#78879d}
+
+
+/* ===== Game Visual Overhaul 1 · RPG HUD / Environment Art ===== */
+body{
+  background:#050912 url("/backgrounds/frontier-fortress.svg") center top/cover fixed no-repeat;
+}
+.game-shell{
+  max-width:1280px;
+  padding:18px 18px 42px;
+}
+.game-shell:before{
+  background:
+    linear-gradient(180deg,rgba(4,8,14,.28) 0,rgba(4,8,14,.72) 48%,rgba(4,8,14,.94) 100%),
+    radial-gradient(ellipse at 50% 4%,rgba(91,125,166,.22),transparent 35%);
+}
+.game-shell:after{opacity:.34}
+.topbar{
+  border-color:#4b5870;
+  background:linear-gradient(180deg,rgba(9,15,25,.94),rgba(7,12,20,.86));
+  box-shadow:0 10px 35px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.06);
+}
+.topbar:after{
+  content:"";
+  position:absolute;left:8%;right:8%;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,#c6a45b,transparent);
+  opacity:.55;
+}
+.brand-mark{
+  border:1px solid #8c7444;
+  background:linear-gradient(145deg,#263a57,#171f30);
+  color:#e4c67d;
+  box-shadow:0 0 26px rgba(205,167,86,.12);
+}
+.brand b{letter-spacing:-.01em}
+.resources{gap:7px}
+.resources span{
+  min-height:32px;
+  border-color:#3a465c;
+  background:linear-gradient(180deg,#151e2d,#0c131f);
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+.resources span:nth-child(1){color:#e5c777}.resources span:nth-child(2){color:#b9b8ff}.resources span:nth-child(3){color:#aebdcb}
+.main-nav{
+  position:sticky;top:88px;z-index:19;
+  padding:5px;
+  border:1px solid #334057;
+  border-radius:13px;
+  background:rgba(7,12,20,.82);
+  backdrop-filter:blur(12px);
+  box-shadow:0 10px 24px rgba(0,0,0,.2);
+}
+.main-nav button{
+  position:relative;
+  flex:1;
+  min-width:88px;
+  padding:10px 12px;
+  border-color:transparent;
+  background:transparent;
+  color:#7f8ca4;
+  border-radius:9px;
+  font-weight:800;
+}
+.main-nav button:before{
+  content:"";
+  position:absolute;left:20%;right:20%;bottom:3px;height:2px;
+  background:#c7a75d;transform:scaleX(0);transition:.16s;
+}
+.main-nav button:hover{color:#d6deed;background:rgba(255,255,255,.035)}
+.main-nav button.nav-on{
+  color:#f3e4bb;
+  border-color:#55472f;
+  background:linear-gradient(180deg,#252333,#171923);
+  box-shadow:inset 0 0 18px rgba(193,157,77,.06);
+}
+.main-nav button.nav-on:before{transform:scaleX(1)}
+.fortress-map-shell{
+  position:relative;
+  box-shadow:0 20px 70px rgba(0,0,0,.42);
+}
+.fortress-map{
+  background:
+    linear-gradient(180deg,rgba(8,14,23,.18),rgba(6,10,16,.56)),
+    url("/backgrounds/frontier-fortress.svg") center/cover no-repeat;
+}
+.map-skyline{opacity:.22}
+.map-mountain{opacity:.22}
+.fortress-keep{
+  background:radial-gradient(circle at 50% 24%,rgba(210,177,105,.14),transparent 34%),linear-gradient(180deg,rgba(29,42,58,.9),rgba(10,17,26,.96));
+  border-color:#8a6e3d;
+  box-shadow:inset 0 0 40px rgba(192,153,70,.08),0 18px 45px rgba(0,0,0,.42);
+}
+.fortress-keep:after{
+  content:"";
+  position:absolute;inset:-12px;border:1px solid rgba(205,169,88,.16);
+  border-radius:50% 50% 16px 16px;pointer-events:none;
+}
+.fortress-zone,.gate-launch{
+  backdrop-filter:blur(8px);
+  box-shadow:0 12px 30px rgba(0,0,0,.4);
+}
+.fortress-zone{
+  border-color:#53637c;
+  background:linear-gradient(135deg,rgba(13,23,37,.94),rgba(8,14,23,.9));
+}
+.fortress-zone:hover{border-color:#b09156;box-shadow:0 14px 32px rgba(0,0,0,.44),0 0 24px rgba(195,157,77,.1)}
+.gate-launch{
+  border-color:#86683a;
+  background:linear-gradient(135deg,rgba(35,27,17,.96),rgba(14,14,17,.94));
+}
+.gate-launch:hover{border-color:#d0aa61;box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 24px rgba(210,170,83,.1)}
+.fortress-panel,.fortress-doctrine{
+  background:linear-gradient(145deg,rgba(14,23,35,.94),rgba(8,14,22,.9));
+  border-color:#35445d;
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+.dungeon-page{
+  padding:18px;
+  border:1px solid #334159;
+  border-radius:18px;
+  background:
+    linear-gradient(180deg,rgba(7,12,20,.72),rgba(7,11,17,.94)),
+    url("/backgrounds/dungeon-depths.svg") center/cover no-repeat;
+  box-shadow:0 18px 55px rgba(0,0,0,.28);
+}
+.route-card,.mode-card,.battle-summary-strip span{
+  background:linear-gradient(145deg,rgba(17,27,42,.94),rgba(9,15,24,.94));
+  border-color:#34445e;
+}
+.route-card:hover,.mode-card:hover{border-color:#9a7b43;box-shadow:0 10px 28px rgba(0,0,0,.25)}
+.cave-panel{
+  border-color:#43546d;
+  background:linear-gradient(180deg,rgba(11,18,29,.96),rgba(7,12,19,.96));
+  box-shadow:0 18px 45px rgba(0,0,0,.28);
+}
+.cave-lane{
+  background:
+    linear-gradient(180deg,rgba(10,17,27,.2),rgba(5,8,13,.45)),
+    url("/backgrounds/battlefield.svg") center/cover no-repeat;
+  border-color:#6c5637;
+  box-shadow:inset 0 0 55px rgba(0,0,0,.32),0 12px 34px rgba(0,0,0,.32);
+}
+.cave-floor{
+  background:linear-gradient(180deg,rgba(39,35,34,.6),rgba(9,10,13,.88));
+  border-color:#69513a;
+}
+.battle-unit.player .unit-token{border-color:#82a1dd;background:linear-gradient(145deg,#304d78,#18243b);box-shadow:0 0 22px rgba(97,145,220,.16)}
+.battle-unit.enemy .unit-token{border-color:#cf6d62;background:linear-gradient(145deg,#6a2d30,#27171d);box-shadow:0 0 22px rgba(220,73,58,.14)}
+.ai-panel{
+  border:1px solid #3e4e68;
+  background:linear-gradient(145deg,rgba(13,21,34,.97),rgba(7,12,19,.96));
+  box-shadow:0 18px 45px rgba(0,0,0,.25);
+}
+.ai-focus{
+  border-color:#63512f;
+  background:linear-gradient(145deg,#211b13,#111724);
+}
+.ai-focus b{color:#e0c276}
+.combat-log div{border-left-color:#8b6c3d}
+.battle-status{border-color:#4c5d76;background:rgba(8,14,23,.84)}
+.result-panel{
+  border-color:#7c653a;
+  background:linear-gradient(145deg,#1b1712,#101722);
+}
+@media(max-width:650px){
+  body{background-attachment:scroll}
+  .main-nav{position:relative;top:auto}
+  .dungeon-page{padding:12px}
+}
