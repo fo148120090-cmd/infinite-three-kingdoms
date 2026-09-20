@@ -9,7 +9,7 @@ const behaviorDelta:Record<string,Partial<Tendencies>>={
   "수호 맹세":{protect:.24,cooperation:.16,bravery:.06},"철벽 진형":{protect:.2,survival:.18,caution:.1},"아군 보호":{protect:.18,cooperation:.14,survival:.05},
   "회복":{protect:.16,cooperation:.2,caution:.04},"대회복":{protect:.24,cooperation:.22,focus:.08},"원소 폭발":{aggression:.12,focus:.2,curiosity:.06},
   "저주 확산":{focus:.18,curiosity:.12,caution:.08},"비전 해방":{focus:.24,curiosity:.12},"심판":{focus:.18,bravery:.12,caution:.06},
-  "후퇴":{survival:.2,caution:.16,bravery:-.1},"기습 후퇴":{survival:.18,caution:.12,greed:.04},"대기":{caution:.03,focus:.02}
+  "후퇴":{survival:.2,caution:.16,bravery:-.1},"기습 후퇴":{survival:.18,caution:.12,greed:.04},"대기":{caution:.03,focus:.02},"방어 태세":{caution:.16,survival:.16,protect:.06,focus:.04}
 };
 
 export function applyBehaviorHistory(hero:Hero,battleCounts:Record<string,number>):Hero{
