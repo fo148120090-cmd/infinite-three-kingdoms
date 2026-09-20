@@ -201,7 +201,7 @@ export function dungeonChoiceEvent(floor:number,environment:EnvironmentKind):Dun
       choices:[
         {id:"rush",label:"빠르게 돌파한다",detail:"용맹을 믿고 가장 짧은 길을 선택한다.",tendency:"bravery",risk:18,reward:190+floor*8,rewardKind:"trait"},
         {id:"secure",label:"안전한 길을 찾는다",detail:"신중하게 지형을 살펴 시간을 들인다.",tendency:"caution",risk:4,reward:130+floor*6},
-        {id:"cooperate",label:"파티가 함께 통로를 보강한다",detail:"협동으로 붕괴 위험을 낮추지만 시간이 걸린다.",tendency:"cooperation",risk:2,reward:155+floor*7,rewardKind:"equipment"}
+        {id:"cooperate",label:"파티가 함께 통로를 보강한다",detail:"협동으로 붕괴 위험을 낮추지만 시간이 걸린다.",tendency:"cooperation",risk:2,reward:155+floor*7,rewardKind:"artifact"}
       ]
     };
   }
@@ -211,7 +211,7 @@ export function dungeonChoiceEvent(floor:number,environment:EnvironmentKind):Dun
       text:"독성 안개 속에 약초와 봉인된 약품 상자가 있다.",
       choices:[
         {id:"herbs",label:"약초를 채집한다",detail:"생존본능을 살려 필요한 것만 안전하게 챙긴다.",tendency:"survival",risk:7,reward:145+floor*7,rewardKind:"trait"},
-        {id:"rare",label:"희귀 약품을 꺼낸다",detail:"더 큰 보상을 노리지만 독성에 노출될 수 있다.",tendency:"greed",risk:15,reward:250+floor*10,rewardKind:"equipment"},
+        {id:"rare",label:"희귀 약품을 꺼낸다",detail:"더 큰 보상을 노리지만 독성에 노출될 수 있다.",tendency:"greed",risk:15,reward:250+floor*10,rewardKind:"artifact"},
         {id:"careful",label:"장비 없이 지나간다",detail:"보상을 포기하고 안전을 우선한다.",tendency:"caution",risk:0,reward:55+floor*3}
       ]
     };
@@ -222,7 +222,7 @@ export function dungeonChoiceEvent(floor:number,environment:EnvironmentKind):Dun
       text:"물이 차오른 방 아래에 반짝이는 보관함이 잠겨 있다.",
       choices:[
         {id:"dive",label:"직접 잠수한다",detail:"호기심을 따라 위험을 감수하고 깊은 곳으로 내려간다.",tendency:"curiosity",risk:16,reward:270+floor*11,rewardKind:"trait"},
-        {id:"team",label:"함께 끌어올린다",detail:"협동으로 보관함을 들어 올린다.",tendency:"cooperation",risk:5,reward:180+floor*8,rewardKind:"equipment"},
+        {id:"team",label:"함께 끌어올린다",detail:"협동으로 보관함을 들어 올린다.",tendency:"cooperation",risk:5,reward:180+floor*8,rewardKind:"artifact"},
         {id:"skip",label:"보관함을 포기한다",detail:"안전을 우선하고 통로를 통과한다.",tendency:"caution",risk:0,reward:80+floor*4}
       ]
     };
@@ -233,7 +233,7 @@ export function dungeonChoiceEvent(floor:number,environment:EnvironmentKind):Dun
       text:"균열 사이에서 귀중한 수정이 맥동한다. 잘못 건드리면 지형이 무너질 수 있다.",
       choices:[
         {id:"focus",label:"진동 패턴을 읽는다",detail:"집중력을 사용해 안정 구간을 찾는다.",tendency:"focus",risk:8,reward:210+floor*9,rewardKind:"trait"},
-        {id:"break",label:"강제로 채굴한다",detail:"용맹하게 수정을 부수어 많은 자원을 노린다.",tendency:"bravery",risk:20,reward:320+floor*12,rewardKind:"equipment"},
+        {id:"break",label:"강제로 채굴한다",detail:"용맹하게 수정을 부수어 많은 자원을 노린다.",tendency:"bravery",risk:20,reward:320+floor*12,rewardKind:"artifact"},
         {id:"mark",label:"위치를 기록하고 철수한다",detail:"다음 원정을 위해 정보를 남긴다.",tendency:"caution",risk:0,reward:95+floor*4}
       ]
     };
@@ -243,7 +243,7 @@ export function dungeonChoiceEvent(floor:number,environment:EnvironmentKind):Dun
     text:"오래된 제단 위에 손대지 않은 보급품과 이상한 문양이 남아 있다.",
     choices:[
       {id:"study",label:"문양을 조사한다",detail:"호기심으로 숨겨진 의미를 찾는다.",tendency:"curiosity",risk:8,reward:190+floor*8,rewardKind:"trait"},
-      {id:"take",label:"보급품을 챙긴다",detail:"탐욕을 따라 즉시 보상을 가져간다.",tendency:"greed",risk:12,reward:240+floor*10,rewardKind:"equipment"},
+      {id:"take",label:"보급품을 챙긴다",detail:"탐욕을 따라 즉시 보상을 가져간다.",tendency:"greed",risk:12,reward:240+floor*10,rewardKind:"artifact"},
       {id:"observe",label:"주변을 살핀다",detail:"신중하게 함정 여부를 확인한다.",tendency:"caution",risk:2,reward:110+floor*5}
     ]
   };
