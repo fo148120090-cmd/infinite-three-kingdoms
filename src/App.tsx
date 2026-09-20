@@ -156,7 +156,7 @@ function load(): Save {
         routeMemory:s.routeMemory||{},
         sealCount:Math.max(legacySealed?1:0,Math.floor(Number(s.sealCount)||0)),
         heroes:(Array.isArray(s.heroes)?s.heroes:heroesSeed).map(normalizeLoadedHero),
-        items:Array.isArray(s.items)?s.items:[],
+        items:Array.isArray(s.items)?s.items.slice(0,MAX_WAREHOUSE_ITEMS):[],
         monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")),
         scenarioClears:s.scenarioClears||{},
         worldSealed:legacySealed?false:!!s.worldSealed
@@ -204,6 +204,8 @@ const combinedAiMods=(items:Item[])=>{
   return mods;
 };
 const MAX_ENHANCEMENT=15;
+const MAX_WAREHOUSE_ITEMS=60;
+const addWarehouseItems=(items:Item[],additions:Item[])=>items.concat(additions).slice(0,MAX_WAREHOUSE_ITEMS);
 const enhancementLevel=(item:Item)=>Math.max(0,Math.min(MAX_ENHANCEMENT,item.enhancement||0));
 const enhancementCost=(item:Item)=>{
   const lv=enhancementLevel(item);
@@ -451,7 +453,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,level:h.level,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
       speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[],h),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],skinId:h.equippedSkinId||h.costumeId,
-      personality:h.personality,relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
+      personality:h.personality,relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"||room==="evilCave"?3:room==="elite"?4:3;
@@ -467,7 +469,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   }
   es=es.map(e=>e.grade==="Boss"?scaleBossMonster(e,floor,sealCount):scaleMonsterForSeals(e,sealCount));
   return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,level:e.level,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
-    speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,actionText:"대기",cooldown:0,guard:0,xp:0})));
+    speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,promotionTier:e.promotionTier,promotionPath:e.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0})));
 }
 
 function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
@@ -592,7 +594,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+(combinedCombatMods(equippedItemsOf(a)).healPct||0)/100)));t.hp=Math.min(t.maxHp,t.hp+x);fx(t,"heal","+"+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="분열"){
     if(pct(a)>.55 && n.filter(x=>x.team==="enemy").length<8){
-      const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true};
+      const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true,behaviorCounts:{},battleStats:{damage:0,healing:0,actions:0}};
       n.push(child);a.hp=Math.round(a.hp*.72);a.actionText="분열 → "+child.name;line=a.actionText;
     } else {a.actionText="분열 대기";line=a.actionText;}
   } else if(d.action==="함정 투척"||d.action==="매복 함정"||d.action==="거미줄"){
@@ -703,7 +705,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
   if(["광폭 돌격","수호 맹세","결투 집중","정밀 사격","사냥 본능","심판","철벽 진형","원소 폭발","저주 확산","비전 해방","대회복","분열","함정 투척","매복 함정","거미줄","무리 사냥","약점 추적","연계 공격","전투 함성","지휘 명령","측면 습격","급강하","굴 파기 기습","독성 압박","매혹","대지 강타","회피 기동","역할 분석","전선 재편","둥지 확장","공포의 심문","영역 지배","광폭화"].includes(d.action))a.cooldown=1.2;
   n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2;if(x.id!==a.id&&x.cooldown>0)x.cooldown=Math.max(0,x.cooldown-.25);});
   n.forEach(x=>{const before=hpBefore.get(x.id)||x.hp;const delta=before-x.hp;if(x.id!==a.id&&delta>0)a.battleStats!.damage+=Math.round(delta);if(x.id!==a.id&&delta<0)a.battleStats!.healing+=Math.round(-delta);});
-  const personalityLine=a.team==="player"&&((a.personality?.favoriteAction===d.action)||Math.random()<.26)?personalityBattleLine(a,d.action,a.skinId):"";
+  const personalityLine=a.team==="player"&&((a.personality?.favoriteAction===d.action)||Math.random()<.26)?personalityBattleLine(a,d.action):"";
   const finalLine=personalityLine?(line||a.actionText)+" · "+personalityLine:(line||a.actionText);
   return {units:n,decision:d,line:finalLine};
 }
@@ -863,11 +865,12 @@ export default function App(){
       const uniqueBase=uniqueItems[Math.floor(Math.random()*uniqueItems.length)];
       const uniqueDrop=Math.random()<.12 ? {...uniqueBase,id:uniqueBase.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)} : undefined;
       const item=uniqueDrop||randomGeneralItem(save.floor+2,partyPref);
-      setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,routeMemory:recordRouteMemory(s.routeMemory,"treasure",true,180),stage:s.stage+1}));
+      const canStoreTreasure=save.items.length<MAX_WAREHOUSE_ITEMS;
+      setSave(s=>({...s,items:canStoreTreasure?addWarehouseItems(s.items,[item]):s.items,gold:s.gold+180,routeMemory:recordRouteMemory(s.routeMemory,"treasure",true,180),stage:s.stage+1}));
       const recipient=save.heroes.filter(h=>save.party.includes(h.id)&&((h.artifacts||[]).length<4)).sort((a,b)=>b.tendencies.greed-a.tendencies.greed)[0];
       const growth=recipient&&treasureArtifactReward(recipient,save.floor);
       if(growth) setSave(s=>applyGrowthRewardSave(s,growth,recipient.id));
-      notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득"+(growth?" · "+growth.name+" 발견":""));
+      notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+(canStoreTreasure?" 획득":" · 창고가 가득 차 장비는 보관하지 못함")+(growth?" · "+growth.name+" 발견":""));
       return;
     }
     if(kind==="rest"){
@@ -986,7 +989,7 @@ export default function App(){
     const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
     const isRepeat=battle.repeatScenarioFloor!==undefined;
     const isElite=battle.room==="elite"||!!battle.elitePack;
-    const isBoss=battle.room==="boss";
+    const isBoss=battle.room==="boss"||battle.room==="evilCave";
     const isFinal=battle.room==="evilCave";
     const baseStats={wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0};
     const buildHero=(h:Hero,unit:BattleUnit|undefined,won:boolean,stats:any,experienceGain:number)=>{
@@ -994,7 +997,7 @@ export default function App(){
       const base={...h,campaignStats:stats};
       const previousProfile=h.combatProfile||{actions:0,damage:0,healing:0,battles:0,topActions:{}};
       const actionCounts={...previousProfile.topActions};
-      Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>{const before=h.behaviorCounts?.[name]||0;const gained=Math.max(0,count-before);if(gained)actionCounts[name]=(actionCounts[name]||0)+gained;});
+      Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>{const gained=Math.max(0,count);if(gained)actionCounts[name]=(actionCounts[name]||0)+gained;});
       const combatProfile={actions:previousProfile.actions+(unit.battleStats?.actions||0),damage:previousProfile.damage+(unit.battleStats?.damage||0),healing:previousProfile.healing+(unit.battleStats?.healing||0),battles:previousProfile.battles+1,topActions:actionCounts};
       const withProfile={...base,combatProfile};
       const beforePromotion=promotionLabel(withProfile);
@@ -1056,7 +1059,7 @@ export default function App(){
         const unit=battle.units.find(u=>u.id===id);
         if(!heroBefore||!unit)return m;
         Object.entries(unit.behaviorCounts||{}).forEach(([action,count])=>{
-          const gained=Math.max(0,count-(heroBefore.behaviorCounts?.[action]||0));
+          const gained=Math.max(0,count);
           if(action==="아군 보호"||action==="수호 맹세"||action==="철벽 진형")m.protection+=gained;
           if(action==="회복"||action==="대회복")m.recovery+=gained;
         });
@@ -1071,9 +1074,11 @@ export default function App(){
       const exp=Math.max(8,Math.round((30+(isElite?20:0)+(isBoss?80:0)+(isFinal?120:0))*(isRepeat?.9:1)));
       const experienceGain=victory?exp:Math.max(8,Math.round(exp*.7));
       const loot=victory?rollBattleLoot(Math.max(1,s.floor+(isBoss?2:0)),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
+      const storedLoot=victory?loot.slice(0,Math.max(0,MAX_WAREHOUSE_ITEMS-s.items.length)):[];
       const routeLearning=battle.mode==="dungeon"&&!isRepeat&&(battle.room==="battle"||battle.room==="elite"||battle.room==="boss"||battle.room==="evilCave");
-      if(victory) setLastLoot(loot);
-      if(victory&&loot.length) window.setTimeout(()=>notify("전리품 획득 · "+loot.map(x=>x.name).join(" · ")),0);
+      if(victory) setLastLoot(storedLoot);
+      if(victory&&storedLoot.length) window.setTimeout(()=>notify("전리품 획득 · "+storedLoot.map(x=>x.name).join(" · ")),0);
+      if(victory&&loot.length>storedLoot.length) window.setTimeout(()=>notify("창고가 가득 차 "+(loot.length-storedLoot.length)+"개 전리품은 보관하지 못했습니다."),0);
       let nextHeroes=s.heroes.map(h=>{
         if(!s.party.includes(h.id))return h;
         return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id],experienceGain);
@@ -1084,7 +1089,7 @@ export default function App(){
       return {...s,
         gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier):0),
         materials:s.materials+(victory?Math.max(5,Math.round(baseMaterials*rewardMultiplier)):0),
-        items:victory?[...s.items,...loot]:s.items,
+        items:victory?addWarehouseItems(s.items,storedLoot):s.items,
         scenarioClears,
         monsterLineages:nextLineages,
         floor:victory&&isBoss?s.floor+1:s.floor,
@@ -1183,6 +1188,7 @@ export default function App(){
   const unequip=(slot:number)=>{
     const current=equipmentSlotsOf(hero)[slot];
     if(!current){notify("선택한 슬롯이 비어 있습니다.");return;}
+    if(save.items.length>=MAX_WAREHOUSE_ITEMS){notify("용사단 창고가 가득 차 장비를 해제할 수 없습니다.");return;}
     setSave(s=>({...s,heroes:s.heroes.map(h=>{
       if(h.id!==selectedHero)return h;
       const slots=equipmentSlotsOf(h); slots[slot]=undefined;
@@ -1245,6 +1251,7 @@ export default function App(){
     setSave(s=>{
       const earnedTrait=outcome.rewardKind==="trait"&&outcome.rewardHeroId&&outcome.rewardName;
       const earnedArtifact=outcome.rewardKind==="artifact"&&outcome.rewardHeroId&&outcome.rewardName;
+      const storedEventEquipment=outcome.rewardKind==="equipment"&&!!outcome.rewardItem&&s.items.length<MAX_WAREHOUSE_ITEMS;
       const traitEffect=earnedTrait?eventTraitEffects[outcome.rewardName!]:undefined;
       const artifactEffect=earnedArtifact?eventArtifactEffects[outcome.rewardName!]:undefined;
       const nextHeroes=s.heroes.map(h=>{
@@ -1264,16 +1271,17 @@ export default function App(){
         routeMemory:recordRouteMemory(s.routeMemory,"event",true,outcome.gold),
         heroes:nextHeroes.map(h=>{
           if(h.id!==outcome.rewardHeroId||!outcome.rewardKind||!outcome.rewardName)return h;
+          if(outcome.rewardKind==="equipment"&&!storedEventEquipment)return h;
           const detail=outcome.rewardKind==="trait"?(traitEffect?.detail||"던전 이벤트에서 획득한 특성입니다."):outcome.rewardKind==="artifact"?(artifactEffect?.detail||"던전 이벤트에서 획득한 기재입니다."):(outcome.rewardItem?.description||"던전 이벤트에서 획득한 장비입니다.");
           const records=[...(h.eventRewards||[]),{kind:outcome.rewardKind,name:outcome.rewardName,floor:s.floor,detail}].slice(-8);
           return {...h,eventRewards:records};
         }),
-        items:outcome.rewardKind==="equipment"&&outcome.rewardItem?[...s.items,outcome.rewardItem]:s.items,
+        items:storedEventEquipment&&outcome.rewardItem?addWarehouseItems(s.items,[outcome.rewardItem]):s.items,
         gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,stage:s.stage+1
       };
     });
     setPendingEvent(undefined);
-    const rewardText=outcome.rewardKind==="trait"&&outcome.rewardName?" · "+outcome.rewardName+" 특성 획득":outcome.rewardKind==="artifact"&&outcome.rewardName?" · "+outcome.rewardName+" 기재 획득":outcome.rewardKind==="equipment"&&outcome.rewardItem?" · "+outcome.rewardItem.name+" 장비 획득":"";
+    const rewardText=outcome.rewardKind==="trait"&&outcome.rewardName?" · "+outcome.rewardName+" 특성 획득":outcome.rewardKind==="artifact"&&outcome.rewardName?" · "+outcome.rewardName+" 기재 획득":outcome.rewardKind==="equipment"&&outcome.rewardItem?(save.items.length<MAX_WAREHOUSE_ITEMS?" · "+outcome.rewardItem.name+" 장비 획득":" · 장비 보상은 창고 가득 참으로 보류"):"";
     const reactionHero=save.heroes.filter(h=>save.party.includes(h.id)).slice().sort((x,y)=>(y.tendencies[choice.tendency]||0)-(x.tendencies[choice.tendency]||0))[0];
     const reaction=reactionHero?personalityEventReaction(reactionHero,choice.id):"";
     notify(outcome.text+rewardText+(reaction?" · "+reaction:"")+" · +"+outcome.gold+"G");

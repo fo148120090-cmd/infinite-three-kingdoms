@@ -9,7 +9,7 @@ export const monsterEvolutionTrees:Record<string,Branch[]>={
   Orc:[{focus:"combat",forms:["오크 전사","오크 챔피언"]},{focus:"defense",forms:["오크 수호자","철벽 오크"]},{focus:"command",forms:["오크 족장","대족장"]},{focus:"berserk",forms:["오크 광전사","학살자"]}],
   Lizardman:[{focus:"hunt",forms:["리자드맨 사냥꾼","리자드맨 전사"]},{focus:"poison",forms:["독 리자드","맹독 리자드"]},{focus:"aquatic",forms:["수중 리자드","심해 리자드"]},{focus:"command",forms:["리자드 장로","리자드 왕"]}],
   Naga:[{focus:"combat",forms:["나가 전사","나가 장군"]},{focus:"poison",forms:["독술사 나가","맹독의 주인"]},{focus:"magic",forms:["나가 마도사","나가 대마도사"]},{focus:"command",forms:["여왕의 호위","나가 여왕"]}],
-  Harpy:[{focus:"speed",forms:["바람 하피","폭풍 하피"]},{focus:"combat",forms:["전투 하피","하피 전사장"]},{focus:"mental",forms:["사이렌 하피","매혹의 하피"]},{focus:"command",forms:["하피 여왕"] .slice(0,2)}],
+  Harpy:[{focus:"speed",forms:["바람 하피","폭풍 하피"]},{focus:"combat",forms:["전투 하피","하피 전사장"]},{focus:"mental",forms:["사이렌 하피","매혹의 하피"]},{focus:"command",forms:["하피 여왕","하피 대여왕"]}],
   Uruk:[{focus:"soldier",forms:["우르크 베테랑","우르크 챔피언"]},{focus:"officer",forms:["우르크 지휘관","우르크 장군"]},{focus:"armor",forms:["중장 우르크","철갑군"]},{focus:"command",forms:["우르크 전쟁대장","우르크 전쟁군주"]}],
   Ogre:[{focus:"strength",forms:["거대 오거","오거 왕"]},{focus:"defense",forms:["장갑 오거","오거 요새"]},{focus:"berserk",forms:["광폭 오거","오거 파괴자"]}],
   Arachne:[{focus:"hunt",forms:["사냥 거미","살인 거미"]},{focus:"poison",forms:["독거미","맹독 아라크네"]},{focus:"web",forms:["거미줄 장인","둥지 여왕"]},{focus:"command",forms:["아라크네 여왕","고대 여왕"]}],
