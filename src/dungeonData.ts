@@ -18,7 +18,7 @@ export type Memory = {text:string; weight:number; createdAt:number};
 
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
-  speed:number; range:number; tendencies:Tendencies; item?:Item; equipment?:[Item?,Item?,Item?,Item?,Item?]; experience:number;
+  speed:number; range:number; tendencies:Tendencies; item?:Item; equipment?:[Item?,Item?,Item?]; experience:number;
   history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   traits?:string[];
