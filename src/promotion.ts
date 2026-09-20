@@ -96,6 +96,22 @@ function applyPromotion(h:Hero,level:number){
 }
 
 
+const finalAwakeningData:Record<string,{id:string;name:string;detail:string;skillName:string;skillDetail:string;attack:number;defense:number;hpPct:number;speedPct:number;range:number}> = {
+  kael:{id:"kael-infinite",name:"무쌍천극",detail:"100레벨에 도달한 카엘의 최종 각성. 전장의 한계를 넘어 무쌍의 경지를 완성합니다.",skillName:"천극·무쌍",skillDetail:"전투 시작 시 공격력과 기동력을 크게 끌어올리는 최종 각성 패시브.",attack:24,defense:4,hpPct:6,speedPct:1.5,range:.03},
+  seren:{id:"seren-infinite",name:"불침영역",detail:"100레벨에 도달한 세린의 최종 각성. 자신과 동료를 지키는 절대 수호 영역을 완성합니다.",skillName:"천벽·불침",skillDetail:"전투 시작 시 방어력과 최대 HP를 크게 높이는 최종 각성 패시브.",attack:4,defense:18,hpPct:12,speedPct:.4,range:.02},
+  lyra:{id:"lyra-infinite",name:"천궁극점",detail:"100레벨에 도달한 리라의 최종 각성. 전장을 꿰뚫는 궁술의 극점을 완성합니다.",skillName:"천궁·일점",skillDetail:"전투 시작 시 공격력·사거리·기동력을 강화하는 최종 각성 패시브.",attack:20,defense:3,hpPct:4,speedPct:1.0,range:.14},
+  orion:{id:"orion-infinite",name:"종언의 비전",detail:"100레벨에 도달한 오리온의 최종 각성. 비전의 한계를 넘어 종언의 마력을 개방합니다.",skillName:"비전·종언",skillDetail:"전투 시작 시 마력 화력과 사거리를 강화하는 최종 각성 패시브.",attack:23,defense:3,hpPct:3,speedPct:.8,range:.12},
+  mira:{id:"mira-infinite",name:"영원의 성역",detail:"100레벨에 도달한 미라의 최종 각성. 영원히 지속되는 성역의 기적을 완성합니다.",skillName:"기적·영원",skillDetail:"전투 시작 시 회복형 영웅의 생존 기반을 크게 강화하는 최종 각성 패시브.",attack:5,defense:12,hpPct:10,speedPct:.5,range:.08}
+};
+const genericFinalAwakening:Record<Job,{id:string;name:string;detail:string;skillName:string;skillDetail:string;attack:number;defense:number;hpPct:number;speedPct:number;range:number}> = {
+  Warrior:{id:"warrior-infinite",name:"무한의 전사",detail:"100레벨 최종 각성으로 전사의 성장 한계를 넘어섭니다.",skillName:"무한·돌파",skillDetail:"전투 시작 시 공격과 기동을 강화합니다.",attack:18,defense:5,hpPct:5,speedPct:1.0,range:.03},
+  Guardian:{id:"guardian-infinite",name:"무한의 방벽",detail:"100레벨 최종 각성으로 수호자의 성장 한계를 넘어섭니다.",skillName:"무한·수호",skillDetail:"전투 시작 시 방어와 생존을 강화합니다.",attack:5,defense:15,hpPct:10,speedPct:.3,range:.02},
+  Archer:{id:"archer-infinite",name:"무한의 신궁",detail:"100레벨 최종 각성으로 궁수의 성장 한계를 넘어섭니다.",skillName:"무한·정밀",skillDetail:"전투 시작 시 공격과 사거리를 강화합니다.",attack:17,defense:3,hpPct:4,speedPct:.9,range:.12},
+  Mage:{id:"mage-infinite",name:"무한의 대현자",detail:"100레벨 최종 각성으로 마법사의 성장 한계를 넘어섭니다.",skillName:"무한·비전",skillDetail:"전투 시작 시 마법 화력과 사거리를 강화합니다.",attack:20,defense:3,hpPct:3,speedPct:.7,range:.1},
+  Cleric:{id:"cleric-infinite",name:"무한의 성역",detail:"100레벨 최종 각성으로 성직자의 성장 한계를 넘어섭니다.",skillName:"무한·기적",skillDetail:"전투 시작 시 회복과 생존 기반을 강화합니다.",attack:4,defense:10,hpPct:9,speedPct:.4,range:.06}
+};
+const finalAwakeningFor=(hero:Hero)=>finalAwakeningData[hero.id]||genericFinalAwakening[hero.job];
+
 const endgameAwakening=(hero:Hero,level:number):Hero=>{
   const definitions:{level:50|70|100;name:string;detail:string;hp:number;attack:number;defense:number;speed:number;range:number}[]=[
     {level:50,name:"초월 각성 · 개화",detail:"50레벨에 도달해 영웅의 잠재력이 개화합니다.",hp:1.08,attack:3,defense:2,speed:.04,range:.03},
@@ -109,6 +125,19 @@ const endgameAwakening=(hero:Hero,level:number):Hero=>{
     next={...next,hp:Math.round(next.hp*d.hp),attack:next.attack+d.attack,defense:next.defense+d.defense,speed:next.speed+d.speed,range:next.range+d.range};
     entries.push({level:d.level,name:d.name,detail:d.detail,earnedAt:Date.now()});
     next.history=[d.name+" 해금",...(next.history||[])].slice(0,6);
+  }
+  if(level>=100 && !next.finalAwakening){
+    const f=finalAwakeningFor(next);
+    next={
+      ...next,
+      hp:Math.round(next.hp*(1+f.hpPct/100)),
+      attack:next.attack+f.attack,
+      defense:next.defense+f.defense,
+      speed:next.speed*(1+f.speedPct/100),
+      range:next.range+f.range,
+      finalAwakening:{id:f.id,name:f.name,detail:f.detail,skillName:f.skillName,skillDetail:f.skillDetail,earnedAt:Date.now()},
+      history:[f.skillName+" 해금",...(next.history||[])].slice(0,6)
+    };
   }
   return {...next,awakenings:entries};
 };
