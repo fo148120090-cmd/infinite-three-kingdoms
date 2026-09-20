@@ -307,3 +307,33 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 @media(max-width:980px){.character-equipment-layout{grid-template-columns:1fr}.character-selector{grid-template-columns:repeat(2,minmax(0,1fr))}.warehouse-targets{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.character-equipment-head{flex-direction:column}.character-selector{grid-template-columns:1fr}.character-inventory-grid{grid-template-columns:1fr}.warehouse-targets{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.character-equipment-stats{grid-template-columns:repeat(2,1fr)}.warehouse-targets{grid-template-columns:1fr}}
+
+
+/* Compact five-slot equipment and icon inventory */
+.compact-five{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.compact-five .equipment-slot{padding:8px;min-width:0}
+.compact-five .equipment-slot .slot-main{padding:4px;gap:3px}
+.compact-five .equipment-slot b{font-size:10px}
+.compact-five .equipment-slot span{font-size:8px}
+.compact-five .equipment-slot .slot-action{font-size:8px;padding:5px 6px;margin-right:2px}
+.warehouse-equipment-strip{padding:11px;border:1px solid #28364c;border-radius:13px;background:#0d1623;margin-bottom:10px}
+.warehouse-strip-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.warehouse-strip-head>div{display:grid;gap:3px}
+.warehouse-strip-head b{font-size:11px}.warehouse-strip-head span{font-size:8px;color:#74839b}
+.warehouse-icon-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:7px;align-items:start}
+.inventory-icon-wrap{position:relative;display:flex;justify-content:center}
+.inventory-icon{position:relative;width:58px;height:58px;padding:0;border:1px solid #2a3950;border-radius:11px;background:linear-gradient(145deg,#152034,#0f1725);color:#d9e3f1;cursor:pointer;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.015);transition:.12s}
+.inventory-icon:hover{transform:translateY(-2px);border-color:#7189db;box-shadow:0 5px 18px rgba(0,0,0,.25),inset 0 0 0 1px #7189db}
+.inventory-icon span{font-size:25px;line-height:1}
+.inventory-icon small{position:absolute;right:3px;bottom:3px;padding:2px 4px;border-radius:4px;background:#09111c;color:#9aabc6;font-size:7px}
+.inventory-icon b{position:absolute;left:3px;top:3px;padding:2px 4px;border-radius:4px;background:#332d1e;color:#dbc274;font-size:7px}
+.inventory-icon.unique{border-color:#67552d;background:linear-gradient(145deg,#211f25,#121822)}
+.inventory-icon.warehouse-icon{width:64px;height:64px}
+.inventory-sell{position:absolute;right:-2px;top:-5px;width:17px;height:17px;padding:0;border:1px solid #4d3640;border-radius:50%;background:#24171d;color:#c7939e;font-size:13px;line-height:14px;cursor:pointer;opacity:.45}
+.inventory-icon-wrap:hover .inventory-sell{opacity:1}
+.inventory-sell:hover{background:#3a2029;color:#efbbc5}
+.character-inventory-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;max-height:300px;overflow:auto;padding:2px}
+@media(max-width:1100px){.warehouse-icon-grid{grid-template-columns:repeat(8,minmax(0,1fr))}.compact-five{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:850px){.warehouse-icon-grid{grid-template-columns:repeat(7,minmax(0,1fr))}.character-inventory-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:650px){.warehouse-icon-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.compact-five{grid-template-columns:repeat(2,minmax(0,1fr))}.character-inventory-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.warehouse-strip-head{align-items:flex-start;flex-direction:column}}
+@media(max-width:420px){.warehouse-icon-grid,.character-inventory-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.inventory-icon,.inventory-icon.warehouse-icon{width:54px;height:54px}}
