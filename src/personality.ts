@@ -34,7 +34,7 @@ function hash(text:string){
 export function buildPersonality(hero:Pick<Hero,"id"|"job"|"name"|"tendencies">):CharacterPersonality{
   if(seedPersonalities[hero.id])return seedPersonalities[hero.id];
   const t=hero.tendencies;
-  const axes=[
+  const axes:Array<[string,number]>=[
     ["돌격형",t.aggression+t.bravery+t.pursuit],
     ["수호형",t.protect+t.cooperation+t.survival],
     ["탐구형",t.curiosity+t.focus],
