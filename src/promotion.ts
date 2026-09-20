@@ -28,34 +28,69 @@ const secondTier:Record<string,Choice[]>={
   "저지":[{name:"이단심문관",keys:["focus","bravery"]},{name:"중재자",keys:["focus","cooperation"]},{name:"정화자",keys:["caution","protect"]}]
 };
 
+const lateTierChoices:Record<number,Record<Job,Choice[]>>={
+  4:{
+    Warrior:[{name:"파멸 전쟁군주",keys:["aggression","bravery"]},{name:"철혈 기사",keys:["protect","bravery"]},{name:"무쌍 투사",keys:["pursuit","focus"]}],
+    Guardian:[{name:"불굴의 요새",keys:["protect","survival"]},{name:"성벽의 기사",keys:["protect","bravery"]},{name:"철갑 분쇄자",keys:["aggression","focus"]}],
+    Archer:[{name:"천공 저격수",keys:["focus","caution"]},{name:"심연 추적자",keys:["pursuit","curiosity"]},{name:"폭풍 레인저",keys:["survival","cooperation"]}],
+    Mage:[{name:"대원소술사",keys:["aggression","focus"]},{name:"심연 주술사",keys:["curiosity","cooperation"]},{name:"비전 대마도사",keys:["focus","curiosity"]}],
+    Cleric:[{name:"대성역 사제",keys:["protect","cooperation"]},{name:"성좌 팔라딘",keys:["bravery","protect"]},{name:"천벌 집행자",keys:["focus","caution"]}]
+  },
+  5:{
+    Warrior:[{name:"전쟁신의 사도",keys:["aggression","bravery"]},{name:"철혈 성전왕",keys:["protect","bravery"]},{name:"무쌍 검성",keys:["pursuit","focus"]}],
+    Guardian:[{name:"불침의 성채",keys:["protect","survival"]},{name:"천상의 방벽",keys:["protect","bravery"]},{name:"절대 수호자",keys:["aggression","focus"]}],
+    Archer:[{name:"천궁의 신궁",keys:["focus","caution"]},{name:"심연 사냥왕",keys:["pursuit","curiosity"]},{name:"세계수 레인저",keys:["survival","cooperation"]}],
+    Mage:[{name:"원소 재앙술사",keys:["aggression","focus"]},{name:"대주령술사",keys:["curiosity","cooperation"]},{name:"공허 대현자",keys:["focus","curiosity"]}],
+    Cleric:[{name:"성역의 대주교",keys:["protect","cooperation"]},{name:"신벌의 성기사",keys:["bravery","protect"]},{name:"천상의 심판자",keys:["focus","caution"]}]
+  },
+  6:{
+    Warrior:[{name:"전쟁신",keys:["aggression","bravery"]},{name:"무한의 검제",keys:["pursuit","focus"]},{name:"파멸의 군왕",keys:["aggression","curiosity"]}],
+    Guardian:[{name:"불멸의 방패",keys:["protect","survival"]},{name:"영원의 수호자",keys:["protect","bravery"]},{name:"절대 방벽",keys:["survival","focus"]}],
+    Archer:[{name:"천공의 신궁",keys:["focus","caution"]},{name:"무한 추적자",keys:["pursuit","curiosity"]},{name:"세계의 파수꾼",keys:["survival","cooperation"]}],
+    Mage:[{name:"창세 원소군",keys:["aggression","focus"]},{name:"심연 군주",keys:["curiosity","cooperation"]},{name:"무한 대현자",keys:["focus","curiosity"]}],
+    Cleric:[{name:"영원의 성자",keys:["protect","cooperation"]},{name:"신성 수호왕",keys:["bravery","protect"]},{name:"최후의 심판관",keys:["focus","caution"]}]
+  }
+};
+
 function score(h:Hero,c:Choice){
   return c.keys.reduce((n,k)=>n+(h.tendencies[k]||0),0);
 }
 function pick(h:Hero,choices:Choice[]){
   return choices.slice().sort((a,b)=>score(h,b)-score(h,a))[0]?.name||"";
 }
+function pushPromotion(next:Hero,tier:number,name:string,mults:{hp:number;attack:number;defense:number}){
+  return {...next,promotionTier:tier,promotionPath:[...(next.promotionPath||[]),name],
+    hp:Math.round(next.hp*mults.hp),attack:Math.round(next.attack*mults.attack),defense:Math.round(next.defense*mults.defense)};
+}
 
 function applyPromotion(h:Hero,level:number){
   const tier=h.promotionTier||0;
   const path=[...(h.promotionPath||[])];
   let next={...h,promotionTier:tier,promotionPath:path};
-  if(level>=10 && tier<1){
-    const name=pick(h,firstTier[h.job]);
-    next={...next,promotionTier:1,promotionPath:[...path,name],hp:Math.round(h.hp*1.12),attack:Math.round(h.attack*1.06),defense:Math.round(h.defense*1.06)};
+  if(level>=10 && (next.promotionTier||0)<1){
+    const name=pick(next,firstTier[next.job]);
+    if(name)next=pushPromotion(next,1,name,{hp:1.12,attack:1.06,defense:1.06});
   }
   const branch=next.promotionPath?.[0]||"";
   if(level>=20 && (next.promotionTier||0)<2){
     const name=pick(next,secondTier[branch]||[]);
-    if(name){
-      next={...next,promotionTier:2,promotionPath:[...(next.promotionPath||[]),name],hp:Math.round(next.hp*1.10),attack:Math.round(next.attack*1.08),defense:Math.round(next.defense*1.08)};
-    }
+    if(name)next=pushPromotion(next,2,name,{hp:1.10,attack:1.08,defense:1.08});
   }
   if(level>=30 && (next.promotionTier||0)<3){
-    const values=Object.values(next.tendencies).sort((a,b)=>b-a);
-    if(values[0]>=85 && values[1]>=75){
-      const final=next.job==="Warrior"?"전쟁의 화신":next.job==="Guardian"?"수호의 화신":next.job==="Archer"?"천공의 사수":next.job==="Mage"?"대현자": "성역의 집행자";
-      next={...next,promotionTier:3,promotionPath:[...(next.promotionPath||[]),final],hp:Math.round(next.hp*1.15),attack:Math.round(next.attack*1.12),defense:Math.round(next.defense*1.12)};
-    }
+    const final=next.job==="Warrior"?"전쟁의 화신":next.job==="Guardian"?"수호의 화신":next.job==="Archer"?"천공의 사수":next.job==="Mage"?"대현자":"성역의 집행자";
+    next=pushPromotion(next,3,final,{hp:1.15,attack:1.12,defense:1.12});
+  }
+  if(level>=50 && (next.promotionTier||0)<4){
+    const name=pick(next,lateTierChoices[4][next.job]);
+    if(name)next=pushPromotion(next,4,name,{hp:1.18,attack:1.15,defense:1.15});
+  }
+  if(level>=70 && (next.promotionTier||0)<5){
+    const name=pick(next,lateTierChoices[5][next.job]);
+    if(name)next=pushPromotion(next,5,name,{hp:1.22,attack:1.19,defense:1.19});
+  }
+  if(level>=100 && (next.promotionTier||0)<6){
+    const name=pick(next,lateTierChoices[6][next.job]);
+    if(name)next=pushPromotion(next,6,name,{hp:1.30,attack:1.25,defense:1.25});
   }
   return next;
 }
@@ -88,40 +123,37 @@ export function promotionLabel(hero:Hero){
 export function promotionForecast(hero:Hero){
   const tier=hero.promotionTier||0;
   const path=hero.promotionPath||[];
-  if(tier>=3)return {next:"최종 전직 완료",level:30,progress:100,reason:"최종 전직까지 도달한 상태입니다."};
-  if(tier===0){
-    const choices=firstTier[hero.job]||[];
+  const forecast=(level:number,choices:Choice[],fallback:string)=>{
     const best=pick(hero,choices);
     const ranked=choices.slice().sort((a,b)=>score(hero,b)-score(hero,a));
-    return {next:"Lv.10 · "+(best||"자동 전직"),level:10,progress:Math.min(100,Math.round(hero.level/10*100)),reason:ranked.slice(0,2).map(x=>x.name).join(" / ")+" 후보 중 현재 성향이 높은 쪽으로 자동 결정됩니다."};
-  }
+    return {next:"Lv."+level+" · "+(best||fallback),level,progress:Math.min(100,Math.round(hero.level/level*100)),reason:ranked.slice(0,2).map(x=>x.name).join(" / ")+" 후보 중 현재 성향이 높은 쪽으로 자동 결정됩니다."};
+  };
+  if(tier>=6)return {next:"Lv.100 · 최종 각성 완료",level:100,progress:100,reason:"100레벨 최종 각성까지 도달한 상태입니다."};
+  if(tier===0)return forecast(10,firstTier[hero.job]||[],"자동 전직");
   if(tier===1){
     const branch=path[0]||"";
-    const choices=secondTier[branch]||[];
-    const best=pick(hero,choices);
-    const ranked=choices.slice().sort((a,b)=>score(hero,b)-score(hero,a));
-    return {next:"Lv.20 · "+(best||"2차 전직"),level:20,progress:Math.min(100,Math.round(hero.level/20*100)),reason:ranked.slice(0,2).map(x=>x.name).join(" / ")+" 후보 중 현재 성향이 높은 쪽으로 자동 결정됩니다."};
+    return forecast(20,secondTier[branch]||[],"2차 전직");
   }
-  const values=Object.values(hero.tendencies).sort((a,b)=>b-a);
-  const ready=values[0]>=85&&values[1]>=75;
-  return {next:ready?"Lv.30 · 최종 전직 가능":"Lv.30 · 최종 전직 조건 확인",level:30,progress:Math.min(100,Math.round(hero.level/30*100)),reason:ready?"상위 두 성향이 최종 전직 기준을 충족할 수 있는 상태입니다.":"Lv.30에서 상위 두 성향이 기준을 충족하면 최종 전직합니다."};
+  if(tier===2)return forecast(30,[{name:hero.job==="Warrior"?"전쟁의 화신":hero.job==="Guardian"?"수호의 화신":hero.job==="Archer"?"천공의 사수":hero.job==="Mage"?"대현자":"성역의 집행자",keys:["focus","bravery"]}],"3차 전직");
+  if(tier===3)return forecast(50,lateTierChoices[4][hero.job]||[],"4차 전직");
+  if(tier===4)return forecast(70,lateTierChoices[5][hero.job]||[],"5차 전직");
+  return forecast(100,lateTierChoices[6][hero.job]||[],"최종 각성");
 }
-
 
 export function promotionActions(heroPath:string[]|undefined):{name:string;detail:string;bonus:number}[]{
   const path=heroPath||[];
   const text=path.join(" ");
   const out:{name:string;detail:string;bonus:number}[]=[];
-  if(/광전사|전쟁군주|학살자|광란/.test(text))out.push({name:"광폭 돌격",detail:"공격성과 용맹을 전부 밀어붙이는 전직 행동",bonus:34});
-  if(/기사|성기사|크루세이더|근위|템플러|수호기사|팔라딘|성전사|여명의 기사/.test(text))out.push({name:"수호 맹세",detail:"가까운 위험한 아군을 지키며 자신도 방어 태세를 취함",bonus:32});
-  if(/검투사|결투가|챔피언|처형자/.test(text))out.push({name:"결투 집중",detail:"가장 위협적인 단일 대상을 집중 공격",bonus:28});
-  if(/철벽|요새|바스티온|불가동벽|중장벽|아에기스/.test(text))out.push({name:"철벽 진형",detail:"아군 주변에서 방어 우선순위를 극대화",bonus:30});
-  if(/저격수|데드아이|명사수|탄환/.test(text))out.push({name:"정밀 사격",detail:"체력이 낮은 대상을 확실하게 마무리",bonus:30});
-  if(/헌터|비스트마스터|추적자|스토커|레인저|윈드러너|패스파인더|스커미셔/.test(text))out.push({name:"사냥 본능",detail:"약한 대상을 추적하며 거리 우위를 유지",bonus:27});
-  if(/엘리멘탈리스트|인페르노|템페스트|프로스트/.test(text))out.push({name:"원소 폭발",detail:"여러 적에게 광역 피해를 집중",bonus:31});
-  if(/주술사|스피릿|헥스|폭풍 주술사/.test(text))out.push({name:"저주 확산",detail:"다수 적에게 약화 효과를 남기는 전직 행동",bonus:25});
-  if(/아케인|아르카니스트|스펠블레이드|보이드|대현자/.test(text))out.push({name:"비전 해방",detail:"집중력을 끌어올려 강한 마법을 사용",bonus:33});
-  if(/힐러|대사제|성인|오라클/.test(text))out.push({name:"대회복",detail:"가장 위험한 동료에게 큰 회복을 시도",bonus:34});
-  if(/저지|이단심문관|중재자|정화자/.test(text))out.push({name:"심판",detail:"위협적인 대상을 우선 제압",bonus:29});
+  if(/광전사|전쟁군주|학살자|광란|파멸|전쟁신|검성|군왕/.test(text))out.push({name:"광폭 돌격",detail:"공격성과 용맹을 전부 밀어붙이는 전직 행동",bonus:34});
+  if(/기사|성기사|크루세이더|근위|템플러|수호기사|팔라딘|성전사|여명의 기사|철혈|성벽|방벽|수호자|방패/.test(text))out.push({name:"수호 맹세",detail:"가까운 위험한 아군을 지키며 자신도 방어 태세를 취함",bonus:32});
+  if(/검투사|결투가|챔피언|처형자|투사/.test(text))out.push({name:"결투 집중",detail:"가장 위협적인 단일 대상을 집중 공격",bonus:28});
+  if(/철벽|요새|바스티온|불가동벽|중장벽|아에기스|성채|불침|방패|절대 방벽/.test(text))out.push({name:"철벽 진형",detail:"아군 주변에서 방어 우선순위를 극대화",bonus:30});
+  if(/저격수|데드아이|명사수|탄환|신궁|저격/.test(text))out.push({name:"정밀 사격",detail:"체력이 낮은 대상을 확실하게 마무리",bonus:30});
+  if(/헌터|비스트마스터|추적자|스토커|레인저|윈드러너|패스파인더|스커미셔|추적|사냥왕/.test(text))out.push({name:"사냥 본능",detail:"약한 대상을 추적하며 거리 우위를 유지",bonus:27});
+  if(/엘리멘탈리스트|인페르노|템페스트|프로스트|원소|대마도사/.test(text))out.push({name:"원소 폭발",detail:"여러 적에게 광역 피해를 집중",bonus:31});
+  if(/주술사|스피릿|헥스|폭풍 주술사|주령|심연 주술/.test(text))out.push({name:"저주 확산",detail:"다수 적에게 약화 효과를 남기는 전직 행동",bonus:25});
+  if(/아케인|아르카니스트|스펠블레이드|보이드|대현자|비전|공허|대현자/.test(text))out.push({name:"비전 해방",detail:"집중력을 끌어올려 강한 마법을 사용",bonus:33});
+  if(/힐러|대사제|성인|오라클|성역 사제|대주교|성자/.test(text))out.push({name:"대회복",detail:"가장 위험한 동료에게 큰 회복을 시도",bonus:34});
+  if(/저지|이단심문관|중재자|정화자|집행자|심판자/.test(text))out.push({name:"심판",detail:"위협적인 대상을 우선 제압",bonus:29});
   return out;
 }
