@@ -14,7 +14,7 @@ import { costumesForJob, skinCost, skinLabel, skinUnlockText, skinVisual, skinTh
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 import { bossClearReward, eliteClearReward, hiddenRoomReward, milestoneReward, repeatClearReward, treasureArtifactReward, growthArtifactCatalog, growthTraitCatalog, type GrowthReward } from "./growthRewards";
 import { buildPersonality, personalityActionBonus, personalityBattleLine, personalityEventReaction } from "./personality";
-import ThreeKingdoms from "./ThreeKingdoms";
+import ThreeKingdoms from "./ThreeKingdoms";\nimport { normalizePassiveData, passiveAiBonus, passiveCombatBonus, passiveSetFor, upgradePassive } from "./passiveSkills";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit" | "strategy";
 type BattleMode = "dungeon" | "defense" | "raid";
