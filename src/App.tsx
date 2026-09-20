@@ -100,6 +100,12 @@ const eventArtifactAiMods=(artifacts:string[])=>{
   artifacts.forEach(name=>Object.entries(eventArtifactEffects[name]?.aiMods||{}).forEach(([k,v])=>mods[k as keyof Tendencies]=(mods[k as keyof Tendencies]||0)+(v||0)));
   return mods;
 };
+const combinedAiModsWithArtifacts=(items:Item[],artifacts:string[])=>{
+  const gear=combinedAiMods(items), artifact=eventArtifactAiMods(artifacts);
+  const mods:Partial<Tendencies>={...gear};
+  (Object.keys(tendencyKo) as (keyof Tendencies)[]).forEach(k=>mods[k]=(gear[k]||0)+(artifact[k]||0));
+  return mods;
+};
 const equipmentNames=(hero:Hero)=>equipmentSlotsOf(hero).map(x=>x?.name||"장비 없음");
 const combatStats=(hero:Hero)=>{
   const m=combinedCombatMods(equippedItemsOf(hero));
@@ -221,7 +227,7 @@ function routeForecast(kind:RoomKind,floor:number,heroes:Hero[],routeMemory?:Rou
 function actionForecast(hero:Hero,partyHeroes:Hero[],partyMemory?:PartyMemory):{action:string;score:number;detail:string}[]{
   const t=hero.tendencies;
   const items=equippedItemsOf(hero);
-  const mods={...combinedAiMods(items),...eventArtifactAiMods(hero.artifacts||[])};
+  const mods=combinedAiModsWithArtifacts(items,hero.artifacts||[]);
   const habit=(action:string)=>habitBias(hero,action)+(partyMemory?partyHabitBias(partyMemory,action):0);
   const result:{action:string;score:number;detail:string}[]=[];
   result.push({action:"일반 공격",score:50+t.aggression*.35+t.bravery*.2+t.focus*.1+(mods.aggression||0)*.7+habit("일반 공격"),detail:"공격성·용맹·집중력과 기존 공격 습관을 반영"});
@@ -931,7 +937,7 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes
   const bonus=chronicleBonuses(hero);
   const growth=promotionForecast(hero);
   const items=equippedItemsOf(hero);
-  const aiMods={...combinedAiMods(items),...eventArtifactAiMods(hero.artifacts||[])};
+  const aiMods=combinedAiModsWithArtifacts(items,hero.artifacts||[]);
   const index=Math.max(0,heroes.findIndex(h=>h.id===hero.id));
   const prev=heroes[index-1];
   const next=heroes[index+1];
@@ -960,7 +966,7 @@ function HeroCard({hero,active,onClick,onStatus}:{hero:Hero;active:boolean;onCli
       <div className="name-row"><b>{hero.name}</b><span>Lv.{hero.level}</span></div>
       <p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/100</p>
       <div className="tag-row">{tags(hero).map(t=><em key={t}>{t}</em>)}</div>
-      <small>장비 · {equippedItemsOf(hero).map(x=>x.name).join(" · ")||"없음"} ({equippedItemsOf(hero).length}/3)</small><small>코스튬 · {costumeLabel(hero.job,hero.costumeId)}</small>
+      <small>장비 · {equippedItemsOf(hero).map(x=>x.name).join(" · ")||"없음"} ({equippedItemsOf(hero).length}/3)</small><small>특성 · {(hero.traits||[]).join(" · ")||"없음"}</small><small>기재 · {(hero.artifacts||[]).join(" · ")||"없음"}</small><small>코스튬 · {costumeLabel(hero.job,hero.costumeId)}</small>
       <small>{behaviorSummary(hero)}</small><small>AI 빌드 · {buildProfile(hero).name} · {buildProfile(hero).detail}</small>
       <div className="social-meta">{bond&&<span>유대 · {bondName} {Math.round(bond.relation.bond)}</span>}<span>{bond?"전술 링크 · "+(bond.relation.bond>=25?"활성":"형성 중"):"전술 링크 · 미형성"}</span><span>기억 {hero.memories?.length||0}</span></div>
       <button className="ghost-btn hero-status-btn" onClick={e=>{e.stopPropagation();onStatus();}}>상태 보기</button>
@@ -968,7 +974,7 @@ function HeroCard({hero,active,onClick,onStatus}:{hero:Hero;active:boolean;onCli
     <ChevronRight size={17}/>
   </article>;
 }
-function tags(h:Hero){const mod={...combinedAiMods(equippedItemsOf(h)),...eventArtifactAiMods(h.artifacts||[])};const ks=(Object.keys(tendencyKo) as (keyof Tendencies)[]).sort((a,b)=>(h.tendencies[b]+(mod[b]||0))-(h.tendencies[a]+(mod[a]||0)));return ks.slice(0,3).map(k=>tendencyKo[k]+" "+((h.tendencies[k]+(mod[k]||0))>=80?"높음":(h.tendencies[k]+(mod[k]||0))>=60?"중상":"보통"));}
+function tags(h:Hero){const mod=combinedAiModsWithArtifacts(equippedItemsOf(h),h.artifacts||[]);const ks=(Object.keys(tendencyKo) as (keyof Tendencies)[]).sort((a,b)=>(h.tendencies[b]+(mod[b]||0))-(h.tendencies[a]+(mod[a]||0)));return ks.slice(0,3).map(k=>tendencyKo[k]+" "+((h.tendencies[k]+(mod[k]||0))>=80?"높음":(h.tendencies[k]+(mod[k]||0))>=60?"중상":"보통"));}
 function ItemCard({item,equipped,onEquip,onSell}:{item:Item;equipped?:boolean;onEquip?:()=>void;onSell?:()=>void}){return <article className={"item-card "+(item.unique?"unique-item":"")}><div className="item-top"><span>{item.rarity}</span>{item.unique&&<b>UNIQUE</b>}</div><h3>{item.name}</h3><small>{item.slot} · Lv.{item.level}</small><div className="stat-list">{item.stats.map(s=><span key={s}>{s}</span>)}</div><div className="ai-mod"><Brain size={14}/>{Object.entries(item.aiMods).map(([k,v])=><span key={k}>{tendencyKo[k as keyof Tendencies]} {(v||0)>0?"+":""}{v}</span>)}</div><p>{item.description}</p><div className="item-actions">{onEquip&&<button className="ghost-btn" onClick={onEquip}>{equipped?"장착 중":"장착"}</button>}{onSell&&<button className="ghost-btn danger-btn" onClick={onSell}>판매</button>}</div></article>;}
 
 
