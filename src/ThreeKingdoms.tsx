@@ -29,7 +29,8 @@ const initial=():CampaignSave=>({
   influence:40,
   renown:0,
   cityOwners:Object.fromEntries(cities.map(c=>[c.id,c.owner])),
-  relations:{wei:50,shu:45,wu:45,han:60}
+  relations:{wei:50,shu:45,wu:45,han:60},
+  turns:0
 });
 
 export default function ThreeKingdoms({gold,materials,onSpendGold,onSpendMaterials,onRewardGold,onRewardMaterials,onDispatch,onToast}:Props){
