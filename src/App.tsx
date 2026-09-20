@@ -1121,105 +1121,111 @@ export default function App(){
 
     {pendingEvent&&<div className="event-overlay"><div className="event-dialog"><span className="eyebrow">DUNGEON EVENT</span><h2>{pendingEvent.title}</h2><p>{pendingEvent.text}</p><div className="event-choice-list">{pendingEvent.choices.map(ch=>{const preview=eventRewardPreview(save.heroes,save.party,save.floor,environmentFor(save.floor,"event","dungeon"),ch);let recipientText=" · 이벤트 보상";if(ch.rewardKind==="trait"&&preview.trait)recipientText=" · 「"+preview.trait+"」";else if(ch.rewardKind==="artifact"&&preview.artifact)recipientText=" · 「"+preview.artifact+"」";else if(ch.rewardKind==="equipment"&&preview.equipment)recipientText=" · "+preview.equipment.name+" · "+preview.equipment.stats.slice(0,2).join(" · ");return <button key={ch.id} className="event-choice" onClick={()=>chooseDungeonEvent(ch.id)}><div><b>{ch.label}</b><small>{ch.detail}</small>{ch.rewardKind&&<small className="event-recipient">획득 대상 · {preview.recipient?.name||"파티"}{recipientText}</small>}</div><span>{ch.risk>0?"위험 "+ch.risk:"안전"} · 예상 {ch.reward}G{ch.rewardKind&&<em className="event-reward-label">{ch.rewardKind==="trait"?"특성 획득":ch.rewardKind==="artifact"?"기재 획득":"장비 획득"}</em>}</span></button>})}</div><small className="event-note">선택한 방식이 파티의 해당 성향과 이후 행동 기록에 누적되며, 일부 선택은 성향이 가장 높은 캐릭터에게 특성 또는 기재가 영구 귀속됩니다.</small></div></div>}
 
-    {screen==="home"&&<section className="page lobby-page">
-      <div className="lobby-header">
+    {screen==="home"&&<section className="page fortress-lobby-page">
+      <div className="fortress-header">
         <div>
-          <span className="eyebrow">COMMAND LOBBY · BATTLE ROOM</span>
-          <h1>원정대 작전 로비</h1>
-          <p className="muted">전투 전 정보를 확인하고 파티와 장비를 준비합니다. 전투에 들어가면 캐릭터들이 스스로 판단합니다.</p>
+          <span className="eyebrow">FRONTIER FORTRESS · COMMAND MAP</span>
+          <h1>최전선 요새</h1>
+          <p className="muted">세계의 구멍을 감시하며 원정대를 출격시키는 전초기지입니다. 플레이어는 요새의 시설과 출격 지점만 선택하고, 전투 행동은 AI가 전부 결정합니다.</p>
         </div>
-        <div className="lobby-header-actions">
-          <button className="ghost-btn" onClick={openNpc}>세라피나 호출</button>
-          <button className="primary-btn" onClick={()=>setScreen("dungeon")}><MapIcon size={17}/> 출격 준비</button>
+        <div className="fortress-status">
+          <div><span>세계</span><b>{(save.sealCount||0)+1}회차</b><small>적 전투력 +{sealEnemyEnhancement(save.sealCount||0)}%</small></div>
+          <div><span>현재 전선</span><b>{save.floor}F</b><small>{save.stage+1}/6 구간</small></div>
+          <div><span>봉인 기록</span><b>{save.sealCount||0}회</b><small>{save.worldSealed?"봉인 완료":"세계의 구멍 OPEN"}</small></div>
         </div>
       </div>
 
-      <div className="lobby-command-grid">
-        <section className="live2d-panel">
-          <div className="live2d-topline"><span>LIVE COMMUNICATION</span><b>백색의 안내자</b><em>ONLINE</em></div>
-          <div className="live2d-stage" onClick={openNpc}>
-            <div className="live2d-aura"/>
-            <div className="live2d-spark spark-a">✦</div><div className="live2d-spark spark-b">✧</div><div className="live2d-spark spark-c">·</div>
-            <img src={NPC_IMAGE} alt="세라피나 Live2D풍 NPC" className="live2d-character"/>
-            <div className="live2d-nameplate"><span>NPC</span><b>세라피나</b><small>심도 {save.floor}F · {npcLineFor(save.floor,mode,npcTalkIndex).mood}</small></div>
+      <div className="fortress-map-shell">
+        <div className="fortress-map-topbar">
+          <div><span className="eyebrow">TACTICAL FRONTLINE MAP</span><b>철벽 전초기지 · 제1 방어선</b><small>시설을 눌러 준비하고, 성문을 통해 전장으로 이동합니다.</small></div>
+          <button className="ghost-btn compact" onClick={openNpc}>세라피나 통신</button>
+        </div>
+        <div className="fortress-map">
+          <div className="map-skyline"/>
+          <div className="map-mountain mountain-a"/>
+          <div className="map-mountain mountain-b"/>
+          <div className="map-road road-main"/>
+          <div className="map-road road-west"/>
+          <div className="map-road road-east"/>
+          <div className="map-wall wall-north"/><div className="map-wall wall-south"/><div className="map-wall wall-west"/><div className="map-wall wall-east"/>
+          <div className="map-tower tower-nw"/><div className="map-tower tower-ne"/><div className="map-tower tower-sw"/><div className="map-tower tower-se"/>
+
+          <button className="fortress-zone zone-command" onClick={()=>setScreen("party")}>
+            <span className="zone-icon"><Shield size={22}/></span>
+            <span><small>COMMAND</small><b>지휘관실</b><em>파티 편성 · 성장 · 상태</em></span>
+          </button>
+          <button className="fortress-zone zone-barracks" onClick={()=>setScreen("party")}>
+            <span className="zone-icon"><UserRound size={21}/></span>
+            <span><small>BARRACKS</small><b>원정대 막사</b><em>{save.party.length}/4명 · 현재 전력 관리</em></span>
+          </button>
+          <button className="fortress-zone zone-forge" onClick={()=>setScreen("inventory")}>
+            <span className="zone-icon"><Package size={21}/></span>
+            <span><small>DIVINE FORGE</small><b>신성 대장간</b><em>장비 · 골드 강화 · 최대 +15</em></span>
+          </button>
+          <button className="fortress-zone zone-recruit" onClick={()=>setScreen("recruit")}>
+            <span className="zone-icon"><UserPlus size={21}/></span>
+            <span><small>RECRUITMENT</small><b>신병 훈련소</b><em>5종 기본 직업 모집</em></span>
+          </button>
+          <button className="fortress-zone zone-watch" onClick={openNpc}>
+            <span className="zone-icon"><Brain size={21}/></span>
+            <span><small>WATCHTOWER</small><b>감시탑</b><em>세라피나 · 몬스터 정보 통신</em></span>
+          </button>
+
+          <div className="fortress-keep">
+            <div className="keep-emblem">⌁</div>
+            <span>최전선 본영</span>
+            <b>원정 지휘 핵심</b>
+            <small>AI CHRONICLE OPERATIONS</small>
           </div>
-          <div className="live2d-dialogue">
-            <div className="speech-mark">“</div>
-            <div><b>{npcLineFor(save.floor,mode,npcTalkIndex).line}</b><small>세라피나가 상황실 통신으로 전한 한마디</small></div>
-            <button className="ghost-btn compact" onClick={openNpc}>대화</button>
+
+          <div className="fortress-outer-label outer-north">심층 감시선 · {save.floor}F</div>
+          <div className="fortress-outer-label outer-west">보급로</div>
+          <div className="fortress-outer-label outer-east">정찰로</div>
+
+          <button className="gate-launch gate-dungeon" onClick={()=>setScreen("dungeon")}>
+            <span>⚔</span><b>던전 출격문</b><small>다음 방 선택</small>
+          </button>
+          <button className="gate-launch gate-defense" onClick={()=>startMode("defense")}>
+            <span>🛡</span><b>방어선 출격</b><small>{defenseObjectiveKo[defenseObjectiveForFloor(save.floor)]} · 30초 방어</small>
+          </button>
+          <button className="gate-launch gate-raid" onClick={()=>startMode("raid")}>
+            <span>♛</span><b>레이드 관문</b><small>{raidBossForFloor(save.floor)} · 3페이즈</small>
+          </button>
+        </div>
+        <div className="fortress-map-legend">
+          <span><i className="legend-ready"/>준비 시설</span>
+          <span><i className="legend-road"/>출격 경로</span>
+          <span><i className="legend-danger"/>전투 전선</span>
+          <span><i className="legend-relic"/>세계의 구멍 감시</span>
+        </div>
+      </div>
+
+      <div className="fortress-command-grid">
+        <section className="fortress-panel mission-panel">
+          <div className="fortress-panel-head"><div><span className="eyebrow">FRONTLINE ORDERS</span><b>오늘의 출격 명령</b><small>요새에서는 작전 선택만 가능합니다. AI가 실제 전투를 수행합니다.</small></div><span>LIMITED CHOICE</span></div>
+          <div className="fortress-order-grid">
+            <button onClick={()=>setScreen("dungeon")}><strong>⚔ 던전</strong><span>좁은 동굴 돌파 · 전리품 수집</span><em>{save.floor}F · 다음 방 {save.stage+1}/6</em></button>
+            <button onClick={()=>startMode("defense")}><strong>🛡 방어전</strong><span>목표 방어 · 연속 웨이브</span><em>{defenseObjectiveKo[defenseObjectiveForFloor(save.floor)]}</em></button>
+            <button onClick={()=>startMode("raid")}><strong>♛ 보스 레이드</strong><span>보스 3페이즈 · 대형 전투</span><em>{raidBossForFloor(save.floor)}</em></button>
           </div>
         </section>
-
-        <section className="battle-room-panel">
-          <div className="battle-room-head">
-            <div><span className="eyebrow">TACTICAL COMMAND</span><h2>전투상황실</h2><small>현재 원정대와 최근 전투 상태를 한눈에 확인합니다.</small></div>
-            <div className={"battle-readiness "+(save.party.length>=4?"ready":"partial")}><span>출격 상태</span><b>{save.party.length>=2?"READY":"PARTY 부족"}</b></div>
-          </div>
-
-          <div className="situation-core">
-            <div className="situation-radar">
-              <div className="radar-ring r1"/><div className="radar-ring r2"/><div className="radar-ring r3"/><span className="radar-core">⌁</span>
-              <div className="radar-blip b1"/><div className="radar-blip b2"/><div className="radar-blip b3"/>
-              <small>AI FIELD</small>
-            </div>
-            <div className="situation-copy">
-              <span className="situation-label">CURRENT OPERATION</span>
-              <b>{battle.ended?battle.result==="victory"?"최근 작전 성공":"최근 작전 종료":"대기 · 자동 전투 시스템 온라인"}</b>
-              <p>{battle.ended
-                ? `최근 ${roomKo[battle.room]} 결과가 기록되어 있습니다. 다음 출격에서는 이 경험이 캐릭터의 행동 기록에 반영됩니다.`
-                : "파티가 출격 대기 중입니다. 던전에서는 경로 선택만 하고 실제 이동·공격·스킬 판단은 AI가 수행합니다."}</p>
-            </div>
-          </div>
-
-          <div className="battle-metrics">
-            <div><span>심도</span><b>{save.floor}F</b><small>{save.stage+1}/6 ROOM</small></div><div><span>세계 회차</span><b>{(save.sealCount||0)+1}</b><small>적 +{sealEnemyEnhancement(save.sealCount||0)}%</small></div>
-            <div><span>원정대</span><b>{save.party.length}/4</b><small>현재 편성 인원</small></div>
-            <div><span>장비</span><b>{party.reduce((n,h)=>n+equippedItemsOf(h).length,0)}/20</b><small>5슬롯 기준</small></div>
-            <div><span>세계 상태</span><b>{save.worldSealed?"SEALED":"OPEN"}</b><small>{save.worldSealed?"봉인 완료":"악의 동굴 탐색 중"}</small></div>
-          </div>
-
-          <div className="battle-room-party">
-            <div className="room-party-head"><b>원정대 전력</b><span>{party.length?party.map(h=>jobIcon[h.job]+" "+h.name).join(" · "):"편성된 파티 없음"}</span></div>
-            <div className="room-party-bars">{party.map(h=>{
-              const hp=Math.max(1,Math.min(100,Math.round((h.hp/Math.max(1,combatStats(h).maxHp))*100)));
-              return <div key={h.id} className="room-party-row"><span>{jobIcon[h.job]}</span><b>{h.name}</b><small>Lv.{h.level}</small><i><em style={{width:Math.max(4,hp)+"%"}}/></i><strong>{hp}%</strong></div>;
-            })}</div>
-          </div>
+        <section className="fortress-panel party-panel">
+          <div className="fortress-panel-head"><div><span className="eyebrow">GARRISON STATUS</span><b>주둔 원정대</b><small>전투에 들어가면 캐릭터의 행동은 자율 AI에 위임됩니다.</small></div><button className="ghost-btn compact" onClick={()=>setScreen("party")}>막사 열기</button></div>
+          <div className="fortress-party-list">{party.map(h=>{const hp=Math.max(1,Math.min(100,Math.round((h.hp/Math.max(1,combatStats(h).maxHp))*100)));return <div key={h.id}><span className="fortress-party-icon">{jobIcon[h.job]}</span><b>{h.name}</b><small>Lv.{h.level} · {jobKo[h.job]}</small><i><em style={{width:hp+"%"}}/></i><strong>{hp}%</strong></div>})}</div>
+        </section>
+        <section className="fortress-panel threat-panel">
+          <div className="fortress-panel-head"><div><span className="eyebrow">THREAT LEVEL</span><b>전선 위험 정보</b><small>세계의 구멍 봉인 횟수가 적 강화에 누적됩니다.</small></div><span className="threat-badge">{save.sealCount||0} SEALS</span></div>
+          <div className="threat-core"><div className="threat-ring"><b>+{sealEnemyEnhancement(save.sealCount||0)}%</b><span>ENEMY POWER</span></div><div className="threat-copy"><b>{save.sealCount?"봉인 이후 강화된 적군":"아직 봉인되지 않은 첫 세계"}</b><p>{save.sealCount?"세계의 구멍을 "+save.sealCount+"회 봉인했습니다. 다음 회차에서는 더 강해진 적이 새로운 전선을 점거합니다.":"첫 번째 세계의 전선입니다. 구멍을 봉인할수록 다음 세계의 적은 더 강해집니다."}</p></div></div>
         </section>
       </div>
 
-      <div className="lobby-quick-grid">
-        <button className="lobby-quick-card" onClick={()=>setScreen("party")}><div className="quick-icon"><UserRound/></div><div><small>PARTY CONTROL</small><b>원정대 관리</b><span>성향 · 성장 · 관계 · 코스튬 · 5슬롯 장비</span></div><ChevronRight/></button>
-        <button className="lobby-quick-card" onClick={()=>setScreen("inventory")}><div className="quick-icon"><Package/></div><div><small>ARMORY</small><b>장비실</b><span>아이콘 인벤토리와 추천 장비 자동 장착</span></div><ChevronRight/></button>
-        <button className="lobby-quick-card" onClick={()=>setScreen("recruit")}><div className="quick-icon"><UserPlus/></div><div><small>RECRUITMENT</small><b>모집실</b><span>5종 기본 직업의 신규 용사 모집</span></div><ChevronRight/></button>
-      </div>
-
-      <div className="launch-board">
-        <div className="launch-board-head"><div><span className="eyebrow">MISSION SELECT</span><b>다음 작전 선택</b><small>플레이어는 작전만 선택하고 전투 행동은 AI가 담당합니다.</small></div><span>AI DIRECTIVE</span></div>
-        <div className="mission-grid">
-          <ModeCard title="DUNGEON" subtitle="던전 탐사" text="좁은 동굴을 돌파하며 전리품과 성장 기록을 확보합니다." icon="⚔" onClick={()=>{setMode("dungeon");setScreen("dungeon")}} />
-          <ModeCard title="DEFENSE" subtitle="방어전" text="시간 동안 목표를 지키며 계속되는 웨이브를 버팁니다." icon="🛡" onClick={()=>startMode("defense")} />
-          <ModeCard title="BOSS RAID" subtitle="보스 레이드" text="보스의 체력에 따라 패턴이 변하는 3페이즈 전투입니다." icon="♛" onClick={()=>startMode("raid")} />
-        </div>
-      </div>
-
-      <div className="lobby-intel-grid">
-        <div className="lobby-intel-card"><span className="eyebrow">AI CHRONICLE</span><b>캐릭터 행동 기록</b><p>반복된 전투 행동과 파티 기억이 다음 판단으로 연결됩니다.</p><div className="intel-line"><span>전투 기억</span><strong>{party.reduce((n,h)=>n+(h.memories?.length||0),0)}</strong></div><div className="intel-line"><span>클리어 시나리오</span><strong>{Object.keys(save.scenarioClears).length}</strong></div></div>
-        <div className="lobby-intel-card"><span className="eyebrow">MONSTER INTELLIGENCE</span><b>동굴 감시망</b><p>종족·등급·환경·진화 계통에 따라 다음 조우 위험을 예측합니다.</p><div className="intel-line"><span>기록된 종족 계보</span><strong>{save.monsterLineages.length}</strong></div><div className="intel-line"><span>현재 심도</span><strong>{save.floor}F</strong></div></div>
-        <div className="lobby-intel-card"><span className="eyebrow">MISSION LOG</span><b>최근 작전</b><p>{battle.ended?(battle.result==="victory"?"작전 성공 · 보상이 파티 창고로 이관됨":"작전 종료 · 재정비가 필요합니다."):"아직 새로운 작전이 시작되지 않았습니다."}</p><div className="intel-status">{battle.ended?<><span>{roomKo[battle.room]}</span><b>{battle.result==="victory"?"VICTORY":"DEFEAT"}</b></>:<><span>STATUS</span><b>STANDBY</b></>}</div></div>
-      </div>
-
-      <div className="evolution-section lobby-evolution">
-        <div className="section-mini-head"><div><span className="eyebrow">WORLD INTELLIGENCE</span><h3>동굴 종족 감시망</h3><p>번식·멸종 없이 종족의 성장, 진화 계통, 등급과 환경 반응만 장기적으로 추적합니다.</p></div></div>
-        <div className="evolution-grid">{Object.entries(monsterEvolutionTrees).slice(0,8).map(([species,branches])=>{
-          const lineage=save.monsterLineages.find(x=>x.species===species);
-          const activeLine=lineage?evolutionHint(lineage):"아직 계보 기억 없음";
-          return <article className="evolution-card" key={species}><b>{species}</b><small>{activeLine}</small>{lineage&&<em>단계 {lineage.evolutionStage} · {lineage.evolutionPath.join(" → ")||"원형 유지"}</em>}<div>{branches.slice(0,2).map((b,i)=><span key={i}>{b.forms.join(" → ")}</span>)}</div></article>;
-        })}</div>
+      <div className="fortress-footer-note">
+        <div><span className="eyebrow">FORTRESS DOCTRINE</span><b>“요새는 선택을 줄이고, 전투는 AI에게 맡긴다.”</b><small>파티 · 장비 · 보급을 준비한 뒤 출격. 적의 강화는 세계를 봉인할 때마다 누적됩니다.</small></div>
+        <div className="fortress-footer-metrics"><span><b>{save.gold}</b>G</span><span><b>{save.materials}</b> 보급</span><span><b>{save.items.length}/60</b> 창고</span><span><b>{(save.sealCount||0)+1}</b> 세계</span></div>
       </div>
     </section>}
 
-{screen==="party"&&<section className="page"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>원정대 구성</h2><p className="muted">전투 전에만 편성과 장비를 변경할 수 있습니다.</p></div><span className="counter">{save.party.length}/4</span></div>
+    {screen==="party"&&<section className="page"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>원정대 구성</h2><p className="muted">전투 전에만 편성과 장비를 변경할 수 있습니다.</p></div><span className="counter">{save.party.length}/4</span></div>
       <div className="party-grid">{save.heroes.map(h=><HeroCard key={h.id} hero={h} active={save.party.includes(h.id)} onClick={()=>{setSelectedHero(h.id);toggleParty(h.id)}} onStatus={()=>{setSelectedHero(h.id);setStatusHeroId(h.id)}}/>)}</div>
       <div className="subpanel"><div><b>현재 편성</b><span>{party.map(h=>jobIcon[h.job]+" "+h.name).join(" · ")}</span></div><div className="social-summary"><span>관계는 전투를 함께할수록 강화되고, 동료를 잃으면 기억이 남습니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("dungeon")}><Swords size={16}/> 던전으로</button></div><div className="party-memory-panel"><div><span className="eyebrow">PARTY MEMORY</span><b>파티 집단 기억</b><p>개별 캐릭터의 습관과 별개로, 함께 싸운 경험이 보호·회복·생존 판단에 남습니다.</p></div><div className="party-memory-metrics"><span><strong>{save.partyMemory?.battles||0}</strong>협동 전투</span><span><strong>{save.partyMemory?.protection||0}</strong>보호 행동</span><span><strong>{save.partyMemory?.recovery||0}</strong>회복 행동</span><span><strong>{save.partyMemory?.losses||0}</strong>패배 경험</span></div><small>{partyMemorySummary(save.partyMemory)}</small></div>
       <div className="synergy-panel"><div className="synergy-head"><div><span className="eyebrow">TACTICAL LINKS</span><b>현재 파티 전술 연계</b><small>관계와 직업 조합을 기준으로 실제 전투에서 연결될 가능성이 높은 동료 조합입니다.</small></div><span>{partyTacticalLinks(party).length}개 링크</span></div><div className="synergy-list">{partyTacticalLinks(party).length===0?<span className="quick-empty">파티에 등록된 동료가 부족합니다.</span>:partyTacticalLinks(party).map((link,i)=><div className="synergy-card" key={link.a.id+"-"+link.b.id}><div className="synergy-pair"><strong>{jobIcon[link.a.job]} {link.a.name}</strong><b>↔</b><strong>{jobIcon[link.b.job]} {link.b.name}</strong></div><div className="synergy-meter"><span style={{width:link.strength+"%"}}/></div><div className="synergy-meta"><span>연계 강도 {link.strength}</span><em>{link.detail}</em></div></div>)}</div></div>
