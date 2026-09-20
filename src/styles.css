@@ -539,3 +539,13 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 
 /* Post-battle growth choice */
 .growth-dialog{max-width:720px}.growth-choice-list{display:grid;gap:8px;margin-top:14px}.growth-choice{display:grid;grid-template-columns:38px 1fr 18px;gap:10px;align-items:center;width:100%;padding:13px;text-align:left;border:1px solid #2b3851;border-radius:12px;background:#101827;color:#dbe3f1}.growth-choice:hover{border-color:#647ac0;background:#141e31;transform:translateY(-1px)}.growth-choice-index{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#1d2a43;color:#9eb4f4;font-weight:800}.growth-choice:nth-child(1) .growth-choice-index{background:#332a17;color:#dfc16b}.growth-choice b{display:block;font-size:14px}.growth-choice small{display:block;margin-top:4px;color:#8d99b0;line-height:1.45}.growth-choice em{display:block;margin-top:5px;font-style:normal;font-size:9px;color:#a4b5d7}
+
+.star-rank{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px;padding:10px;border:1px solid #2d3b57;border-radius:10px;background:linear-gradient(135deg,#131e31,#0e1726)}
+.star-rank strong{font-size:18px;letter-spacing:1px;color:#d9c27c}
+.star-rank b{font-size:12px;color:#f2f4f9}
+.star-rank span{grid-column:1/-1;font-size:8px;color:#91a0b8}
+.transcend-info{display:grid;gap:6px;margin-top:8px;padding:8px;border-radius:9px;background:#101a29;border:1px solid #253650}
+.transcend-info small,.transcend-info span{font-size:8px;color:#8796ad;line-height:1.4}
+.transcend-info .primary-btn{margin-top:2px;width:100%}
+.modal-traits b{display:flex;justify-content:space-between;gap:5px;align-items:center}
+.modal-traits b em{font-style:normal;font-size:7px;color:#d8be73;padding:2px 5px;border:1px solid #5a4b2c;border-radius:5px;background:#231e14}
