@@ -531,3 +531,7 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .inventory-enhance:hover{background:#3b301b;border-color:#967942}
 .enhancement-line{color:#d4bd72!important;background:#1b1a13!important;border:1px solid #3f3925}
 .item-tooltip-head .enhance-badge{font-size:7px;padding:2px 4px;border-radius:4px;background:#3a301c;color:#e0c976}
+
+
+/* Combat status effects */
+.battle-status-tags{display:flex;justify-content:center;gap:3px;flex-wrap:wrap;min-height:13px;margin-top:3px}.battle-status-tags:empty{display:none}.battle-status-tags span{padding:2px 4px;border-radius:5px;border:1px solid #35425b;background:#111a28;color:#aebddd;font-size:7px;line-height:1.1;white-space:nowrap}.battle-status-tags span:first-child{box-shadow:0 0 8px rgba(104,130,190,.08)}
