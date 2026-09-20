@@ -915,8 +915,6 @@ export default function App(){
   useEffect(()=>{
     if(screen!=="battle"||!battle.ended)return;
     const progressionNotices:string[]=[];
-    let pendingGrowthReward:GrowthReward|undefined;
-    let pendingGrowthHeroId:string|undefined;
     const victory=battle.result==="victory";
     const deadIds=battle.units.filter(u=>u.team==="player"&&!u.alive).map(u=>u.id);
     const isRepeat=battle.repeatScenarioFloor!==undefined;
@@ -945,6 +943,21 @@ export default function App(){
       const awarded=awardChronicle(behavioral);
       return {...awarded,mood:systemMood(awarded),statusNote:systemStatus(awarded),evaluation:systemEvaluation(awarded)};
     };
+    let battleGrowthReward:GrowthReward|undefined;
+    if(victory){
+      battleGrowthReward = isBoss ? bossClearReward(battle.units,save.heroes) :
+        isElite&&!isRepeat ? eliteClearReward(battle.units,save.heroes) :
+        isRepeat ? repeatClearReward(battle.units,save.heroes,battle.repeatCount||0) : undefined;
+      if(!battleGrowthReward){
+        for(const unit of battle.units.filter(u=>u.team==="player"&&u.alive)){
+          const h=save.heroes.find(x=>x.id===unit.id);
+          if(h){
+            const candidate=milestoneReward(h,unit.behaviorCounts||{});
+            if(candidate){battleGrowthReward=candidate;break;}
+          }
+        }
+      }
+    }
     setSave(s=>{
       const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
       const statsById:Record<string,any>={};
@@ -998,24 +1011,8 @@ export default function App(){
         if(!s.party.includes(h.id))return h;
         return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id],experienceGain);
       });
-      let growthReward:GrowthReward|undefined;
-      if(victory){
-        growthReward = isBoss ? bossClearReward(battle.units,s.heroes) :
-          isElite&&!isRepeat ? eliteClearReward(battle.units,s.heroes) :
-          isRepeat ? repeatClearReward(battle.units,s.heroes,battle.repeatCount||0) : undefined;
-        if(!growthReward){
-          for(const unit of battle.units.filter(u=>u.team==="player"&&u.alive)){
-            const h=s.heroes.find(x=>x.id===unit.id);
-            if(h){
-              const candidate=milestoneReward(h,unit.behaviorCounts||{});
-              if(candidate){growthReward=candidate;break;}
-            }
-          }
-        }
-        if(growthReward&&growthReward.heroId){
-          pendingGrowthReward=growthReward;
-          pendingGrowthHeroId=growthReward.heroId;
-        }
+      if(victory&&battleGrowthReward?.heroId){
+        progressionNotices.push("성장 후보 · "+battleGrowthReward.name);
       }
       return {...s,
         gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier):0),
@@ -1029,10 +1026,10 @@ export default function App(){
         heroes:nextHeroes
       };
     });
-    if(pendingGrowthReward&&pendingGrowthHeroId){
-      const targetHero=save.heroes.find(h=>h.id===pendingGrowthHeroId);
+    if(battleGrowthReward?.heroId){
+      const targetHero=save.heroes.find(h=>h.id===battleGrowthReward!.heroId);
       if(targetHero){
-        setPendingGrowth({heroId:pendingGrowthHeroId,options:growthOptionsFor(targetHero,pendingGrowthReward),source:pendingGrowthReward.source});
+        setPendingGrowth({heroId:targetHero.id,options:growthOptionsFor(targetHero,battleGrowthReward!),source:battleGrowthReward!.source});
       }
     }
     if(progressionNotices.length) window.setTimeout(()=>notify("성장 갱신 · "+progressionNotices.join(" · ")),0);
@@ -1040,7 +1037,7 @@ export default function App(){
 
   const chooseGrowth=(reward:GrowthReward)=>{
     if(!pendingGrowth)return;
-    setSave(s=>applyGrowthRewardHeroes(s.heroes,reward,pendingGrowth.heroId,s.floor)===s.heroes?s:{...s,heroes:applyGrowthRewardHeroes(s.heroes,reward,pendingGrowth.heroId,s.floor)});
+    setSave(s=>({...s,heroes:applyGrowthRewardHeroes(s.heroes,reward,pendingGrowth.heroId,s.floor)}));
     setPendingGrowth(undefined);
     notify(reward.name+" 습득 · "+reward.source);
   };
