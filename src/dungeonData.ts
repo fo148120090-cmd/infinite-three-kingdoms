@@ -1,3 +1,4 @@
+import { buildPersonality, type CharacterPersonality } from "./personality";
 export type Job = "Warrior" | "Guardian" | "Archer" | "Mage" | "Cleric";
 export type RoomKind = "battle" | "elite" | "treasure" | "rest" | "event" | "hidden" | "boss" | "evilCave";
 export type Grade = "Normal" | "Elite" | "Named" | "Boss";
@@ -24,6 +25,9 @@ export type Hero = {
   history:string[]; color:string; star?:number; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   traits?:string[];
+  personality?:CharacterPersonality;
+  skinIds?:string[];
+  equippedSkinId?:string;
   artifacts?:string[];
   eventRewards?:{kind:"trait"|"artifact"|"equipment";name:string;floor:number;detail:string;source?:string}[];
   chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
