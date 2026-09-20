@@ -267,7 +267,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   const ordered=autoFormation(selected,mode);
   const ps: BattleUnit[] = ordered.map((h,i)=>{
     const s=combatStats(h);
-    return {id:h.id,name:h.name,job:h.job,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
+    return {id:h.id,name:h.name,job:h.job,level:h.level,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
       speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[]),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
       relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
   });
@@ -280,12 +280,12 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
     const bossName=room==="evilCave"?"악의 동굴 수문장":bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
     es[0]={...base,name:bossName,pos:8.8};
   }
-  return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
+  return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,level:e.level,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
     speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,actionText:"대기",cooldown:0,guard:0,xp:0})));
 }
 
 function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
-  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
+  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,level:e.level,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
 }
 
 function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):Decision[] {
