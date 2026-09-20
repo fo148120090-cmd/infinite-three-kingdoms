@@ -111,6 +111,7 @@ const normalizeLoadedHero=(h:Hero):Hero=>{
   const rawEquipment=Array.isArray(h.equipment)?h.equipment:(h.item?[h.item]:[]);
   const experience=Number(h.experience);
   const normalized={...h,
+    star:Math.max(1,Math.min(6,Math.floor(Number(h.star)||1))),
     level:Math.max(1,Math.floor(Number(h.level)||1)),
     experience:Number.isFinite(experience)?Math.max(0,experience):0,
     tendencies:{...defaultTendencies[h.job],...(h.tendencies||{})},
@@ -210,14 +211,39 @@ const combinedCombatMods=(items:Item[])=>{
   }
   return mods;
 };
-const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[]):Tendencies=>{
+const heroStar=(hero:Hero)=>Math.max(1,Math.min(6,Math.floor(Number(hero.star)||1)));
+const traitStrengthMultiplier=(hero:Hero)=>1+(heroStar(hero)-1)*.2;
+const traitAiBoostAtStar=(hero:Hero):Partial<Tendencies>=>{
+  const extra:Partial<Tendencies>={};
+  const extraMultiplier=Math.max(0,traitStrengthMultiplier(hero)-1);
+  if(extraMultiplier===0)return extra;
+  (hero.traits||[]).forEach(name=>{
+    const effect=eventTraitEffects[name]||growthTraitCatalog[name];
+    Object.entries(effect?.aiMods||{}).forEach(([k,v])=>{
+      const key=k as keyof Tendencies;
+      extra[key]=(extra[key]||0)+(v||0)*extraMultiplier;
+    });
+  });
+  return extra;
+};
+const starCombatMultiplier=(hero:Hero)=>1+(heroStar(hero)-1)*.03;
+const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[],hero?:Hero):Tendencies=>{
   const n={...t}; const mods=combinedAiMods(items);
   (Object.keys(mods) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(mods[k]||0)));
   artifacts.forEach(name=>{
     const effect=eventArtifactEffects[name]||growthArtifactCatalog[name];
     if(effect)Object.entries(effect.aiMods).forEach(([k,v])=>{n[k as keyof Tendencies]=clamp(n[k as keyof Tendencies]+(v||0));});
   });
+  if(hero){
+    const traitBoost=traitAiBoostAtStar(hero);
+    (Object.keys(traitBoost) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(traitBoost[k]||0)));
+  }
   return n;
+};
+const transcendenceRequirements=[undefined,{level:20,materials:120,gems:5},{level:40,materials:220,gems:10},{level:60,materials:360,gems:15},{level:80,materials:550,gems:25},{level:100,materials:800,gems:40}] as const;
+const transcendenceRequirement=(hero:Hero)=>{
+  const star=heroStar(hero);
+  return star>=6?undefined:transcendenceRequirements[star];
 };
 const eventArtifactAiMods=(artifacts:string[])=>{
   const mods:Partial<Tendencies>={};
@@ -233,6 +259,7 @@ const combinedAiModsWithArtifacts=(items:Item[],artifacts:string[])=>{
 const equipmentNames=(hero:Hero)=>equipmentSlotsOf(hero).map(x=>x?.name||"장비 없음");
 const combatStats=(hero:Hero)=>{
   const m=combinedCombatMods(equippedItemsOf(hero));
+  const starMult=starCombatMultiplier(hero);
   const artifactMods:Record<string,number>={};
   (hero.artifacts||[]).forEach(name=>Object.entries((eventArtifactEffects[name]||growthArtifactCatalog[name])?.combatMods||{}).forEach(([k,v])=>artifactMods[k]=(artifactMods[k]||0)+(v||0)));
   const bonus=chronicleBonuses(hero);
@@ -399,7 +426,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   const ps: BattleUnit[] = ordered.map((h,i)=>{
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,level:h.level,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
-      speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[]),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
+      speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[],h),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],
       relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{...(h.behaviorCounts||{})}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
@@ -1139,6 +1166,22 @@ export default function App(){
     setSelectedHero(newHero.id);
     notify(newHero.name+" · "+jobKo[job]+" 신규 용사 모집");
   };
+  const transcendHero=(heroId:string)=>{
+    const target=save.heroes.find(h=>h.id===heroId);
+    if(!target)return;
+    const star=heroStar(target);
+    if(star>=6){notify(target.name+" · 6성 최대 초월");return;}
+    const req=transcendenceRequirement(target)!;
+    if(target.level<req.level){notify(target.name+" · Lv."+req.level+"부터 "+(star+1)+"성 초월 가능");return;}
+    if(save.materials<req.materials||save.gems<req.gems){notify("초월 재료 부족 · "+req.materials+" 자원 / "+req.gems+" 보석 필요");return;}
+    const nextStar=star+1;
+    setSave(s=>({...s,
+      materials:s.materials-req.materials,
+      gems:s.gems-req.gems,
+      heroes:s.heroes.map(h=>h.id!==heroId?h:{...h,star:nextStar,history:["초월 · "+nextStar+"성 도달",...(h.history||[])].slice(0,6),statusNote:nextStar+"성 초월 완료 · 특성 강화 ×"+traitStrengthMultiplier({...h,star:nextStar}).toFixed(1)})
+    }));
+    notify(target.name+" · "+nextStar+"성 초월 완료 · 특성 강화 ×"+traitStrengthMultiplier({...target,star:nextStar}).toFixed(1));
+  };
   const equipCostume=(costumeId:string)=>{
     setSave(s=>({...s,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,costumeId}:h)}));
     notify(hero.name+" · "+costumeLabel(hero.job,costumeId)+" 착용");
@@ -1370,27 +1413,33 @@ export default function App(){
       <div className="warehouse-equipment-strip"><div className="warehouse-strip-head"><div><b>{hero.name} 장비창</b><span>3칸 · 선택 슬롯 {selectedEquipSlot+1}</span></div><div className="equipment-head-actions"><button className="ghost-btn" onClick={recommendEquip}>✦ 추천 장착</button><button className="ghost-btn" onClick={()=>setSelectedEquipSlot((selectedEquipSlot+1)%5)}>다음 슬롯</button></div></div><div className="equipment-slots compact-five">{[0,1,2].map(slot=>{const item=equipmentSlotsOf(hero)[slot];return <div key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")}><button onClick={()=>setSelectedEquipSlot(slot)} className="slot-main"><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"아이콘을 선택해 장착"}</span></button>{item&&<button className="ghost-btn slot-action" onClick={()=>unequip(slot)}>해제</button>}</div>})}</div></div>
       <div className="warehouse-icon-grid">{sorted.length===0?<div className="subpanel empty-warehouse"><b>해당 카테고리에 장비가 없습니다.</b><span>전투 전리품과 보물방에서 장비를 획득하세요.</span></div>:sorted.map((item,idx)=><InventoryIcon item={item} key={item.id+"-"+idx} warehouse compare={equipmentPreview(hero,item,selectedEquipSlot)} onEquip={()=>equip(item,selectedEquipSlot)} onSell={()=>sellItem(item)}/>)}</div>
     </section>})()}
-    {statusHeroId&&save.heroes.find(h=>h.id===statusHeroId)&&<CharacterStatusModal heroes={save.heroes} hero={save.heroes.find(h=>h.id===statusHeroId)!} onClose={()=>setStatusHeroId(undefined)} onNavigate={id=>setStatusHeroId(id)}/>}
+    {statusHeroId&&save.heroes.find(h=>h.id===statusHeroId)&&<CharacterStatusModal heroes={save.heroes} hero={save.heroes.find(h=>h.id===statusHeroId)!} onClose={()=>setStatusHeroId(undefined)} onNavigate={id=>setStatusHeroId(id)} onTranscend={transcendHero}/>}
     <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
   </main>;
 }
 
-function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes:Hero[];onClose:()=>void;onNavigate:(id:string)=>void}){
+function CharacterStatusModal({hero,heroes,onClose,onNavigate,onTranscend}:{hero:Hero;heroes:Hero[];onClose:()=>void;onNavigate:(id:string)=>void;onTranscend:(heroId:string)=>void}){
   const stats=combatStats(hero);
   const bonus=chronicleBonuses(hero);
   const growth=promotionForecast(hero);
   const items=equippedItemsOf(hero);
+  const star=heroStar(hero);
+  const traitMultiplier=traitStrengthMultiplier(hero);
+  const transcendReq=transcendenceRequirement(hero);
+  const transcendReady=!!transcendReq&&hero.level>=transcendReq.level;
+  const transcendCostLabel=transcendReq?transcendReq.materials+" 자원 · "+transcendReq.gems+" 보석":"MAX";
   const index=Math.max(0,heroes.findIndex(h=>h.id===hero.id));
   const prev=heroes[index-1];
   const next=heroes[index+1];
   return <div className="status-modal-backdrop" onClick={onClose}>
     <section className="status-modal" role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}>
-      <div className="status-modal-head"><div className="status-modal-title-row"><button className="status-nav-btn" disabled={!prev} onClick={()=>prev&&onNavigate(prev.id)} aria-label="이전 캐릭터">‹</button><div><span className="eyebrow">CHARACTER STATUS</span><h2>{hero.name}</h2><p>{jobKo[hero.job]} · {promotionLabel(hero)} · Lv.{hero.level}</p></div><button className="status-nav-btn" disabled={!next} onClick={()=>next&&onNavigate(next.id)} aria-label="다음 캐릭터">›</button></div><div className="status-modal-actions"><span>{index+1} / {heroes.length}</span><button className="ghost-btn" onClick={onClose}>닫기</button></div></div>
+      <div className="status-modal-head"><div className="status-modal-title-row"><button className="status-nav-btn" disabled={!prev} onClick={()=>prev&&onNavigate(prev.id)} aria-label="이전 캐릭터">‹</button><div><span className="eyebrow">CHARACTER STATUS</span><h2>{hero.name}</h2><p>{jobKo[hero.job]} · {promotionLabel(hero)} · Lv.{hero.level} · {starLabel(star)}</p></div><button className="status-nav-btn" disabled={!next} onClick={()=>next&&onNavigate(next.id)} aria-label="다음 캐릭터">›</button></div><div className="status-modal-actions"><span>{index+1} / {heroes.length}</span><button className="ghost-btn" onClick={onClose}>닫기</button></div></div>
       <div className="status-modal-grid">
+        <div className="status-modal-card star-status-card"><div className="modal-card-title"><b>성급 · 초월</b><span>{star}/6성</span></div><div className="star-rank"><strong>{starLabel(star)}</strong><b>{star}성</b><span>특성 강화 ×{traitMultiplier.toFixed(1)}</span></div>{star<6&&<div className="transcend-info"><small>다음 초월 · {star+1}성 · Lv.{transcendReq?.level} 필요</small><small>비용 · {transcendCostLabel}</small><button className="primary-btn compact" onClick={()=>onTranscend(hero.id)} disabled={!transcendReady}>{transcendReady?"초월 · "+(star+1)+"성":"Lv."+transcendReq?.level+" 필요"}</button></div>}{star>=6&&<div className="transcend-info"><small>최대 성급에 도달했습니다.</small><span>6성 최종 초월 · 특성 효과 2.0배</span></div>}</div>
         <div className="status-modal-card"><div className="modal-card-title"><b>기본 스탯</b><span>기본값 → 적용값</span></div><div className="modal-stat-grid">{([["HP",Math.round(hero.hp),Math.round(stats.maxHp)],["공격",Math.round(hero.attack),Math.round(stats.attack)],["방어",Math.round(hero.defense),Math.round(stats.defense)],["속도",Math.round(hero.speed*100)/100,Math.round(stats.speed*100)/100],["사거리",Math.round(hero.range*100)/100,Math.round(stats.range*100)/100],["경험",hero.experience+"/100",hero.experience+"/100"]] as [string,string|number,string|number][]).map(x=><div key={x[0]}><small>{x[0]}</small><b>{x[1]}</b>{String(x[1])!==String(x[2])&&<span>→ {x[2]}</span>}</div>)}</div><div className="modal-note">연대기 가산 · 공격 +{bonus.attack||0} · 방어 +{bonus.defense||0} · HP +{bonus.hpPct||0}% · 속도 +{bonus.speedPct||0}%</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>전투 방향</b><span>{compactTendency(hero)}</span></div><div className="compact-tendency-card"><b>{compactTendency(hero)}</b><p>세부 수치 대신 전투에서 드러나는 큰 방향만 표시합니다.</p></div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div><div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div><p className="growth-reason">{growth.reason}</p><div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>현재 경험</b>{hero.experience}/100</span></div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4</span></div><div className="modal-traits">{(hero.traits||[]).map(name=><div key={name}><b>{name}</b><span>{eventTraitEffects[name]?.detail||growthTraitCatalog[name]?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>)}</div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4 · ×{traitMultiplier.toFixed(1)}</span></div><div className="modal-traits">{(hero.traits||[]).map(name=>{const effect=eventTraitEffects[name]||growthTraitCatalog[name];return <div key={name}><b>{name}<em>×{traitMultiplier.toFixed(1)}</em></b><span>{effect?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>})}</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>던전 획득 기록</b><span>최근 8회</span></div><div className="modal-event-rewards">{(hero.eventRewards||[]).slice().reverse().map((r,i)=><div key={r.name+"-"+r.floor+"-"+i}><span>{r.kind==="trait"?"특성":r.kind==="artifact"?"기재":"장비"} · {r.floor}F{r.source?" · "+r.source:""}</span><b>{r.name}</b><small>{r.detail}</small></div>)}{(!hero.eventRewards||hero.eventRewards.length===0)&&<small>던전 이벤트에서 획득한 특성·기재·장비 기록이 여기에 남습니다.</small>}</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 특성 · 기재</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-collection"><div><small>특성</small><b>{(hero.traits||[]).join(" · ")||"없음"}</b></div><div><small>기재</small>{(hero.artifacts||[]).length===0?<b>없음</b>:<div className="modal-artifact-list">{(hero.artifacts||[]).map(name=>{const effect=eventArtifactEffects[name]||growthArtifactCatalog[name];const ai=Object.entries(effect?.aiMods||{}).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(effect?.combatMods||{}).map(([k,v])=>(k==="attack"?"공격 +"+v:k==="defense"?"방어 +"+v:k==="hpPct"?"HP +"+v+"%":k==="speedPct"?"속도 +"+v+"%":k==="range"?"사거리 +"+v:k==="healPct"?"치유 +"+v+"%":k==="critPct"?"치명타 +"+v+"%":k+" +"+v)).join(" · ");return <div key={name}><b>{name}</b><small>{effect?.detail||"던전 이벤트에서 얻은 고유 기재입니다."}</small>{ai&&<em>AI · {ai}</em>}{combat&&<em>전투 · {combat}</em>}</div>})}</div>}</div></div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
       </div>
@@ -1444,13 +1493,17 @@ function NpcGuide({floor,mode,onOpen,compact=false,dialogueIndex=0}:{floor:numbe
   </button>;
 }
 function Feature({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <article className="feature-card"><div className="feature-icon">{icon}</div><b>{title}</b><p>{text}</p></article>;}
+function starLabel(star:number){
+  const n=Math.max(1,Math.min(6,Math.floor(star||1)));
+  return "★".repeat(n)+"☆".repeat(6-n);
+}
 function HeroCard({hero,active,onClick,onStatus}:{hero:Hero;active:boolean;onClick:()=>void;onStatus:()=>void}){
   const bond=hero.relationships?Object.entries(hero.relationships).sort((a,b)=>(b[1]?.bond||0)-(a[1]?.bond||0))[0]:undefined;
   const bondName=heroesSeed.find(h=>h.id===bond?.[0])?.name;
   return <article className={"hero-card "+(active?"hero-selected":"")} onClick={onClick}>
     <div className="hero-avatar" style={{background:hero.color}}>{jobIcon[hero.job]}</div>
     <div className="hero-card-main">
-      <div className="name-row"><b>{hero.name}</b><span>Lv.{hero.level}</span></div>
+      <div className="name-row"><b>{hero.name}</b><span>{starLabel(heroStar(hero))}</span><span>Lv.{hero.level}</span></div>
       <p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/100</p>
       <div className="tag-row"><em>전투 방향 · {compactTendency(hero)}</em></div>
       <small>장비 · {equippedItemsOf(hero).length}/3{equippedItemsOf(hero).length?" · "+equippedItemsOf(hero).slice(0,2).map(x=>x.name).join(" · "):""}</small>
