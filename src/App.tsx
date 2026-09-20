@@ -539,6 +539,9 @@ export default function App(){
   const [selectedHero,setSelectedHero]=useState(save.party[0]||save.heroes[0].id);
   const [statusHeroId,setStatusHeroId]=useState<string|undefined>();
   const [selectedEquipSlot,setSelectedEquipSlot]=useState(0);
+  const [warehouseTab,setWarehouseTab]=useState<"all"|"weapon"|"armor"|"ring"|"accessory">("all");
+  const [warehouseSort,setWarehouseSort]=useState<"recent"|"level"|"rarity">("recent");
+  const [selectedWarehouseItem,setSelectedWarehouseItem]=useState<string|undefined>();
   const [lastLoot,setLastLoot]=useState<Item[]>([]);
   const [pendingEvent,setPendingEvent]=useState<DungeonChoiceEvent|undefined>();
   const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean;phaseNotice?:string;partyMemory?:PartyMemory;plan?:BattlePlan}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1,partyMemory:defaultPartyMemory});
