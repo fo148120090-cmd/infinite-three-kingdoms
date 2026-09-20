@@ -21,7 +21,7 @@ export type StatusEffect = {kind:StatusEffectKind; turns:number; power?:number};
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
   speed:number; range:number; tendencies:Tendencies; item?:Item; equipment?:[Item?,Item?,Item?]; experience:number;
-  history:string[]; color:string; promotionTier?:number; promotionPath?:string[];
+  history:string[]; color:string; star?:number; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   traits?:string[];
   artifacts?:string[];
@@ -59,19 +59,19 @@ export const defaultTendencies: Record<Job,Tendencies> = {
 };
 
 export const heroesSeed: Hero[] = [
-  {id:"kael",name:"카엘",job:"Warrior",level:6,hp:172,attack:34,defense:18,speed:1.05,range:1.4,tendencies:{...defaultTendencies.Warrior},item:{
+  {id:"kael",name:"카엘",job:"Warrior",level:6,star:1,hp:172,attack:34,defense:18,speed:1.05,range:1.4,tendencies:{...defaultTendencies.Warrior},item:{
     id:"iron-greatsword",name:"정련된 대검",slot:"weapon",level:6,rarity:"희귀",stats:["공격력 +14","치명타 +4%"],aiMods:{aggression:8,pursuit:6},combatMods:{attack:14},description:"공격적인 전투를 돕는 고성능 일반 장비."
   },experience:62,history:["돌진을 자주 선택","약한 적 추격"],color:"#d65a5a"},
-  {id:"seren",name:"세린",job:"Guardian",level:6,hp:218,attack:24,defense:32,speed:.82,range:1.3,tendencies:{...defaultTendencies.Guardian},item:{
+  {id:"seren",name:"세린",job:"Guardian",level:6,star:1,hp:218,attack:24,defense:32,speed:.82,range:1.3,tendencies:{...defaultTendencies.Guardian},item:{
     id:"guardian-wall",name:"수호자의 성벽",slot:"accessory",level:6,rarity:"전설",stats:["방어력 +18","최대 HP +12%"],aiMods:{protect:50,cooperation:18,survival:18},combatMods:{defense:18,hpPct:12},unique:true,description:"부상당한 아군 쪽으로 이동하고 보호 행동을 우선한다."
   } as Item,experience:88,history:["전투마다 아군 보호","후퇴 명령을 거의 하지 않음"],color:"#5b8bd9"},
-  {id:"lyra",name:"리라",job:"Archer",level:7,hp:134,attack:30,defense:14,speed:1.16,range:5.2,tendencies:{...defaultTendencies.Archer},item:{
+  {id:"lyra",name:"리라",job:"Archer",level:7,star:1,hp:134,attack:30,defense:14,speed:1.16,range:5.2,tendencies:{...defaultTendencies.Archer},item:{
     id:"hunter-eye",name:"사냥꾼의 눈",slot:"ring",level:7,rarity:"전설",stats:["명중 +8%","치명타 +6%"],aiMods:{focus:20,pursuit:16},combatMods:{range:.3},unique:true,description:"HP가 낮은 적을 발견하면 마무리 공격을 강하게 선호한다."
   } as Item,experience:94,history:["마무리 사격 12회","거리 유지 성공률 높음"],color:"#d1a252"},
-  {id:"orion",name:"오리온",job:"Mage",level:7,hp:118,attack:39,defense:10,speed:.94,range:4.8,tendencies:{...defaultTendencies.Mage},item:{
+  {id:"orion",name:"오리온",job:"Mage",level:7,star:1,hp:118,attack:39,defense:10,speed:.94,range:4.8,tendencies:{...defaultTendencies.Mage},item:{
     id:"sage-staff",name:"현자의 지팡이",slot:"weapon",level:7,rarity:"영웅",stats:["마법 공격 +18","관통 +7%"],aiMods:{focus:14,curiosity:10},combatMods:{attack:18},description:"광역 마법과 제어 마법의 사용 빈도를 높인다."
   } as Item,experience:71,history:["광역 마법을 선호","다수 적에게 집중"],color:"#8b70cf"},
-  {id:"mira",name:"미라",job:"Cleric",level:5,hp:142,attack:18,defense:15,speed:.90,range:4.5,tendencies:{...defaultTendencies.Cleric},item:{
+  {id:"mira",name:"미라",job:"Cleric",level:5,star:1,hp:142,attack:18,defense:15,speed:.90,range:4.5,tendencies:{...defaultTendencies.Cleric},item:{
     id:"saints-cup",name:"성자의 성배",slot:"accessory",level:5,rarity:"영웅",stats:["치유량 +22%","상태이상 저항 +10%"],aiMods:{protect:34,cooperation:22},combatMods:{healPct:22},unique:true,description:"위험한 아군을 먼저 회복하고 보호한다."
   } as Item,experience:40,history:["카엘을 8회 회복","후퇴 판단으로 생존"],color:"#70b6ad"}
 ];
@@ -263,7 +263,7 @@ export function createRecruitHero(job:Job):Hero{
   const name=recruitNames[Math.floor(Math.random()*recruitNames.length)]+" "+String(Math.floor(Math.random()*90)+10);
     return {
     id:"recruit-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
-    name,job,level:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
+    name,job,level:1,star:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
     tendencies,equipment:[],experience:0,history:["모집된 신규 용사"],color:"#6f819b",
     campaignStats:{wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0},
     chronicle:[]
