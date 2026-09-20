@@ -14,7 +14,8 @@ import { costumesForJob, skinCost, skinLabel, skinUnlockText, skinVisual, skinTh
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 import { bossClearReward, eliteClearReward, hiddenRoomReward, milestoneReward, repeatClearReward, treasureArtifactReward, growthArtifactCatalog, growthTraitCatalog, type GrowthReward } from "./growthRewards";
 import { buildPersonality, personalityActionBonus, personalityBattleLine, personalityEventReaction } from "./personality";
-import ThreeKingdoms from "./ThreeKingdoms";\nimport { normalizePassiveData, passiveAiBonus, passiveCombatBonus, passiveSetFor, upgradePassive } from "./passiveSkills";
+import ThreeKingdoms from "./ThreeKingdoms";
+import { normalizePassiveData, passiveAiBonus, passiveCombatBonus, passiveSetFor, upgradePassive } from "./passiveSkills";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit" | "strategy";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -1209,7 +1210,16 @@ export default function App(){
     setSelectedHero(newHero.id);
     notify(newHero.name+" · "+jobKo[job]+" 신규 용사 모집");
   };
-  const upgradeHeroPassive=(heroId:string,skillId:string)=>{\n    const target=save.heroes.find(h=>h.id===heroId);\n    if(!target)return;\n    const next=upgradePassive(target,skillId);\n    if(!next){notify(target.skillPoints&&target.skillPoints>0?"이미 최대 레벨이거나 사용할 수 없는 패시브입니다.":"사용할 스킬 포인트가 없습니다.");return;}\n    const skill=passiveSetFor(next).skills.find(s=>s.id===skillId);\n    setSave(s=>({...s,heroes:s.heroes.map(h=>h.id===heroId?next:h)}));\n    notify(target.name+" · "+(skill?.name||"패시브")+" Lv."+(next.passiveSkills?.[skillId]||0)+" 강화");\n  };\n  const transcendHero=(heroId:string)=>{
+  const upgradeHeroPassive=(heroId:string,skillId:string)=>{
+    const target=save.heroes.find(h=>h.id===heroId);
+    if(!target)return;
+    const next=upgradePassive(target,skillId);
+    if(!next){notify(target.skillPoints&&target.skillPoints>0?"이미 최대 레벨이거나 사용할 수 없는 패시브입니다.":"사용할 스킬 포인트가 없습니다.");return;}
+    const skill=passiveSetFor(next).skills.find(s=>s.id===skillId);
+    setSave(s=>({...s,heroes:s.heroes.map(h=>h.id===heroId?next:h)}));
+    notify(target.name+" · "+(skill?.name||"패시브")+" Lv."+(next.passiveSkills?.[skillId]||0)+" 강화");
+  };
+  const transcendHero=(heroId:string)=>{
     const target=save.heroes.find(h=>h.id===heroId);
     if(!target)return;
     const star=heroStar(target);
