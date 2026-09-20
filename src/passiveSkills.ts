@@ -9,7 +9,7 @@ export type PassiveSkill = {
   branch: string;
   requires?: { skillId: string; level: number };
   aiMods: Partial<Tendencies>;
-  combatPerLevel: { attack?: number; defense?: number; hpPct?: number; speedPct?: number; range?: number; healPct?: number };
+  combatPerLevel: { attack?: number; defense?: number; hpPct?: number; speedPct?: number; range?: number; healPct?: number };\n  milestones?: { level: 10 | 20 | 30; name: string; detail: string; combat: PassiveSkill["combatPerLevel"]; ai?: Partial<Tendencies> }[];
 };
 
 type SkillSet = { characterId: string; title: string; skills: PassiveSkill[] };
@@ -158,7 +158,7 @@ export function passiveAiBonus(hero:Hero):Partial<Tendencies> {
   return out;
 }
 
-export function passiveCombatBonus(hero:Hero):{attack:number;defense:number;hpPct:number;speedPct:number;range:number;healPct:number} {
+export function passiveMilestones(hero:Hero):{skillId:string;level:10|20|30;name:string;detail:string}[] {\n  const set=passiveSetFor(hero);\n  const unlocked:{skillId:string;level:10|20|30;name:string;detail:string}[]=[];\n  for(const skill of set.skills){\n    const lv=hero.passiveSkills?.[skill.id]||0;\n    for(const milestone of skill.milestones||[]) if(lv>=milestone.level) unlocked.push({skillId:skill.id,level:milestone.level,name:milestone.name,detail:milestone.detail});\n  }\n  return unlocked;\n}\n\nexport function passiveCombatBonus(hero:Hero):{attack:number;defense:number;hpPct:number;speedPct:number;range:number;healPct:number} {
   const set=passiveSetFor(hero);
   const out={attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0};
   for(const skill of set.skills){
