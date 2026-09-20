@@ -511,7 +511,7 @@ function route(stage:number,floor:number,curiosity=0){
   return base;
 }
 
-function applyGrowthRewardHeroes(heroes:Hero[],reward:GrowthReward,heroId:string):Hero[]{
+function applyGrowthRewardHeroes(heroes:Hero[],reward:GrowthReward,heroId:string,floor:number):Hero[]{
   return heroes.map(h=>{
     if(h.id!==heroId)return h;
     if(reward.kind==="trait"){
@@ -519,17 +519,17 @@ function applyGrowthRewardHeroes(heroes:Hero[],reward:GrowthReward,heroId:string
       const effect=growthTraitCatalog[reward.name];
       const tendencies={...h.tendencies};
       Object.entries(effect?.aiMods||{}).forEach(([k,v])=>tendencies[k as keyof Tendencies]=clamp(tendencies[k as keyof Tendencies]+(v||0)));
-      const record={kind:"trait" as const,name:reward.name,floor:heroes.find(x=>x.id===h.id)?.level||0,detail:reward.detail,source:reward.source};
+      const record={kind:"trait" as const,name:reward.name,floor,detail:reward.detail,source:reward.source};
       return {...h,tendencies,traits:[...(h.traits||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
     }
     if((h.artifacts||[]).length>=4 || (h.artifacts||[]).includes(reward.name)) return h;
-    const record={kind:"artifact" as const,name:reward.name,floor:h.level,detail:reward.detail,source:reward.source};
+    const record={kind:"artifact" as const,name:reward.name,floor,detail:reward.detail,source:reward.source};
     return {...h,artifacts:[...(h.artifacts||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
   });
 }
 
 function applyGrowthRewardSave(s:Save,reward:GrowthReward,heroId:string):Save{
-  return {...s,heroes:applyGrowthRewardHeroes(s.heroes,reward,heroId)};
+  return {...s,heroes:applyGrowthRewardHeroes(s.heroes,reward,heroId,s.floor)};
 }
   return {...s,heroes:s.heroes.map(h=>{
     if(h.id!==heroId)return h;
@@ -804,7 +804,7 @@ export default function App(){
           }
         }
         if(growthReward&&growthReward.heroId){
-          nextHeroes=applyGrowthRewardHeroes(nextHeroes,growthReward,growthReward.heroId);
+          nextHeroes=applyGrowthRewardHeroes(nextHeroes,growthReward,growthReward.heroId,s.floor);
           window.setTimeout(()=>notify(growthReward!.name+" 획득 · "+growthReward!.source),0);
         }
       }
@@ -1011,9 +1011,9 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate}:{hero:Hero;heroes
         <div className="status-modal-card"><div className="modal-card-title"><b>기본 스탯</b><span>기본값 → 적용값</span></div><div className="modal-stat-grid">{([["HP",Math.round(hero.hp),Math.round(stats.maxHp)],["공격",Math.round(hero.attack),Math.round(stats.attack)],["방어",Math.round(hero.defense),Math.round(stats.defense)],["속도",Math.round(hero.speed*100)/100,Math.round(stats.speed*100)/100],["사거리",Math.round(hero.range*100)/100,Math.round(stats.range*100)/100],["경험",hero.experience+"/100",hero.experience+"/100"]] as [string,string|number,string|number][]).map(x=><div key={x[0]}><small>{x[0]}</small><b>{x[1]}</b>{String(x[1])!==String(x[2])&&<span>→ {x[2]}</span>}</div>)}</div><div className="modal-note">연대기 가산 · 공격 +{bonus.attack||0} · 방어 +{bonus.defense||0} · HP +{bonus.hpPct||0}% · 속도 +{bonus.speedPct||0}%</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>AI 성향</b><span>{buildProfile(hero).name}</span></div><div className="modal-tendency-grid">{(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>{const value=clamp(hero.tendencies[k]+(aiMods[k]||0));return <div key={k}><span>{tendencyKo[k]}</span><b>{Math.round(value)}</b><i><em style={{width:value+"%"}}/></i></div>})}</div></div>
         <div className="status-modal-card"><div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div><div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div><p className="growth-reason">{growth.reason}</p><div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>주요 성향</b>{(Object.entries(hero.tendencies) as [keyof Tendencies,number][]).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>tendencyKo[x[0]]+" "+Math.round(x[1])).join(" · ")}</span></div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4</span></div><div className="modal-traits">{(hero.traits||[]).map(name=><div key={name}><b>{name}</b><span>{eventTraitEffects[name]?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>)}</div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>던전 획득 기록</b><span>최근 8회</span></div><div className="modal-event-rewards">{(hero.eventRewards||[]).slice().reverse().map((r,i)=><div key={r.name+"-"+r.floor+"-"+i}><span>{r.kind==="trait"?"특성":r.kind==="artifact"?"기재":"장비"} · {r.floor}F</span><b>{r.name}</b><small>{r.detail}</small></div>)}{(!hero.eventRewards||hero.eventRewards.length===0)&&<small>던전 이벤트에서 획득한 특성·기재·장비 기록이 여기에 남습니다.</small>}</div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 특성 · 기재</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-collection"><div><small>특성</small><b>{(hero.traits||[]).join(" · ")||"없음"}</b></div><div><small>기재</small>{(hero.artifacts||[]).length===0?<b>없음</b>:<div className="modal-artifact-list">{(hero.artifacts||[]).map(name=>{const effect=eventArtifactEffects[name];const ai=Object.entries(effect?.aiMods||{}).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(effect?.combatMods||{}).map(([k,v])=>(k==="attack"?"공격 +"+v:k==="defense"?"방어 +"+v:k==="hpPct"?"HP +"+v+"%":k==="speedPct"?"속도 +"+v+"%":k==="range"?"사거리 +"+v:k==="healPct"?"치유 +"+v+"%":k==="critPct"?"치명타 +"+v+"%":k+" +"+v)).join(" · ");return <div key={name}><b>{name}</b><small>{effect?.detail||"던전 이벤트에서 얻은 고유 기재입니다."}</small>{ai&&<em>AI · {ai}</em>}{combat&&<em>전투 · {combat}</em>}</div>})}</div>}</div></div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4</span></div><div className="modal-traits">{(hero.traits||[]).map(name=><div key={name}><b>{name}</b><span>{eventTraitEffects[name]?.detail||growthTraitCatalog[name]?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>)}</div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>던전 획득 기록</b><span>최근 8회</span></div><div className="modal-event-rewards">{(hero.eventRewards||[]).slice().reverse().map((r,i)=><div key={r.name+"-"+r.floor+"-"+i}><span>{r.kind==="trait"?"특성":r.kind==="artifact"?"기재":"장비"} · {r.floor}F{r.source?" · "+r.source:""}</span><b>{r.name}</b><small>{r.detail}</small></div>)}{(!hero.eventRewards||hero.eventRewards.length===0)&&<small>던전 이벤트에서 획득한 특성·기재·장비 기록이 여기에 남습니다.</small>}</div></div>
+        <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 특성 · 기재</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-collection"><div><small>특성</small><b>{(hero.traits||[]).join(" · ")||"없음"}</b></div><div><small>기재</small>{(hero.artifacts||[]).length===0?<b>없음</b>:<div className="modal-artifact-list">{(hero.artifacts||[]).map(name=>{const effect=eventArtifactEffects[name]||growthArtifactCatalog[name];const ai=Object.entries(effect?.aiMods||{}).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(effect?.combatMods||{}).map(([k,v])=>(k==="attack"?"공격 +"+v:k==="defense"?"방어 +"+v:k==="hpPct"?"HP +"+v+"%":k==="speedPct"?"속도 +"+v+"%":k==="range"?"사거리 +"+v:k==="healPct"?"치유 +"+v+"%":k==="critPct"?"치명타 +"+v+"%":k+" +"+v)).join(" · ");return <div key={name}><b>{name}</b><small>{effect?.detail||"던전 이벤트에서 얻은 고유 기재입니다."}</small>{ai&&<em>AI · {ai}</em>}{combat&&<em>전투 · {combat}</em>}</div>})}</div>}</div></div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
       </div>
       <div className="status-modal-bottom"><div className="modal-bottom-card"><b>장기 전투 기록</b><span>{hero.combatProfile?.battles||0}전투 · {hero.combatProfile?.actions||0}행동 · {hero.combatProfile?.damage||0}피해 · {hero.combatProfile?.healing||0}회복</span><small>{Object.entries(hero.combatProfile?.topActions||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+" · "+x[1]+"회").join("  /  ")||"기록 없음"}</small></div><div className="modal-bottom-card"><b>최근 기억</b><span>{(hero.memories||[]).slice(0,2).map(m=>m.text+" · 영향 "+Math.round(m.weight*10)/10).join("  /  ")||"강하게 남은 기억 없음"}</span><small>칭호 · {chronicleLabel(hero)}</small></div></div>
     </section>
