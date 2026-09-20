@@ -40,7 +40,7 @@ export function buildPersonality(hero:Pick<Hero,"id"|"job"|"name"|"tendencies">)
     ["탐구형",t.curiosity+t.focus],
     ["사냥형",t.focus+t.pursuit+t.aggression],
     ["생존형",t.caution+t.survival]
-  ].sort((a,b)=>b[1]-a[1]);
+  ].map(x=>x as [string,number]).sort((a,b)=>b[1]-a[1]);
   const archetype=axes[0]?.[0]||jobDefaults[hero.job].archetype;
   let favoriteAction=jobDefaults[hero.job].favoriteAction;
   if(archetype==="돌격형")favoriteAction=t.pursuit>=t.aggression?"추격":"일반 공격";
