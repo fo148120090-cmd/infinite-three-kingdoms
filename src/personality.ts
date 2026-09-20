@@ -86,3 +86,29 @@ export function personalityActionBonus(hero:Pick<Hero,"id"|"job"|"name"|"tendenc
   if(p.temperament==="관찰적"&&action==="대기")score+=3;
   return score;
 }
+
+
+export function personalityEventReaction(hero:Pick<Hero,"id"|"job"|"name"|"tendencies"|"personality">,choiceId:string){
+  const p=hero.personality||buildPersonality(hero);
+  if(choiceId==="rush"||choiceId==="break"||choiceId==="dive"){
+    if(p.archetype==="돌격형"||p.temperament==="직선적")return hero.name+" · " + "이런 선택이라면 망설일 이유가 없지.";
+    if(p.archetype==="생존형"||p.temperament==="침착함")return hero.name+" · " + "위험은 계산하고 움직이는 게 좋겠어.";
+    return hero.name+" · " + "과감한 길이라면 결과를 직접 확인해 보자.";
+  }
+  if(choiceId==="secure"||choiceId==="careful"||choiceId==="mark"||choiceId==="leave"){
+    if(p.archetype==="수호형")return hero.name+" · " + "무사히 지나가는 것도 모두를 위한 선택이야.";
+    if(p.archetype==="탐구형")return hero.name+" · " + "안전하게 남긴 정보가 다음 기회를 만든다.";
+    return hero.name+" · " + "일단 안전을 확보하자.";
+  }
+  if(choiceId==="cooperate"||choiceId==="team"||choiceId==="take"){
+    if(p.archetype==="수호형"||p.bondStyle.includes("신뢰"))return hero.name+" · " + "함께하면 힘을 낭비할 필요가 없어.";
+    if(p.archetype==="돌격형")return hero.name+" · " + "같이 움직인다면 길을 더 빨리 열 수 있겠군.";
+    return hero.name+" · " + "동료와 역할을 맞추면 된다.";
+  }
+  if(choiceId==="read"||choiceId==="study"||choiceId==="focus"){
+    if(p.archetype==="탐구형")return hero.name+" · " + "좋아. 답이 숨어 있는 곳이라면 확인해야 해.";
+    if(p.archetype==="사냥형")return hero.name+" · " + "정보를 얻으면 다음 한 발이 더 정확해져.";
+    return hero.name+" · " + "확인하고 움직이자.";
+  }
+  return hero.name+" · " + "내 방식대로 결과를 받아들이겠어.";
+}
