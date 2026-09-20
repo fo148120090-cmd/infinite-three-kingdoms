@@ -12,6 +12,7 @@ import { applyBehaviorHistory, behaviorSummary, buildProfile, habitBias, partyHa
 import { awardChronicle, chronicleBonuses, chronicleLabel, systemEvaluation, systemMood, systemStatus } from "./chronicle";
 import { costumeLabel, costumesForJob } from "./costumes";
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
+import { bossClearReward, eliteClearReward, hiddenRoomReward, milestoneReward, repeatClearReward, treasureArtifactReward, growthArtifactCatalog, growthTraitCatalog, type GrowthReward } from "./growthRewards";
 
 type Screen = "home" | "party" | "dungeon" | "battle" | "inventory" | "recruit";
 type BattleMode = "dungeon" | "defense" | "raid";
@@ -97,7 +98,7 @@ const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[]):Tendencies=>{
 };
 const eventArtifactAiMods=(artifacts:string[])=>{
   const mods:Partial<Tendencies>={};
-  artifacts.forEach(name=>Object.entries(eventArtifactEffects[name]?.aiMods||{}).forEach(([k,v])=>mods[k as keyof Tendencies]=(mods[k as keyof Tendencies]||0)+(v||0)));
+  artifacts.forEach(name=>Object.entries((eventArtifactEffects[name]||growthArtifactCatalog[name])?.aiMods||{}).forEach(([k,v])=>mods[k as keyof Tendencies]=(mods[k as keyof Tendencies]||0)+(v||0)));
   return mods;
 };
 const combinedAiModsWithArtifacts=(items:Item[],artifacts:string[])=>{
@@ -110,7 +111,7 @@ const equipmentNames=(hero:Hero)=>equipmentSlotsOf(hero).map(x=>x?.name||"장비
 const combatStats=(hero:Hero)=>{
   const m=combinedCombatMods(equippedItemsOf(hero));
   const artifactMods:Record<string,number>={};
-  (hero.artifacts||[]).forEach(name=>Object.entries(eventArtifactEffects[name]?.combatMods||{}).forEach(([k,v])=>artifactMods[k]=(artifactMods[k]||0)+(v||0)));
+  (hero.artifacts||[]).forEach(name=>Object.entries((eventArtifactEffects[name]||growthArtifactCatalog[name])?.combatMods||{}).forEach(([k,v])=>artifactMods[k]=(artifactMods[k]||0)+(v||0)));
   const bonus=chronicleBonuses(hero);
   const hp=Math.round(hero.hp*(1+((m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0))/100));
   return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)+(artifactMods.range||0)};
@@ -510,6 +511,23 @@ function route(stage:number,floor:number,curiosity=0){
   return base;
 }
 
+function applyGrowthRewardSave(s:Save,reward:GrowthReward,heroId:string):Save{
+  return {...s,heroes:s.heroes.map(h=>{
+    if(h.id!==heroId)return h;
+    if(reward.kind==="trait"){
+      if((h.traits||[]).length>=4 || (h.traits||[]).includes(reward.name)) return h;
+      const effect=growthTraitCatalog[reward.name];
+      const tendencies={...h.tendencies};
+      Object.entries(effect?.aiMods||{}).forEach(([k,v])=>tendencies[k as keyof Tendencies]=clamp(tendencies[k as keyof Tendencies]+(v||0)));
+      const record={kind:"trait" as const,name:reward.name,floor:s.floor,detail:reward.detail,source:reward.source};
+      return {...h,tendencies,traits:[...(h.traits||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
+    }
+    if((h.artifacts||[]).length>=4 || (h.artifacts||[]).includes(reward.name)) return h;
+    const record={kind:"artifact" as const,name:reward.name,floor:s.floor,detail:reward.detail,source:reward.source};
+    return {...h,artifacts:[...(h.artifacts||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
+  })};
+}
+
 export default function App(){
   const [save,setSave]=useState<Save>(load);
   const [screen,setScreen]=useState<Screen>("home");
@@ -549,7 +567,10 @@ export default function App(){
         routeMemory:recordRouteMemory(s.routeMemory,"hidden",true,outcome.gold),
         stage:s.stage+1
       }));
-      notify(outcome.text);
+      const recipient=save.heroes.filter(h=>save.party.includes(h.id)&&((h.traits||[]).length<4)).sort((a,b)=>b.tendencies.curiosity-a.tendencies.curiosity)[0];
+      const growth=recipient&&hiddenRoomReward(recipient,save.floor);
+      if(growth) setSave(s=>applyGrowthRewardSave(s,growth,recipient.id));
+      notify(outcome.text+(growth?" · "+growth.name+" 획득":""));
       return;
     }
     if(kind==="event"){
@@ -562,7 +583,10 @@ export default function App(){
       const uniqueDrop=Math.random()<.12 ? {...uniqueBase,id:uniqueBase.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)} : undefined;
       const item=uniqueDrop||randomGeneralItem(save.floor+2,partyPref);
       setSave(s=>({...s,items:[...s.items,item],gold:s.gold+180,routeMemory:recordRouteMemory(s.routeMemory,"treasure",true,180),stage:s.stage+1}));
-      notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득");
+      const recipient=save.heroes.filter(h=>save.party.includes(h.id)&&((h.artifacts||[]).length<4)).sort((a,b)=>b.tendencies.greedy-a.tendencies.greedy)[0];
+      const growth=recipient&&treasureArtifactReward(recipient,save.floor);
+      if(growth) setSave(s=>applyGrowthRewardSave(s,growth,recipient.id));
+      notify("보물: "+item.name+(uniqueDrop?" · 고유 장비 발견":"")+" 획득"+(growth?" · "+growth.name+" 발견":""));
       return;
     }
     if(kind==="rest"){
