@@ -756,6 +756,7 @@ export default function App(){
   const [npcTalkIndex,setNpcTalkIndex]=useState(0);
   const [lastLoot,setLastLoot]=useState<Item[]>([]);
   const [pendingEvent,setPendingEvent]=useState<DungeonChoiceEvent|undefined>();
+  const [pendingGrowth,setPendingGrowth]=useState<{heroId:string;options:GrowthReward[];source:string}|undefined>();
   const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean;phaseNotice?:string;partyMemory?:PartyMemory;plan?:BattlePlan}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1,partyMemory:defaultPartyMemory});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
