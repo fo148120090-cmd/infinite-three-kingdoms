@@ -535,3 +535,7 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 
 /* Combat status effects */
 .battle-status-tags{display:flex;justify-content:center;gap:3px;flex-wrap:wrap;min-height:13px;margin-top:3px}.battle-status-tags:empty{display:none}.battle-status-tags span{padding:2px 4px;border-radius:5px;border:1px solid #35425b;background:#111a28;color:#aebddd;font-size:7px;line-height:1.1;white-space:nowrap}.battle-status-tags span:first-child{box-shadow:0 0 8px rgba(104,130,190,.08)}
+
+
+/* Post-battle growth choice */
+.growth-dialog{max-width:720px}.growth-choice-list{display:grid;gap:8px;margin-top:14px}.growth-choice{display:grid;grid-template-columns:38px 1fr 18px;gap:10px;align-items:center;width:100%;padding:13px;text-align:left;border:1px solid #2b3851;border-radius:12px;background:#101827;color:#dbe3f1}.growth-choice:hover{border-color:#647ac0;background:#141e31;transform:translateY(-1px)}.growth-choice-index{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#1d2a43;color:#9eb4f4;font-weight:800}.growth-choice:nth-child(1) .growth-choice-index{background:#332a17;color:#dfc16b}.growth-choice b{display:block;font-size:14px}.growth-choice small{display:block;margin-top:4px;color:#8d99b0;line-height:1.45}.growth-choice em{display:block;margin-top:5px;font-style:normal;font-size:9px;color:#a4b5d7}
