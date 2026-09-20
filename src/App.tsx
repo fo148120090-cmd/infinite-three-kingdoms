@@ -144,7 +144,7 @@ const normalizeLoadedHero=(h:Hero):Hero=>{
     equipment:rawEquipment.slice(0,3).map(i=>i?{...i,enhancement:Math.max(0,Math.min(MAX_ENHANCEMENT,Number(i.enhancement)||0))}:undefined) as [Item?,Item?,Item?],
     item:rawEquipment[0]
   };
-  return grantExperience(normalized,0).hero;
+  return normalizePassiveData(grantExperience(normalized,0).hero);
 };
 
 function load(): Save {
@@ -263,6 +263,8 @@ const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[],hero?:Hero):Tenden
     if(effect)Object.entries(effect.aiMods).forEach(([k,v])=>{n[k as keyof Tendencies]=clamp(n[k as keyof Tendencies]+(v||0));});
   });
   if(hero){
+    const passiveBoost=passiveAiBonus(hero);
+    (Object.keys(passiveBoost) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(passiveBoost[k]||0)));
     const traitBoost=traitAiBoostAtStar(hero);
     (Object.keys(traitBoost) as (keyof Tendencies)[]).forEach(k=>n[k]=clamp(n[k]+(traitBoost[k]||0)));
   }
@@ -287,12 +289,13 @@ const combinedAiModsWithArtifacts=(items:Item[],artifacts:string[])=>{
 const equipmentNames=(hero:Hero)=>equipmentSlotsOf(hero).map(x=>x?.name||"장비 없음");
 const combatStats=(hero:Hero)=>{
   const m=combinedCombatMods(equippedItemsOf(hero));
+  const passive=passiveCombatBonus(hero);
   const starMult=starCombatMultiplier(hero);
   const artifactMods:Record<string,number>={};
   (hero.artifacts||[]).forEach(name=>Object.entries((eventArtifactEffects[name]||growthArtifactCatalog[name])?.combatMods||{}).forEach(([k,v])=>artifactMods[k]=(artifactMods[k]||0)+(v||0)));
   const bonus=chronicleBonuses(hero);
-  const hp=Math.round(hero.hp*starMult*(1+((m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0))/100));
-  return {hp,maxHp:hp,attack:Math.round(hero.attack*starMult)+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0),defense:Math.round(hero.defense*starMult)+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)+(artifactMods.range||0)};
+  const hp=Math.round(hero.hp*starMult*(1+((m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0)+passive.hpPct)/100));
+  return {hp,maxHp:hp,attack:Math.round(hero.attack*starMult)+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0)+passive.attack,defense:Math.round(hero.defense*starMult)+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0)+passive.defense,speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0)+passive.speedPct)/100),range:hero.range+(m.range||0)+(artifactMods.range||0)+passive.range};
 };
 function autoFormation(heroes:Hero[],mode:BattleMode):Hero[]{
   const rank=(h:Hero)=>{
@@ -453,7 +456,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   const ps: BattleUnit[] = ordered.map((h,i)=>{
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,level:h.level,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
-      speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[],h),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],skinId:h.equippedSkinId||h.costumeId,
+      speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,passiveHealPct:passiveCombatBonus(h).healPct,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[],h),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],skinId:h.equippedSkinId||h.costumeId,
       personality:h.personality,relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
