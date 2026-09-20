@@ -24,6 +24,28 @@ type Decision = { action: string; target?: string; detail: string; score: number
 type BattlePlan = { key:"aggressive"|"defensive"|"focused"|"balanced"; label:string; detail:string };
 type BattleContext = { mode:BattleMode; objectiveKind?:DefenseObjective; objectiveHp:number; phase:number };
 
+const NPC_IMAGE = "/npc/seraphina.webp";
+const npcLineFor = (floor:number, mode:BattleMode) => {
+  if(mode==="raid") return {
+    mood:"보스 레이드 감시",
+    line:`심도 ${floor}F의 관문은 평범한 몬스터와 다릅니다. 보스의 체력이 내려갈수록 전투 양상이 바뀔 거예요.`
+  };
+  if(mode==="defense") return {
+    mood:"방어선 확인",
+    line:`이번 방어전에서는 목표의 내구도가 중요합니다. 전열이 흔들리면 뒤쪽의 회복·지원 행동이 급격히 필요해져요.`
+  };
+  if(floor>=8) return {
+    mood:"심층 경고",
+    line:`이 아래의 동굴은 점점 좁아집니다. 공격성만 높은 파티보다 생존과 추적을 함께 가진 파티가 오래 버틸 수 있어요.`
+  };
+  return {
+    mood:"탐색 안내",
+    line:`지금은 ${floor}F입니다. 다음 방의 위험도와 보상을 먼저 살펴보세요. 전투가 시작되면 저는 결과를 지켜보겠습니다.`
+  };
+};
+
+
+
 const KEY = "autonomous-dungeon-demo-v1";
 const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
 const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
@@ -542,6 +564,7 @@ export default function App(){
   const [warehouseTab,setWarehouseTab]=useState<"all"|"weapon"|"armor"|"ring"|"accessory">("all");
   const [warehouseSort,setWarehouseSort]=useState<"recent"|"level"|"rarity">("recent");
   const [selectedWarehouseItem,setSelectedWarehouseItem]=useState<string|undefined>();
+  const [npcOpen,setNpcOpen]=useState(false);
   const [lastLoot,setLastLoot]=useState<Item[]>([]);
   const [pendingEvent,setPendingEvent]=useState<DungeonChoiceEvent|undefined>();
   const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean;phaseNotice?:string;partyMemory?:PartyMemory;plan?:BattlePlan}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1,partyMemory:defaultPartyMemory});
@@ -917,6 +940,21 @@ export default function App(){
       <div className="resources"><span><Coins size={15}/> {save.gold}</span><span><Gem size={15}/> {save.gems}</span><span>🧱 {save.materials}</span><span>심도 {save.floor}F</span></div></header>
     <nav className="main-nav">{([["home","대시보드"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"],["recruit","모집"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
     {toast&&<div className="toast">{toast}</div>}
+    {npcOpen&&<div className="npc-overlay" onClick={()=>setNpcOpen(false)}><div className="npc-dialog" onClick={e=>e.stopPropagation()}>
+      <div className="npc-dialog-art"><img src={NPC_IMAGE} alt="세라피나"/></div>
+      <div className="npc-dialog-body">
+        <span className="eyebrow">NPC · WHITE GUIDE</span>
+        <h2>세라피나</h2>
+        <small>백색의 안내자 · 심도 {save.floor}F · {mode==="dungeon"?"던전":mode==="defense"?"방어전":"보스 레이드"}</small>
+        <p>{npcLineFor(save.floor,mode).line}</p>
+        <div className="npc-dialog-facts">
+          <span><b>역할</b>던전 안내 / 분위기 연출</span>
+          <span><b>원칙</b>전투 명령은 플레이어가 직접 내리지 않음</span>
+        </div>
+        <button className="primary-btn" onClick={()=>setNpcOpen(false)}>대화 닫기</button>
+      </div>
+    </div></div>}
+
     {pendingEvent&&<div className="event-overlay"><div className="event-dialog"><span className="eyebrow">DUNGEON EVENT</span><h2>{pendingEvent.title}</h2><p>{pendingEvent.text}</p><div className="event-choice-list">{pendingEvent.choices.map(ch=>{const preview=eventRewardPreview(save.heroes,save.party,save.floor,environmentFor(save.floor,"event","dungeon"),ch);let recipientText=" · 이벤트 보상";if(ch.rewardKind==="trait"&&preview.trait)recipientText=" · 「"+preview.trait+"」";else if(ch.rewardKind==="artifact"&&preview.artifact)recipientText=" · 「"+preview.artifact+"」";else if(ch.rewardKind==="equipment"&&preview.equipment)recipientText=" · "+preview.equipment.name+" · "+preview.equipment.stats.slice(0,2).join(" · ");return <button key={ch.id} className="event-choice" onClick={()=>chooseDungeonEvent(ch.id)}><div><b>{ch.label}</b><small>{ch.detail}</small>{ch.rewardKind&&<small className="event-recipient">획득 대상 · {preview.recipient?.name||"파티"}{recipientText}</small>}</div><span>{ch.risk>0?"위험 "+ch.risk:"안전"} · 예상 {ch.reward}G{ch.rewardKind&&<em className="event-reward-label">{ch.rewardKind==="trait"?"특성 획득":ch.rewardKind==="artifact"?"기재 획득":"장비 획득"}</em>}</span></button>})}</div><small className="event-note">선택한 방식이 파티의 해당 성향과 이후 행동 기록에 누적되며, 일부 선택은 성향이 가장 높은 캐릭터에게 특성 또는 기재가 영구 귀속됩니다.</small></div></div>}
 
     {screen==="home"&&<section className="page"><div className="hero-panel"><div><span className="eyebrow">AUTONOMOUS DUNGEON</span>
@@ -924,6 +962,7 @@ export default function App(){
       <p>플레이어는 <b>파티와 장비, 다음 경로</b>를 결정한다. 전투에서는 직접 이동하거나 공격 대상을 지정하지 않는다.</p>
       <div className="hero-actions"><button className="primary-btn" onClick={()=>setScreen("dungeon")}><MapIcon size={18}/> 던전 데모 시작 <ChevronRight size={17}/></button><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={17}/> 파티 준비</button></div>
     </div><div className="hero-orb"><Swords size={108}/></div></div>
+    <NpcGuide floor={save.floor} mode={mode} onOpen={()=>setNpcOpen(true)}/>
     <div className="feature-grid"><Feature icon={<Brain/>} title="자율 AI 전투" text="상황 + 성향 10종 + 직업 + 장비 + 경험으로 행동을 결정합니다."/><Feature icon={<Package/>} title="AI 빌드" text="장비의 수치뿐 아니라 추격·후퇴·보호 우선순위도 바뀝니다."/><Feature icon={<MapIcon/>} title="경로 선택" text="직접 이동 명령 대신 다음 방의 위험과 보상을 선택합니다."/><Feature icon={<Sparkles/>} title="행동 기록" text="반복된 행동이 성향에 조금씩 누적되어 캐릭터의 미래가 달라집니다."/></div>
     <div className="mode-grid">
       <ModeCard title="DUNGEON" subtitle="던전" text="방을 선택하고 탐색·전투·보상·보스까지 진행합니다." icon="⚔" onClick={()=>{setMode("dungeon");setScreen("dungeon")}} />
@@ -972,6 +1011,7 @@ export default function App(){
     {screen==="recruit"&&<section className="page"><div className="section-head"><div><span className="eyebrow">RECRUITMENT</span><h2>용사 모집란</h2><p className="muted">기초직업 5종의 신규 용사를 지속적으로 모집할 수 있습니다. 모집비 350 골드.</p></div><span className="counter">{save.heroes.length}명</span></div><div className="recruit-panel"><div><b>기초직업 모집</b><span>모집된 용사는 Lv.1에서 시작하며 기본 직업과 서로 다른 초기 성향을 가집니다.</span></div><div className="recruit-grid">{(Object.keys(jobKo) as Job[]).map(j=><article className="recruit-card" key={j}><div className="room-icon">{jobIcon[j]}</div><b>{jobKo[j]}</b><p>기초 직업 · 장기 성향이 성장하며 자동 전직합니다.</p><button className="primary-btn compact" disabled={save.gold<350} onClick={()=>recruit(j)}><UserPlus size={15}/> 모집 350G</button></article>)}</div></div><div className="subpanel"><div><b>모집 원칙</b><span>신규 용사의 미래는 실제 행동과 경험이 결정합니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("party")}><UserRound size={16}/> 캐릭터 보기</button></div></section>}
 
     {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
+      <NpcGuide floor={save.floor} mode={mode} compact onOpen={()=>setNpcOpen(true)}/>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
       {Object.keys(save.scenarioClears).length>0&&<div className="repeat-panel"><div><b>완료 시나리오 재도전</b><span>성장을 위해 완료한 시나리오를 반복할 수 있습니다. 반복할수록 보상이 감소하고 25% 확률로 정예 몬스터 무리가 등장합니다.</span></div><div className="repeat-list">{Object.keys(save.scenarioClears).sort((a,b)=>Number(b)-Number(a)).map(k=>{const n=save.scenarioClears[k];const mult=Math.max(.3,.6-.1*Math.max(0,n-1));return <button key={k} className="repeat-card" onClick={()=>startRepeat(Number(k))}><b>{k}F 시나리오</b><span>클리어 {n}회 · 다음 보상 {Math.round(mult*100)}%</span><ChevronRight size={16}/></button>})}</div></div>}
       <div className="route-grid">{route(save.stage,save.floor,party.length?party.reduce((n,h)=>n+h.tendencies.curiosity,0)/party.length:0).map((r,i)=>{const f=routeForecast(r.kind,save.floor,party,save.routeMemory);return <button key={i} className={"route-card room-"+r.kind} onClick={()=>start(r.kind)}><div className="room-icon">{roomIcon[r.kind]}</div><div><small>{roomKo[r.kind]}</small><h3>{r.title}</h3><p>{r.summary}</p><div className="route-intel"><span>위험 {f.risk}</span><span>예상 보상 {f.reward}G</span><span>적합도 {f.fit}</span><span>{environmentInfo[f.environment].name}</span><span>경험 {f.experience}회{f.experience>0?" · 성공 "+f.successRate+"%":""}</span></div></div><ChevronRight size={20}/></button>})}</div>
@@ -1050,6 +1090,19 @@ function InventoryIcon({item,onEquip,onSell,warehouse=false}:{item:Item;onEquip:
     </button>
     {warehouse&&onSell&&<button className="inventory-sell" onClick={onSell} aria-label={item.name+" 판매"}>×</button>}
   </div>;
+}
+function NpcGuide({floor,mode,onOpen,compact=false}:{floor:number;mode:BattleMode;onOpen:()=>void;compact?:boolean}){
+  const info=npcLineFor(floor,mode);
+  return <button className={"npc-guide "+(compact?"npc-guide-compact":"")} onClick={onOpen}>
+    <div className="npc-guide-portrait"><img src={NPC_IMAGE} alt="세라피나 NPC 초상화"/></div>
+    <span className="npc-guide-copy">
+      <small>NPC · 백색의 안내자</small>
+      <b>세라피나</b>
+      <em>{info.mood} · 대화 가능</em>
+      <span>{info.line}</span>
+    </span>
+    <ChevronRight size={18}/>
+  </button>;
 }
 function Feature({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <article className="feature-card"><div className="feature-icon">{icon}</div><b>{title}</b><p>{text}</p></article>;}
 function HeroCard({hero,active,onClick,onStatus}:{hero:Hero;active:boolean;onClick:()=>void;onStatus:()=>void}){
