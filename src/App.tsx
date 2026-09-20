@@ -19,7 +19,7 @@ type BattleMode = "dungeon" | "defense" | "raid";
 type DefenseObjective = "gate" | "relic" | "escort";
 type RouteMemoryEntry = { attempts:number; clears:number; failures:number; rewardSamples:number; rewardGold:number };
 type RouteMemory = Partial<Record<RoomKind,RouteMemoryEntry>>;
-type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; routeMemory?:RouteMemory; worldSealed?:boolean };
+type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; routeMemory?:RouteMemory; worldSealed?:boolean; sealCount?:number };
 type Decision = { action: string; target?: string; detail: string; score: number };
 type BattlePlan = { key:"aggressive"|"defensive"|"focused"|"balanced"; label:string; detail:string };
 type BattleContext = { mode:BattleMode; objectiveKind?:DefenseObjective; objectiveHp:number; phase:number };
@@ -38,6 +38,12 @@ const defenseObjectiveDetail:Record<DefenseObjective,string>={
   escort:"호위 대상 · Guardian 생존 시 내구도가 주기적으로 회복됩니다."
 };
 const raidBossForFloor=(floor:number)=>floor%3===1?"Uruk":floor%3===2?"Arachne":"Demon";
+const sealEnemyMultiplier=(sealCount=0)=>1+Math.max(0,sealCount)*0.12;
+const sealEnemyEnhancement=(sealCount=0)=>Math.round(Math.max(0,sealCount)*12);
+const scaleMonsterForSeals=(monster:ReturnType<typeof createMonster>,sealCount=0)=>{
+  const mult=sealEnemyMultiplier(sealCount);
+  return {...monster,hp:Math.max(1,Math.round(monster.hp*mult)),maxHp:Math.max(1,Math.round(monster.maxHp*mult)),attack:Math.max(1,Math.round(monster.attack*mult)),defense:Math.max(1,Math.round(monster.defense*mult)),speed:Math.max(.2,Math.round(monster.speed*(1+Math.max(0,sealCount)*.025)*100)/100)};
+};
 
 const NPC_IMAGE = "/npc/seraphina.webp";
 const npcLineFor = (floor:number, mode:BattleMode, dialogueIndex=0) => {
@@ -105,10 +111,10 @@ function load(): Save {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      return {...s, partyMemory:s.partyMemory||defaultPartyMemory, routeMemory:s.routeMemory||{}, heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies},equipment:(h.equipment??(h.item?[h.item]:[])).slice(0,5).map(i=>i?{...i,enhancement:Math.max(0,Math.min(MAX_ENHANCEMENT,i.enhancement||0))}:undefined) as [Item?,Item?,Item?,Item?,Item?]})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
+      return {...s, partyMemory:s.partyMemory||defaultPartyMemory, routeMemory:s.routeMemory||{}, sealCount:Math.max(0,Math.floor(s.sealCount||0)), heroes:s.heroes.map(h=>({...h,tendencies:{...defaultTendencies[h.job],...h.tendencies},equipment:(h.equipment??(h.item?[h.item]:[])).slice(0,5).map(i=>i?{...i,enhancement:Math.max(0,Math.min(MAX_ENHANCEMENT,i.enhancement||0))}:undefined) as [Item?,Item?,Item?,Item?,Item?]})), items:s.items||[], monsterLineages:(s.monsterLineages||[]).filter(x=>!x.id.endsWith("-boss")), scenarioClears:s.scenarioClears||{}, worldSealed:!!s.worldSealed};
     }
   } catch {}
-  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[]})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false};
+  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[]})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false,sealCount:0};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
@@ -347,7 +353,7 @@ function equipmentPreview(hero:Hero,item:Item,slot:number){
   };
 }
 
-function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[],mode:BattleMode="dungeon"): BattleUnit[] {
+function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:MonsterLineage[]=[],mode:BattleMode="dungeon",sealCount=0): BattleUnit[] {
   const selected=heroes.filter(h=>party.includes(h.id));
   const ordered=autoFormation(selected,mode);
   const ps: BattleUnit[] = ordered.map((h,i)=>{
@@ -365,6 +371,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
     const bossName=room==="evilCave"?"악의 동굴 수문장":bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
     es[0]={...base,name:bossName,pos:8.8};
   }
+  es=es.map(e=>scaleMonsterForSeals(e,sealCount));
   return ps.concat(es.map(e=>({id:e.id,name:e.name,species:e.species,grade:e.grade,level:e.level,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,
     speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,mutation:e.mutation,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,actionText:"대기",cooldown:0,guard:0,xp:0})));
 }
@@ -729,7 +736,7 @@ export default function App(){
       return;
     }
     const env=environmentFor(save.floor,kind,"dungeon");
-    const units=spawn(save.heroes,save.party,kind,save.floor,save.monsterLineages,"dungeon");
+    const units=spawn(save.heroes,save.party,kind,save.floor,save.monsterLineages,"dungeon",save.sealCount||0);
     setMode("dungeon");
     const plan=battlePlanFor(party,"dungeon");
     setBattle({units,plan,log:[roomKo[kind]+" · "+formationLabel(party,"dungeon")+" · "+plan.label+" · "+environmentInfo[env].name+" · 전투 명령은 AI가 전부 결정합니다."],room:kind,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory});
@@ -742,7 +749,7 @@ export default function App(){
     const elitePack=Math.random()<.25;
     const room:RoomKind=elitePack?"elite":"battle";
     const env=environmentFor(scenarioFloor,room,"dungeon");
-    const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages,"dungeon");
+    const units=spawn(save.heroes,save.party,room,scenarioFloor,save.monsterLineages,"dungeon",save.sealCount||0);
     const rewardMultiplier=Math.max(.3,.6-.1*Math.max(0,repeatCount-1));
     const plan=battlePlanFor(party,"dungeon");
     setBattle({units,plan,log:[scenarioFloor+"F 완료 시나리오 재도전 · "+formationLabel(party,"dungeon")+" · "+plan.label+" · 반복 "+repeatCount+"회 · "+(elitePack?"정예 무리 출현":"일반 적 편성")+" · 보상 "+Math.round(rewardMultiplier*100)+"%"],room,round:1,tick:0,ended:false,next:units[0].id,mode:"dungeon",wave:1,objectiveHp:100,phase:1,environment:env,partyMemory:save.partyMemory||defaultPartyMemory,repeatScenarioFloor:scenarioFloor,repeatCount,rewardMultiplier,elitePack});
@@ -753,7 +760,7 @@ export default function App(){
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
     const env=environmentFor(save.floor,room,nextMode);
-    const units=spawn(save.heroes,save.party,room,save.floor,save.monsterLineages,nextMode);
+    const units=spawn(save.heroes,save.party,room,save.floor,save.monsterLineages,nextMode,save.sealCount||0);
     const objectiveKind=defenseObjectiveForFloor(save.floor);
     const label=nextMode==="defense"
       ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · ${formationLabel(party,nextMode)} · 30초 동안 웨이브가 계속됩니다.`
@@ -801,7 +808,7 @@ export default function App(){
             const count=Math.min(7,2+wave);
             const nextEnemies=Array.from({length:count},(_,i)=>{
               const waveGrade=wave>=6?"Named":wave>=4?"Elite":"Normal";
-              const m=createLinedMonster(pool[(i+wave+save.floor)%pool.length],Math.max(1,save.floor+wave-1),waveGrade,i,save.monsterLineages);
+              const m=scaleMonsterForSeals(createLinedMonster(pool[(i+wave+save.floor)%pool.length],Math.max(1,save.floor+wave-1),waveGrade,i,save.monsterLineages),save.sealCount||0);
               return asEnemy({...m,pos:8.2+i*.55},"-w"+wave);
             });
             out.units=out.units.concat(nextEnemies);
@@ -1076,13 +1083,18 @@ export default function App(){
   };
 
   const sealWorld=()=>{
-    setSave(s=>({...s,worldSealed:true,heroes:s.heroes.map(h=>{
-      const next={...h,statusNote:"세계의 구멍 봉인 완료"};
-      const awarded=awardChronicle(next);
-      return {...awarded,mood:systemMood(awarded),statusNote:systemStatus(awarded),evaluation:systemEvaluation(awarded)};
-    })}));
+    setSave(s=>{
+      const nextSeal=(s.sealCount||0)+1;
+      const nextHeroes=s.heroes.map(h=>{
+        const next={...h,statusNote:"세계의 구멍 봉인 완료 · "+nextSeal+"회차"};
+        const awarded=awardChronicle(next);
+        return {...awarded,mood:systemMood(awarded),statusNote:systemStatus(awarded),evaluation:systemEvaluation(awarded)};
+      });
+      return {...s,worldSealed:false,sealCount:nextSeal,floor:1,stage:0,scenarioClears:{},heroes:nextHeroes};
+    });
+    setMode("dungeon");
     setScreen("home");
-    notify("세계의 구멍을 봉인했습니다. 악의 침입이 차단되었습니다.");
+    notify("세계의 구멍을 "+((save.sealCount||0)+1)+"회 봉인했습니다. 다음 세계의 적이 강화됩니다.");
   };
   const reset=()=>{localStorage.removeItem(KEY);setSave(load());setScreen("home");notify("데모 초기화 완료");};
 
@@ -1159,7 +1171,7 @@ export default function App(){
           </div>
 
           <div className="battle-metrics">
-            <div><span>심도</span><b>{save.floor}F</b><small>{save.stage+1}/6 ROOM</small></div>
+            <div><span>심도</span><b>{save.floor}F</b><small>{save.stage+1}/6 ROOM</small></div><div><span>세계 회차</span><b>{(save.sealCount||0)+1}</b><small>적 +{sealEnemyEnhancement(save.sealCount||0)}%</small></div>
             <div><span>원정대</span><b>{save.party.length}/4</b><small>현재 편성 인원</small></div>
             <div><span>장비</span><b>{party.reduce((n,h)=>n+equippedItemsOf(h).length,0)}/20</b><small>5슬롯 기준</small></div>
             <div><span>세계 상태</span><b>{save.worldSealed?"SEALED":"OPEN"}</b><small>{save.worldSealed?"봉인 완료":"악의 동굴 탐색 중"}</small></div>
@@ -1237,7 +1249,7 @@ export default function App(){
 
     {screen==="recruit"&&<section className="page"><div className="section-head"><div><span className="eyebrow">RECRUITMENT</span><h2>용사 모집란</h2><p className="muted">기초직업 5종의 신규 용사를 지속적으로 모집할 수 있습니다. 모집비 350 골드.</p></div><span className="counter">{save.heroes.length}명</span></div><div className="recruit-panel"><div><b>기초직업 모집</b><span>모집된 용사는 Lv.1에서 시작하며 기본 직업과 서로 다른 초기 성향을 가집니다.</span></div><div className="recruit-grid">{(Object.keys(jobKo) as Job[]).map(j=><article className="recruit-card" key={j}><div className="room-icon">{jobIcon[j]}</div><b>{jobKo[j]}</b><p>기초 직업 · 장기 성향이 성장하며 자동 전직합니다.</p><button className="primary-btn compact" disabled={save.gold<350} onClick={()=>recruit(j)}><UserPlus size={15}/> 모집 350G</button></article>)}</div></div><div className="subpanel"><div><b>모집 원칙</b><span>신규 용사의 미래는 실제 행동과 경험이 결정합니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("party")}><UserRound size={16}/> 캐릭터 보기</button></div></section>}
 
-    {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다.</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
+    {screen==="dungeon"&&<section className="page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다. · 세계 {(save.sealCount||0)+1}회차 · 적 전투력 +{sealEnemyEnhancement(save.sealCount||0)}%</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
       <NpcGuide floor={save.floor} mode={mode} compact onOpen={openNpc} dialogueIndex={npcTalkIndex}/>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
       {Object.keys(save.scenarioClears).length>0&&<div className="repeat-panel"><div><b>완료 시나리오 재도전</b><span>성장을 위해 완료한 시나리오를 반복할 수 있습니다. 반복할수록 보상이 감소하고 25% 확률로 정예 몬스터 무리가 등장합니다.</span></div><div className="repeat-list">{Object.keys(save.scenarioClears).sort((a,b)=>Number(b)-Number(a)).map(k=>{const n=save.scenarioClears[k];const mult=Math.max(.3,.6-.1*Math.max(0,n-1));return <button key={k} className="repeat-card" onClick={()=>startRepeat(Number(k))}><b>{k}F 시나리오</b><span>클리어 {n}회 · 다음 보상 {Math.round(mult*100)}%</span><ChevronRight size={16}/></button>})}</div></div>}
