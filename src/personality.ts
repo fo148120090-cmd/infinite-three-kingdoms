@@ -112,3 +112,39 @@ export function personalityEventReaction(hero:Pick<Hero,"id"|"job"|"name"|"tende
   }
   return hero.name+" · " + "내 방식대로 결과를 받아들이겠어.";
 }
+
+
+export function personalityBattleLine(hero:Pick<Hero,"id"|"job"|"name"|"tendencies"|"personality"> & {skinId?:string},action:string){
+  const p=hero.personality||buildPersonality(hero);
+  const actionLines:Record<string,string[]>={
+    "일반 공격":["좋아, 내가 먼저 흔들어 놓지.","한 번에 끝내지 못해도 다음 수가 있다."],
+    "추격":["도망칠 틈은 주지 않겠어.","끝까지 따라간다."],
+    "아군 보호":["내가 앞에 선다. 뒤는 맡겨.","여기서는 내가 막아낼게."],
+    "회복":["아직 싸울 수 있어. 다시 일어나자.","숨부터 고르고, 다시 움직여."],
+    "광역 마법":["둘 이상 모였군. 한 번에 정리하자.","지금이 가장 좋은 타이밍이야."],
+    "방어 태세":["서두르지 않는다. 다음 교환을 준비한다.","한 번 받아내고 다음을 본다."],
+    "후퇴":["이건 물러날 가치가 있다.","살아남아서 다음 기회를 만든다."],
+    "정밀 사격":["흔들렸어. 지금이다.","한 발이면 충분해."],
+    "사냥 본능":["약점이 보인다.","도망치는 쪽부터 끊는다."],
+    "심판":["끝낼 시간이야.","여기서 마무리한다."],
+    "광폭 돌격":["길은 내가 만든다.","정면으로 간다."],
+    "결투 집중":["한 명만 보면 된다.","이 상대는 내가 맡는다."],
+    "수호 맹세":["아무도 넘기지 않는다.","이 선은 내가 지킨다."],
+    "철벽 진형":["모두가 움직일 때까지 버틴다.","여기서 무너지지 않는다."],
+    "대회복":["다시 싸울 힘을 돌려주지.","괜찮아. 내가 붙잡고 있어."]
+  };
+  const pool=actionLines[action]||[p.quote];
+  const base=pool[(action.length+hero.name.length)%pool.length];
+  const skinKey=hero.skinId?hero.skinId.split("-").slice(1).join("-"):"base";
+  const skinFlavor:Record<string,string>={
+    beach:"바람도 등을 밀어주는군.",
+    summer:"가볍게 가자.",
+    "fur-winter":"추위보다 전장이 더 차갑군.",
+    barbarian:"야성은 숨길 필요가 없지.",
+    bodysuit:"전투 데이터 갱신 완료.",
+    "monster-disguise":"흔적을 남기지 말자.",
+    "light-hero":"빛이 길을 보여준다.",
+    "fallen-hero":"어둠도 내 방식대로 쓴다."
+  };
+  return hero.name+" · "+base+(skinFlavor[skinKey]?" · "+skinFlavor[skinKey]:"");
+}
