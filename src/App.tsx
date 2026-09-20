@@ -1,7 +1,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map as MapIcon, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
-import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, uniqueItems } from "./dungeonData";
+import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, type StatusEffect, type StatusEffectKind, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionForecast, promotionLabel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 import { applyLineage, emptyLineage, evolutionActionBonus, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
@@ -141,6 +141,30 @@ function load(): Save {
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
+const statusEffectKo:Record<StatusEffectKind,string>={poison:"독",slow:"둔화",stun:"기절",fear:"공포"};
+const statusEffectIcon:Record<StatusEffectKind,string>={poison:"☠",slow:"〽",stun:"✦",fear:"!"};
+const statusOf=(u:BattleUnit,kind:StatusEffectKind)=>u.statusEffects?.find(x=>x.kind===kind);
+const addStatus=(u:BattleUnit,kind:StatusEffectKind,turns:number,power=0)=>{
+  const next=Math.max(1,Math.round(turns));
+  const current=statusOf(u,kind);
+  if(current){current.turns=Math.max(current.turns,next);current.power=Math.max(current.power||0,power);}
+  else (u.statusEffects||(u.statusEffects=[])).push({kind,turns:next,power});
+};
+const tickStatus=(u:BattleUnit)=>{
+  const active=u.statusEffects||[];
+  const stunned=!!statusOf(u,"stun");
+  const poisoned=statusOf(u,"poison");
+  let line="";
+  if(poisoned&&poisoned.turns>0){
+    const damage=Math.max(2,Math.round(u.maxHp*(poisoned.power||.045)));
+    u.hp=Math.max(0,u.hp-damage);
+    u.alive=u.hp>0;
+    line="독 피해 -"+damage;
+  }
+  u.statusEffects=active.map(s=>({...s,turns:s.turns-1})).filter(s=>s.turns>0);
+  return {stunned,line};
+};
+const turnSpeed=(u:BattleUnit)=>u.speed*(statusOf(u,"slow")?.turns?0.64:1);
 const dist=(a:BattleUnit,b:BattleUnit)=>Math.abs(a.pos-b.pos);
 const live=(u:BattleUnit[],team:"player"|"enemy")=>u.filter(x=>x.team===team&&x.alive);
 const equipmentSlotsOf=(hero:Hero|BattleUnit):[Item?,Item?,Item?]=>{
@@ -476,11 +500,12 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
   const critChance=Math.min(.4,(a.tendencies.focus>82?.16:0)+(combinedCombatMods(equippedItemsOf(a)).critPct||0)/100);
   const crit=Math.random()<critChance?1.55:1;
   const guardFactor=b.guard>0?.62:1;
-  return Math.max(5,Math.round((a.attack*m-b.defense*.5)*crit*(.94+Math.random()*.12)*guardFactor));
+  const fearFactor=statusOf(a,"fear")?.turns?0.78:1;
+  return Math.max(5,Math.round((a.attack*m-b.defense*.5)*crit*fearFactor*(.94+Math.random()*.12)*guardFactor));
 }
 
 function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const d=weighted(decisions(a,n,env,partyMemory,plan,context));
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},statusEffects:(x.statusEffects||[]).map(s=>({...s})),fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const statusTurn=tickStatus(a); if(statusTurn.stunned){ a.behaviorCounts!["기절"]=(a.behaviorCounts!["기절"]||0)+1; a.battleStats!.actions+=1; a.actionText="기절 · 행동 취소"; return {units:n,decision:{action:"기절",detail:"상태이상으로 이번 행동이 취소됨",score:999},line:(statusTurn.line?statusTurn.line+" / ":"")+a.actionText}; } const d=weighted(decisions(a,n,env,partyMemory,plan,context));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -514,7 +539,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     } else {a.actionText="분열 대기";line=a.actionText;}
   } else if(d.action==="함정 투척"||d.action==="매복 함정"||d.action==="거미줄"){
     const t=by(d.target)||weak||nearest;
-    if(t){t.speed=Math.max(.35,t.speed-.22);fx(t,"status","SLOW");a.actionText=d.action+" → "+t.name;line=a.actionText;}
+    if(t){addStatus(t,"slow",3);fx(t,"status","SLOW 3T");a.actionText=d.action+" → "+t.name+" · 둔화 3T";line=a.actionText;}
   } else if(d.action==="무리 사냥"||d.action==="약점 추적"||d.action==="연계 공격"){
     const t=by(d.target)||weak||nearest;
     if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.2);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}}
@@ -526,10 +551,10 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     if(t){a.pos=Math.max(.3,t.pos-.7);const x=hit(a,t,1.18);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}
   } else if(d.action==="독성 압박"||d.action==="매혹"){
     const t=by(d.target)||weak||nearest;
-    if(t){t.tendencies.focus=Math.max(0,t.tendencies.focus-(d.action==="매혹"?12:7));t.attack=Math.max(1,Math.round(t.attack*.92));fx(t,"status",d.action==="매혹"?"매혹":"약화");const x=hit(a,t,.9);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}
+    if(t){if(d.action==="독성 압박"){addStatus(t,"poison",4,.055);t.tendencies.focus=Math.max(0,t.tendencies.focus-7);t.attack=Math.max(1,Math.round(t.attack*.92));fx(t,"status","독 4T");}else{addStatus(t,"stun",1);t.tendencies.focus=Math.max(0,t.tendencies.focus-12);t.attack=Math.max(1,Math.round(t.attack*.92));fx(t,"status","기절 1T");}const x=hit(a,t,.9);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;}
   } else if(d.action==="대지 강타"){
     const ts=enemies.filter(x=>dist(a,x)<=2.4).slice(0,4);
-    if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,1.05);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;return t.name+" -"+x});a.actionText="대지 강타 → "+bits.join(", ");line=a.actionText;}
+    if(ts.length){const bits=ts.map(t=>{const x=hit(a,t,1.05);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;if(Math.random()<.34)addStatus(t,"stun",1);return t.name+" -"+x+(statusOf(t,"stun")?" · 기절":"")});a.actionText="대지 강타 → "+bits.join(", ");line=a.actionText;}
   } else if(d.action==="회피 기동"){
     a.pos=Math.max(.3,a.pos-.95);a.tendencies.survival=Math.min(100,a.tendencies.survival+7);a.actionText="회피 기동 · 거리 확보";line=a.actionText;
   } else if(d.action==="역할 분석"){
@@ -551,6 +576,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     const phase=pct(a)>0.65?1:pct(a)>0.35?2:3;
     const target=enemies.slice().sort((x,y)=>(pct(x)-pct(y))||((x.job==="Cleric"?0:1)-(y.job==="Cleric"?0:1)))[0];
     if(target){
+      addStatus(target,"fear",phase===3?4:3);
       target.tendencies.bravery=Math.max(0,target.tendencies.bravery-(phase===3?15:8));
       target.tendencies.focus=Math.max(0,target.tendencies.focus-(phase===3?12:6));
       if(dist(a,target)<=a.range){const x=hit(a,target,phase===3?1.22:1.05);target.hp=Math.max(0,target.hp-x);target.alive=target.hp>0;}
@@ -812,11 +838,11 @@ export default function App(){
         if(prev.ended||!prev.units.length)return prev;
         const alive=prev.units.filter(x=>x.alive);
         if(!alive.length)return {...prev,ended:true,result:"defeat"};
-        const actorPool=alive.slice().sort((a,b)=>b.speed-a.speed).slice(0,Math.min(10,alive.length));
-        const actorTotalSpeed=actorPool.reduce((n,x)=>n+Math.max(.25,x.speed),0);
+        const actorPool=alive.slice().sort((a,b)=>turnSpeed(b)-turnSpeed(a)).slice(0,Math.min(10,alive.length));
+        const actorTotalSpeed=actorPool.reduce((n,x)=>n+Math.max(.25,turnSpeed(x)),0);
         let actorRoll=Math.random()*actorTotalSpeed;
         let actor=actorPool[actorPool.length-1];
-        for(const candidate of actorPool){actorRoll-=Math.max(.25,candidate.speed);if(actorRoll<=0){actor=candidate;break;}}
+        for(const candidate of actorPool){actorRoll-=Math.max(.25,turnSpeed(candidate));if(actorRoll<=0){actor=candidate;break;}}
         const out=doAI(prev.units,actor.id,prev.environment,prev.partyMemory,prev.plan,{mode:prev.mode,objectiveKind:prev.objectiveKind,objectiveHp:prev.objectiveHp,phase:prev.phase});
         let wave=prev.wave,objectiveHp=prev.objectiveHp,phase=prev.phase,ended=false,result:string|undefined;
         const now=Date.now();
@@ -1297,7 +1323,7 @@ export default function App(){
       <div className="battle-layout"><div className="cave-panel"><div className="cave-label"><span>입구</span><span>심층</span></div><div className="cave-lane"><div className="cave-floor"/>
         {battle.units.map(u=><div key={u.id} className={"battle-unit "+u.team+" "+(u.alive?"":"dead")+" "+(active?.id===u.id?"active-unit":"")+" "+(u.fxKind?"fx-"+u.fxKind:"")} style={{left:(u.pos*9.3)+"%"}}>
           <div className="unit-token">{u.team==="player"?jobIcon[u.job!]:u.grade==="Boss"?"♛":"👹"}{u.team==="enemy"&&<span className={"monster-level-badge grade-"+String(u.grade||"Normal").toLowerCase()}>Lv.{u.level||1}</span>}</div><b>{u.name}</b>{u.team==="enemy"&&<small className="monster-meta">{u.species} · {u.grade||"Normal"}</small>}{u.mutation&&<small className="mutation-label">{u.mutation}</small>}{u.fx&&<span className="combat-fx">{u.fx}</span>}<div className="hp-bar"><span style={{width:(100*pct(u))+"%"}}/></div><small>{Math.max(0,Math.round(u.hp))}/{u.maxHp}</small></div>)}
-      </div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
+      </div><div className="battle-status-tags">{u.statusEffects&&u.statusEffects.length>0&&u.statusEffects.map(s=><span key={s.kind}>{statusEffectIcon[s.kind]} {statusEffectKo[s.kind]} {s.turns}T</span>)}</div><div className="battle-status">{battle.ended?<><Trophy size={17}/> {battle.result==="victory"?"승리 · 성장 기록 반영":"패배 · 원정 종료"}</>:<><Zap size={16}/> ROUND {battle.round} · {active?.name||"AI 계산"}</>}</div></div>
       <aside className="ai-panel"><div className="panel-title"><Brain size={18}/> AI 판단 실시간</div><div className="ai-focus"><small>현재 판단 주체</small><b>{active?.name||"—"}</b><span>{active?.job?jobKo[active.job]:active?.species||"—"}</span></div><div className="decision-box">{battle.plan&&<><b>{battle.plan.label}</b><span> · {battle.plan.detail}</span><br/></>}{decision}</div><h4>전투 로그</h4><div className="combat-log">{battle.log.map((x,i)=><div key={i}>{x}</div>)}</div><div className="inspect-box"><small>선택 캐릭터</small><b>{hero.name}</b><span>{jobKo[hero.job]} · Lv.{hero.level} · {promotionLabel(hero)} · 장비 {equippedItemsOf(hero).length}/3</span><small>기억 {hero.memories?.length||0} · 관계 {Object.keys(hero.relationships||{}).length}</small><small>전투 방향 · {compactTendency(hero)}</small></div></aside></div>
       {battle.ended&&<div className="result-panel"><div className={"result-icon "+(battle.result==="victory"?"win":"lose")}>{battle.result==="victory"?"✓":"×"}</div><div><small>{battle.result==="victory"?"원정대 생존":"전멸"}</small><h3>{battle.result==="victory"?"다음 방으로":"원정 종료"}</h3><p>{battle.result==="victory"?"전투에서 쌓인 행동 기록과 경험이 캐릭터에 반영됩니다.":"다시 던전에 들어가 같은 파티를 시험할 수 있습니다."}</p><div className="battle-report"><b>AI 전투 리포트</b><div className="battle-report-grid">{battle.units.filter(u=>u.team==="player").map(u=><div className="report-card" key={u.id}><strong>{u.name}</strong><span>행동 {u.battleStats?.actions||0}회</span><span>피해 {u.battleStats?.damage||0}</span><span>회복 {u.battleStats?.healing||0}</span><small>{Object.entries(u.behaviorCounts||{}).sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>x[0]).join(" · ")||"기록 없음"}</small></div>)}</div></div>{battle.result==="victory"&&lastLoot.length>0&&<div className="loot-summary"><b>획득 전리품</b><span>{lastLoot.map(x=>x.name).join(" · ")}</span></div>}</div><button className="primary-btn" onClick={()=>{if(battle.result==="victory"&&battle.room==="evilCave"){sealWorld();return;}setScreen("dungeon");setBattle(b=>({...b,ended:false,result:undefined}));}}>{battle.result==="victory"&&battle.room==="evilCave"?"세계의 구멍 봉인":battle.result==="victory"?"경로 선택":"다시 시작"} <ChevronRight size={17}/></button></div>}</section>}
 

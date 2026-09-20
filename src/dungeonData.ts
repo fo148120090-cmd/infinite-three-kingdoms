@@ -15,6 +15,8 @@ export type Item = {
 
 export type Relationship = {trust:number; respect:number; fear:number; bond:number};
 export type Memory = {text:string; weight:number; createdAt:number};
+export type StatusEffectKind = "poison"|"slow"|"stun"|"fear";
+export type StatusEffect = {kind:StatusEffectKind; turns:number; power?:number};
 
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
@@ -45,7 +47,7 @@ export type BattleUnit = {
   id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade; level?:number;
   hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
   pos:number; alive:boolean; tendencies:Tendencies; item?:Item; equipment?:Item[]; actionText:string;
-  cooldown:number; guard:number; xp:number; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>; promotionPath?:string[]; evolutionStage?:number; evolutionPath?:string[]; evolutionFocus?:string; fx?:string; fxKind?:"damage"|"heal"|"critical"|"status"; battleStats?:{damage:number;healing:number;actions:number};
+  cooldown:number; guard:number; xp:number; statusEffects?:StatusEffect[]; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>; promotionPath?:string[]; evolutionStage?:number; evolutionPath?:string[]; evolutionFocus?:string; fx?:string; fxKind?:"damage"|"heal"|"critical"|"status"; battleStats?:{damage:number;healing:number;actions:number};
 };
 
 export const defaultTendencies: Record<Job,Tendencies> = {
