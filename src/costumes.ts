@@ -2,6 +2,7 @@ import type { Job } from "./dungeonData";
 
 export type CostumeTier="Normal"|"Rare"|"Unique";
 export type Costume={id:string;tier:CostumeTier;name:string;description:string;style:string;icon:string};
+export type SkinTheme={background:string;primary:string;secondary:string;accent:string;motif:string};
 export type Skin=Costume;
 
 const jobName:Record<Job,string>={Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
@@ -44,6 +45,21 @@ export function skinVisual(id?:string){
   if(!id)return "♙";
   const key=id.split("-").slice(1).join("-");
   return templates.find(x=>x.id===key)?.icon||"♙";
+}
+const themeByKey:Record<string,SkinTheme>={
+  base:{background:"#182337",primary:"#c7d1df",secondary:"#4e6485",accent:"#d9c27c",motif:"crest"},
+  beach:{background:"#16384a",primary:"#f1f3e5",secondary:"#4ea9ba",accent:"#f0c76d",motif:"sun"},
+  summer:{background:"#203e2b",primary:"#e9f2df",secondary:"#67a86e",accent:"#d7d07a",motif:"leaf"},
+  "fur-winter":{background:"#26313d",primary:"#f0eee7",secondary:"#768596",accent:"#9ec1dc",motif:"snow"},
+  barbarian:{background:"#3a241d",primary:"#a85e42",secondary:"#533027",accent:"#d6a55a",motif:"blade"},
+  bodysuit:{background:"#172a39",primary:"#5fb6c8",secondary:"#243e56",accent:"#9fe8ef",motif:"tech"},
+  "monster-disguise":{background:"#2a2232",primary:"#7b5d48",secondary:"#41324d",accent:"#cf9b6c",motif:"horn"},
+  "light-hero":{background:"#2c2a1c",primary:"#f4e7ad",secondary:"#9da2d6",accent:"#fff4bc",motif:"halo"},
+  "fallen-hero":{background:"#1c1b27",primary:"#4d456a",secondary:"#262331",accent:"#b26a9e",motif:"void"}
+};
+export function skinTheme(id?:string):SkinTheme{
+  const key=id? id.split("-").slice(1).join("-"):"base";
+  return themeByKey[key]||themeByKey.base;
 }
 export function skinUnlockText(skin:Costume){
   const cost=skinCost(skin);
