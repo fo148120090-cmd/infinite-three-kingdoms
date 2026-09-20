@@ -263,8 +263,8 @@ const combatStats=(hero:Hero)=>{
   const artifactMods:Record<string,number>={};
   (hero.artifacts||[]).forEach(name=>Object.entries((eventArtifactEffects[name]||growthArtifactCatalog[name])?.combatMods||{}).forEach(([k,v])=>artifactMods[k]=(artifactMods[k]||0)+(v||0)));
   const bonus=chronicleBonuses(hero);
-  const hp=Math.round(hero.hp*(1+((m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0))/100));
-  return {hp,maxHp:hp,attack:hero.attack+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0),defense:hero.defense+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)+(artifactMods.range||0)};
+  const hp=Math.round(hero.hp*starMult*(1+((m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0))/100));
+  return {hp,maxHp:hp,attack:Math.round(hero.attack*starMult)+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0),defense:Math.round(hero.defense*starMult)+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0),speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0))/100),range:hero.range+(m.range||0)+(artifactMods.range||0)};
 };
 function autoFormation(heroes:Hero[],mode:BattleMode):Hero[]{
   const rank=(h:Hero)=>{
