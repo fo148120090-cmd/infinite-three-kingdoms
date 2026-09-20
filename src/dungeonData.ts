@@ -36,6 +36,7 @@ export type Hero = {
   costumeId?:string;
   skillPoints?:number; passiveSkills?:Record<string,number>;
   awakenings?:{level:50|70|100;name:string;detail:string;earnedAt:number}[];
+  finalAwakening?:{id:string;name:string;detail:string;skillName:string;skillDetail:string;earnedAt:number};
 };
 
 export type MonsterLineage = {
