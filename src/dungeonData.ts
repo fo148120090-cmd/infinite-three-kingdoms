@@ -268,7 +268,7 @@ export function createRecruitHero(job:Job):Hero{
     return {
     id:"recruit-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
     name,job,level:1,star:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
-    tendencies,equipment:[],experience:0,history:["모집된 신규 용사"],color:"#6f819b",personality:buildPersonality({id:"recruit-temp",name,job,tendencies}),skinIds:[job.toLowerCase()+"-base"],equippedSkinId:job.toLowerCase()+"-base",
+    tendencies,equipment:[],experience:0,skillPoints:0,passiveSkills:{},history:["모집된 신규 용사"],color:"#6f819b",personality:buildPersonality({id:"recruit-temp",name,job,tendencies}),skinIds:[job.toLowerCase()+"-base"],equippedSkinId:job.toLowerCase()+"-base",
     campaignStats:{wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0},
     chronicle:[]
   };
