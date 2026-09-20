@@ -6,6 +6,7 @@ export type GrowthReward = {
   name: string;
   detail: string;
   source: string;
+  heroId?: string;
 };
 
 export const growthTraitCatalog: Record<string,{detail:string;aiMods:Record<string,number>}> = {
@@ -45,7 +46,7 @@ export function eliteClearReward(units:BattleUnit[], heroes:Hero[]):GrowthReward
   if(!hero || (hero.campaignStats?.eliteWins||0)!==0) return undefined;
   const name=hero.job==="Guardian"?"수호 전술가":hero.job==="Cleric"?"연전 회복관":hero.job==="Mage"||hero.job==="Archer"?"전장 분석가":"정예 토벌자";
   if((hero.traits||[]).includes(name)) return undefined;
-  return {kind:"trait",name,detail:growthTraitCatalog[name].detail,source:"첫 정예 전투 클리어"};
+  return {kind:"trait",name,detail:growthTraitCatalog[name].detail,source:"첫 정예 전투 클리어",heroId:hero.id};
 }
 
 export function bossClearReward(units:BattleUnit[], heroes:Hero[]):GrowthReward|undefined {
@@ -55,7 +56,7 @@ export function bossClearReward(units:BattleUnit[], heroes:Hero[]):GrowthReward|
   if(!hero || (hero.campaignStats?.bossWins||0)!==0) return undefined;
   const candidates=hero.job==="Guardian"||hero.job==="Cleric" ? ["생환자의 표식","연전의 깃발"] : ["보스의 핵편","정예 토벌의 훈장"];
   const name=candidates.find(x=>!(hero.artifacts||[]).includes(x))||candidates[0];
-  return {kind:"artifact",name,detail:growthArtifactCatalog[name].detail,source:"첫 보스 클리어"};
+  return {kind:"artifact",name,detail:growthArtifactCatalog[name].detail,source:"첫 보스 클리어",heroId:hero.id};
 }
 
 export function repeatClearReward(units:BattleUnit[],heroes:Hero[],repeatCount:number):GrowthReward|undefined {
@@ -63,7 +64,7 @@ export function repeatClearReward(units:BattleUnit[],heroes:Hero[],repeatCount:n
   const mvp=topHeroByBattle(units);
   const hero=mvp&&heroes.find(h=>h.id===mvp.id);
   if(!hero || (hero.traits||[]).includes("재도전 숙련자")) return undefined;
-  return {kind:"trait",name:"재도전 숙련자",detail:growthTraitCatalog["재도전 숙련자"].detail,source:"시나리오 3회 이상 재도전"};
+  return {kind:"trait",name:"재도전 숙련자",detail:growthTraitCatalog["재도전 숙련자"].detail,source:"시나리오 3회 이상 재도전",heroId:hero.id};
 }
 
 export function milestoneReward(hero:Hero, actionCounts:Record<string,number>):GrowthReward|undefined {
@@ -75,7 +76,7 @@ export function milestoneReward(hero:Hero, actionCounts:Record<string,number>):G
   ];
   for(const item of thresholds){
     if((actionCounts[item.action]||0)>=10 && !(hero.traits||[]).includes(item.name)){
-      return {kind:item.kind,name:item.name,detail:growthTraitCatalog[item.name].detail,source:item.action+" 10회 달성"};
+      return {kind:item.kind,name:item.name,detail:growthTraitCatalog[item.name].detail,source:item.action+" 10회 달성",heroId:hero.id};
     }
   }
   return undefined;
@@ -85,7 +86,7 @@ export function hiddenRoomReward(hero:Hero, floor:number):GrowthReward|undefined
   if(floor<4 || Math.random()>0.5) return undefined;
   const name=hero.tendencies.curiosity>=70 ? "전리품 감식가" : hero.tendencies.focus>=70 ? "전장 분석가" : "재도전 숙련자";
   if((hero.traits||[]).includes(name)) return undefined;
-  return {kind:"trait",name,detail:growthTraitCatalog[name]?.detail||"숨은 방 탐색 경험으로 얻은 특성입니다.",source:"숨은 방 탐색"};
+  return {kind:"trait",name,detail:growthTraitCatalog[name]?.detail||"숨은 방 탐색 경험으로 얻은 특성입니다.",source:"숨은 방 탐색",heroId:hero.id};
 }
 
 export function treasureArtifactReward(hero:Hero,floor:number):GrowthReward|undefined {
@@ -93,7 +94,7 @@ export function treasureArtifactReward(hero:Hero,floor:number):GrowthReward|unde
   const candidates=["보물 탐사의 인장","심층 탐사 기록","생환자의 표식"];
   const name=candidates.find(x=>!(hero.artifacts||[]).includes(x));
   if(!name) return undefined;
-  return {kind:"artifact",name,detail:growthArtifactCatalog[name].detail,source:"보물방 특수 발견"};
+  return {kind:"artifact",name,detail:growthArtifactCatalog[name].detail,source:"보물방 특수 발견",heroId:hero.id};
 }
 
 export function pickRecipient(heroes:Hero[], preferredId?:string):Hero|undefined {
