@@ -177,11 +177,15 @@ export function upgradePassive(hero:Hero,skillId:string):Hero|null {
 export function passiveAiBonus(hero:Hero):Partial<Tendencies> {
   const set=passiveSetFor(hero);
   const out:Partial<Tendencies>={};
+  let uniqueUltimateApplied=false;
   for(const skill of set.skills){
     const lv=hero.passiveSkills?.[skill.id]||0;
     for(const [k,v] of Object.entries(skill.aiMods)) out[k as keyof Tendencies]=(out[k as keyof Tendencies]||0)+(v||0)*lv;
     for(const milestone of skill.milestones||[]) if(lv>=milestone.level && milestone.ai){
+      const isUniqueUltimate=milestone.level===30 && milestone.name!=="궁극";
+      if(isUniqueUltimate && uniqueUltimateApplied) continue;
       for(const [k,v] of Object.entries(milestone.ai)) out[k as keyof Tendencies]=(out[k as keyof Tendencies]||0)+(v||0);
+      if(isUniqueUltimate) uniqueUltimateApplied=true;
     }
   }
   return out;
@@ -190,9 +194,15 @@ export function passiveAiBonus(hero:Hero):Partial<Tendencies> {
 export function passiveMilestones(hero:Hero):{skillId:string;level:10|20|30;name:string;detail:string}[] {
   const set=passiveSetFor(hero);
   const unlocked:{skillId:string;level:10|20|30;name:string;detail:string}[]=[];
+  let uniqueUltimateAdded=false;
   for(const skill of set.skills){
     const lv=hero.passiveSkills?.[skill.id]||0;
-    for(const milestone of skill.milestones||[]) if(lv>=milestone.level) unlocked.push({skillId:skill.id,level:milestone.level,name:milestone.name,detail:milestone.detail});
+    for(const milestone of skill.milestones||[]) if(lv>=milestone.level){
+      const isUniqueUltimate=milestone.level===30 && milestone.name!=="궁극";
+      if(isUniqueUltimate && uniqueUltimateAdded) continue;
+      unlocked.push({skillId:skill.id,level:milestone.level,name:milestone.name,detail:milestone.detail});
+      if(isUniqueUltimate) uniqueUltimateAdded=true;
+    }
   }
   return unlocked;
 }
@@ -200,11 +210,15 @@ export function passiveMilestones(hero:Hero):{skillId:string;level:10|20|30;name
 export function passiveCombatBonus(hero:Hero):{attack:number;defense:number;hpPct:number;speedPct:number;range:number;healPct:number} {
   const set=passiveSetFor(hero);
   const out={attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0};
+  let uniqueUltimateApplied=false;
   for(const skill of set.skills){
     const lv=hero.passiveSkills?.[skill.id]||0;
     for(const [k,v] of Object.entries(skill.combatPerLevel)) out[k as keyof typeof out]+=(v||0)*lv;
     for(const milestone of skill.milestones||[]) if(lv>=milestone.level){
+      const isUniqueUltimate=milestone.level===30 && milestone.name!=="궁극";
+      if(isUniqueUltimate && uniqueUltimateApplied) continue;
       for(const [k,v] of Object.entries(milestone.combat)) out[k as keyof typeof out]+=(v||0);
+      if(isUniqueUltimate) uniqueUltimateApplied=true;
     }
   }
   return out;
