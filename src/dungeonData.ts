@@ -1,3 +1,4 @@
+import { buildPersonality, type CharacterPersonality } from "./personality";
 export type Job = "Warrior" | "Guardian" | "Archer" | "Mage" | "Cleric";
 export type RoomKind = "battle" | "elite" | "treasure" | "rest" | "event" | "hidden" | "boss" | "evilCave";
 export type Grade = "Normal" | "Elite" | "Named" | "Boss";
@@ -24,6 +25,9 @@ export type Hero = {
   history:string[]; color:string; star?:number; promotionTier?:number; promotionPath?:string[];
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   traits?:string[];
+  personality?:CharacterPersonality;
+  skinIds?:string[];
+  equippedSkinId?:string;
   artifacts?:string[];
   eventRewards?:{kind:"trait"|"artifact"|"equipment";name:string;floor:number;detail:string;source?:string}[];
   chronicle?:{kind:"achievement"|"title";id:string;name:string;description:string;earnedAt:number}[];
@@ -47,7 +51,7 @@ export type BattleUnit = {
   id:string; name:string; team:"player"|"enemy"; species?:string; job?:Job; grade?:Grade; level?:number;
   hp:number; maxHp:number; attack:number; defense:number; speed:number; range:number;
   pos:number; alive:boolean; tendencies:Tendencies; item?:Item; equipment?:Item[]; actionText:string;
-  cooldown:number; guard:number; xp:number; statusEffects?:StatusEffect[]; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>; promotionPath?:string[]; evolutionStage?:number; evolutionPath?:string[]; evolutionFocus?:string; fx?:string; fxKind?:"damage"|"heal"|"critical"|"status"; battleStats?:{damage:number;healing:number;actions:number};
+  cooldown:number; guard:number; xp:number; statusEffects?:StatusEffect[]; relationships?:Record<string,Relationship>; memories?:Memory[]; mutation?:string; behaviorCounts?:Record<string,number>; personality?:CharacterPersonality; promotionPath?:string[]; evolutionStage?:number; evolutionPath?:string[]; evolutionFocus?:string; fx?:string; fxKind?:"damage"|"heal"|"critical"|"status"; battleStats?:{damage:number;healing:number;actions:number};
 };
 
 export const defaultTendencies: Record<Job,Tendencies> = {
