@@ -61,7 +61,11 @@ function applyPromotion(h:Hero,level:number){
 }
 
 export function grantExperience(hero:Hero,gain:number){
-  let next={...hero,experience:hero.experience+gain};
+  const safeLevel=Math.max(1,Math.floor(Number(hero.level)||1));
+  const rawExperience=Number(hero.experience);
+  const safeExperience=Number.isFinite(rawExperience)?Math.max(0,rawExperience):0;
+  const safeGain=Number.isFinite(Number(gain))?Math.max(0,Number(gain)):0;
+  let next={...hero,level:safeLevel,experience:safeExperience+safeGain};
   let leveled=false;
   while(next.experience>=100){
     next.experience-=100;
