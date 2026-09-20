@@ -1645,12 +1645,7 @@ function HeroCard({hero,active,onClick,onStatus}:{hero:Hero;active:boolean;onCli
 }
 function compactTendency(hero:Hero){
   const t=hero.tendencies;
-  const axes:Array<[string,number]>=[
-    ["공격형",t.aggression*.5+t.bravery*.3+t.pursuit*.2],
-    ["수비형",t.caution*.45+t.survival*.35+t.protect*.2],
-    ["지원형",t.protect*.45+t.cooperation*.35+t.caution*.2],
-    ["탐색형",t.curiosity*.5+t.focus*.3+t.pursuit*.2]
-  ].sort((a,b)=>b[1]-a[1]);
+  const axes:Array<[string,number]>=[["공격형",t.aggression*.5+t.bravery*.3+t.pursuit*.2],["수비형",t.caution*.45+t.survival*.35+t.protect*.2],["지원형",t.protect*.45+t.cooperation*.35+t.caution*.2],["탐색형",t.curiosity*.5+t.focus*.3+t.pursuit*.2]].sort((a,b)=>b[1]-a[1]);
   return Math.abs(axes[0][1]-axes[1][1])<4?"균형형":axes[0][0];
 }
 function ItemCard({item,equipped,onEquip,onSell}:{item:Item;equipped?:boolean;onEquip?:()=>void;onSell?:()=>void}){return <article className={"item-card "+(item.unique?"unique-item":"")}><div className="item-top"><span>{item.rarity}</span>{item.unique&&<b>UNIQUE</b>}</div><h3>{item.name}</h3><small>{item.slot} · Lv.{item.level}</small><div className="stat-list">{item.stats.map(s=><span key={s}>{s}</span>)}</div>{item.aiMods&&Object.values(item.aiMods).some(v=>v!==0)&&<div className="ai-mod"><Brain size={14}/><span>AI 보정 있음</span></div>}<p>{item.description}</p><div className="item-actions">{onEquip&&<button className="ghost-btn" onClick={onEquip}>{equipped?"장착 중":"장착"}</button>}{onSell&&<button className="ghost-btn danger-btn" onClick={onSell}>판매</button>}</div></article>;}
