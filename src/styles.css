@@ -4,7 +4,25 @@
 body{margin:0;min-width:320px;background:radial-gradient(circle at 50% -10%,#18233e 0,#0b101b 42%,#080c14 100%);color:#eef2f8}
 button{font:inherit;color:inherit;cursor:pointer;border:0}
 button:disabled{opacity:.45;cursor:not-allowed}
-.game-shell{max-width:1180px;margin:auto;padding:18px 20px 32px;min-height:100vh}
+.game-shell{max-width:1180px;margin:auto;padding:18px 20px 32px;min-height:100vh;position:relative;isolation:isolate}
+.game-shell:before{content:"";position:fixed;inset:0;z-index:-3;pointer-events:none;background:
+  radial-gradient(ellipse at 50% 8%,rgba(62,77,105,.26),transparent 28%),
+  radial-gradient(ellipse at 18% 30%,rgba(35,48,68,.22),transparent 26%),
+  radial-gradient(ellipse at 84% 62%,rgba(41,49,68,.18),transparent 30%),
+  linear-gradient(180deg,#090d15 0%,#080c13 48%,#060a10 100%);
+}
+.game-shell:after{content:"";position:fixed;inset:-8%;z-index:-2;pointer-events:none;opacity:.48;background:
+  linear-gradient(112deg,transparent 0 12%,rgba(255,255,255,.018) 13%,transparent 14% 28%,rgba(255,255,255,.014) 29%,transparent 30% 100%),
+  linear-gradient(68deg,transparent 0 22%,rgba(255,255,255,.012) 23%,transparent 24% 49%,rgba(0,0,0,.16) 50%,transparent 51% 100%),
+  radial-gradient(circle at 50% 18%,rgba(118,132,153,.08) 0 1px,transparent 1.5px);
+  background-size:100% 100%,100% 100%,18px 18px;
+  filter:blur(.2px);
+}
+.cave-atmosphere{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.cave-atmosphere:before,.cave-atmosphere:after{content:"";position:absolute;top:-6%;width:24vw;height:118%;opacity:.22;filter:blur(2px)}
+.cave-atmosphere:before{left:-7%;background:linear-gradient(155deg,transparent 0 12%,#121a27 13% 25%,transparent 26% 38%,#0f1723 39% 52%,transparent 53% 67%,#101722 68% 82%,transparent 83%);clip-path:polygon(0 0,100% 0,78% 13%,93% 27%,64% 42%,85% 58%,58% 76%,72% 100%,0 100%)}
+.cave-atmosphere:after{right:-7%;background:linear-gradient(205deg,transparent 0 12%,#121a27 13% 25%,transparent 26% 38%,#0f1723 39% 52%,transparent 53% 67%,#101722 68% 82%,transparent 83%);clip-path:polygon(100% 0,0 0,22% 13%,7% 27%,36% 42%,15% 58%,42% 76%,28% 100%,100% 100%)}
+
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:16px 18px;border:1px solid #273149;background:rgba(12,17,28,.86);border-radius:18px;backdrop-filter:blur(12px);position:sticky;top:10px;z-index:20}
 .brand{display:flex;align-items:center;gap:12px;cursor:pointer}
 .brand-mark{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(140deg,#455ed0,#7c58c7);box-shadow:0 0 24px rgba(111,92,226,.2)}
