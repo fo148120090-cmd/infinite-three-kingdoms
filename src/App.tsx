@@ -455,7 +455,10 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   });
   const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   const count=room==="boss"||room==="evilCave"?3:room==="elite"?4:3;
-  let es=Array.from({length:count},(_,i)=>createLinedMonster(pool[(i+floor)%pool.length],floor+2,room==="boss"?"Boss":room==="elite"?"Elite":"Normal",i,lineages));
+  let es=Array.from({length:count},(_,i)=>{
+    const grade=room==="boss"||room==="evilCave"?(i===0?"Named":"Elite"):room==="elite"?"Elite":"Normal";
+    return createLinedMonster(pool[(i+floor)%pool.length],floor+2,grade,i,lineages);
+  });
   if(room==="boss"||room==="evilCave"){
     const bossSpecies=room==="evilCave"?"Demon":raidBossForFloor(floor);
     const base=createMonster(bossSpecies,Math.max(8,floor+5),"Boss",0);
