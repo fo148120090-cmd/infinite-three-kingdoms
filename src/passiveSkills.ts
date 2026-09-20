@@ -109,9 +109,9 @@ function expandGenericTree(set:SkillSet):SkillSet {
   const skills:PassiveSkill[]=[];
   base.forEach((s,index)=>{
     const branch=["전투","생존","전문화"][index]||("분기 "+(index+1));
-    const t1={...s,id:s.id,branch,tier:1,requires:undefined};
-    const t2={...s,id:s.id+"-2",name:s.name+" · 강화",detail:s.detail+" 한 단계 강화됩니다.",branch,tier:2,combatPerLevel:Object.fromEntries(Object.entries(s.combatPerLevel).map(([k,v])=>[k,(v||0)*1.2])) as PassiveSkill["combatPerLevel"],requires:{skillId:t1.id,level:5}};
-    const t3={...s,id:s.id+"-3",name:s.name+" · 극의",detail:s.detail+" 극한까지 끌어올립니다.",branch,tier:3,combatPerLevel:Object.fromEntries(Object.entries(s.combatPerLevel).map(([k,v])=>[k,(v||0)*1.5])) as PassiveSkill["combatPerLevel"],requires:{skillId:t2.id,level:5}};
+    const t1={...s,id:s.id,branch,tier:1 as const,requires:undefined};
+    const t2={...s,id:s.id+"-2",name:s.name+" · 강화",detail:s.detail+" 한 단계 강화됩니다.",branch,tier:2 as const,combatPerLevel:Object.fromEntries(Object.entries(s.combatPerLevel).map(([k,v])=>[k,(v||0)*1.2])) as PassiveSkill["combatPerLevel"],requires:{skillId:t1.id,level:5}};
+    const t3={...s,id:s.id+"-3",name:s.name+" · 극의",detail:s.detail+" 극한까지 끌어올립니다.",branch,tier:3 as const,combatPerLevel:Object.fromEntries(Object.entries(s.combatPerLevel).map(([k,v])=>[k,(v||0)*1.5])) as PassiveSkill["combatPerLevel"],requires:{skillId:t2.id,level:5}};
     skills.push(t1,t2,t3);
   });
   return {...set,skills};
