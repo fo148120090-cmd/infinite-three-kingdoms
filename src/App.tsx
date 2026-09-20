@@ -531,21 +531,6 @@ function applyGrowthRewardHeroes(heroes:Hero[],reward:GrowthReward,heroId:string
 function applyGrowthRewardSave(s:Save,reward:GrowthReward,heroId:string):Save{
   return {...s,heroes:applyGrowthRewardHeroes(s.heroes,reward,heroId,s.floor)};
 }
-  return {...s,heroes:s.heroes.map(h=>{
-    if(h.id!==heroId)return h;
-    if(reward.kind==="trait"){
-      if((h.traits||[]).length>=4 || (h.traits||[]).includes(reward.name)) return h;
-      const effect=growthTraitCatalog[reward.name];
-      const tendencies={...h.tendencies};
-      Object.entries(effect?.aiMods||{}).forEach(([k,v])=>tendencies[k as keyof Tendencies]=clamp(tendencies[k as keyof Tendencies]+(v||0)));
-      const record={kind:"trait" as const,name:reward.name,floor:s.floor,detail:reward.detail,source:reward.source};
-      return {...h,tendencies,traits:[...(h.traits||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
-    }
-    if((h.artifacts||[]).length>=4 || (h.artifacts||[]).includes(reward.name)) return h;
-    const record={kind:"artifact" as const,name:reward.name,floor:s.floor,detail:reward.detail,source:reward.source};
-    return {...h,artifacts:[...(h.artifacts||[]),reward.name].slice(0,4),eventRewards:[...(h.eventRewards||[]),record].slice(-8)};
-  })};
-}
 
 export default function App(){
   const [save,setSave]=useState<Save>(load);
