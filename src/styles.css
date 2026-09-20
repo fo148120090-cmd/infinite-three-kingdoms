@@ -261,3 +261,8 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 .modal-event-rewards>small{padding:8px;color:#6f7e96;line-height:1.4}
 
 .event-recipient{display:block;margin-top:5px!important;color:#9fb2d7!important;font-size:9px!important}.event-choice:hover .event-recipient{color:#c7d7f3!important}.event-reward-label{margin-left:6px}
+
+.modal-collection{display:grid;gap:6px;margin-top:7px}
+.modal-collection>div{padding:7px 8px;border:1px solid #26344b;border-radius:8px;background:#101927}
+.modal-collection small{display:block;color:#71809a;font-size:7px;margin-bottom:2px}
+.modal-collection b{display:block;color:#cbd6e7;font-size:8px;line-height:1.4;word-break:break-word}
