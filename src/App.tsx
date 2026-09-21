@@ -1634,6 +1634,7 @@ export default function App(){
     <p>{battle.result==="victory"?"전투 기록과 경험이 캐릭터에 반영되었습니다.":"이번 전투에서 원정이 종료되었습니다."}</p>
   </div>
   {battle.result==="victory"&&<div className="clear-cutin"><span>MISSION CLEAR</span><b>{battle.room==="evilCave"?"WORLD SEAL BREAKER":"BATTLEFIELD DOMINANCE"}</b><i>전투 기록 · 경험 · 각성 진행이 저장되었습니다.</i></div>}
+  <div className="result-costume-panel"><div className="report-head"><b>✦ 코스튬 전투 기록</b><span>이번 전투에 적용된 코스튬 효과</span></div><div className="costume-result-grid">{battle.units.filter(u=>u.team==="player").map(u=>{const h=save.heroes.find(x=>x.id===u.id);const skinId=h?.equippedSkinId||h?.costumeId||u.skinId;const passive=costumePassive(skinId);return <div className="costume-result-card" key={u.id}><div><strong>{h?.name||u.name}</strong><span>{skinId?skinLabel(skinId):"기본 코스튬"}</span></div><b>✦ {passive.name}</b><small>{passive.detail}</small><em>{u.battleStats?.costumeFx||0}회 발동 · 치명타 {(u.battleStats?.critical||0)}회</em></div>})}</div></div>
   <div className="result-report">
     <div className="battle-report">
       <div className="report-head"><b>AI 전투 리포트</b><span>이번 전투의 핵심 행동만 표시</span></div>
