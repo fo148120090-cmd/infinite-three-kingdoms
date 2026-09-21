@@ -3331,3 +3331,62 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .monster-art-arachne.monster-art-grade-boss .monster-aura-ring,
   .monster-art-demon.monster-art-grade-boss .monster-aura-ring{animation:none!important}
 }
+
+/* 2026-09-21 boss token hierarchy pass: unified token, nameplate and rank badge */
+.battle-scene .battle-unit.enemy.boss-unit .unit-token-frame{
+  transform:scale(1.08);
+  transform-origin:center top;
+  filter:drop-shadow(0 13px 20px rgba(0,0,0,.5));
+}
+.battle-scene .battle-unit.enemy.boss-unit .monster-asset-boss{
+  border-width:2px;
+  box-shadow:0 0 0 1px rgba(242,199,109,.18),0 0 30px rgba(180,74,74,.24),inset 0 1px 0 rgba(255,255,255,.1),0 14px 28px rgba(0,0,0,.5);
+}
+.battle-scene .battle-unit.enemy.boss-unit .monster-asset-boss>i{
+  color:#f2c76d;
+  font-size:14px;
+  font-style:normal;
+  text-shadow:0 0 8px rgba(242,199,109,.55);
+}
+.battle-scene .battle-unit.enemy.boss-unit .boss-nameplate{
+  border-color:rgba(242,199,109,.5);
+  background:linear-gradient(180deg,rgba(25,18,18,.96),rgba(7,9,14,.98));
+  box-shadow:0 8px 20px rgba(0,0,0,.4),inset 0 0 14px rgba(242,199,109,.06);
+}
+.battle-scene .battle-unit.enemy.boss-unit .boss-nameplate b{
+  color:#f7e4b1;
+  text-shadow:0 0 8px rgba(242,199,109,.2);
+}
+.boss-rank-badge{
+  display:inline-block;
+  margin-top:3px;
+  padding:2px 6px;
+  border:1px solid rgba(242,199,109,.42);
+  border-radius:999px;
+  background:rgba(33,22,20,.78);
+  color:#f2c76d;
+  font-size:7px;
+  font-weight:800;
+  letter-spacing:.08em;
+  line-height:1;
+  box-shadow:0 0 10px rgba(242,199,109,.08);
+}
+.boss-rank-orc{border-color:rgba(242,199,109,.48);color:#f2c76d}
+.boss-rank-spider{border-color:rgba(205,157,230,.52);color:#dfbff2}
+.boss-rank-demon{border-color:rgba(232,121,121,.55);color:#f0a0a0}
+.battle-scene.battle-phase-2 .battle-unit.enemy.boss-unit .boss-rank-badge{
+  box-shadow:0 0 13px rgba(242,199,109,.13);
+}
+.battle-scene.battle-phase-3 .battle-unit.enemy.boss-unit .boss-rank-badge{
+  border-color:rgba(255,105,84,.7);
+  background:rgba(35,10,12,.82);
+  color:#ffc0ad;
+  box-shadow:0 0 16px rgba(255,82,65,.18);
+}
+@media(max-width:640px){
+  .battle-scene .battle-unit.enemy.boss-unit .unit-token-frame{transform:scale(1.02)}
+  .boss-rank-badge{font-size:6.5px;padding:2px 5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene .battle-unit.enemy.boss-unit .unit-token-frame{transform:scale(1.08)}
+}
