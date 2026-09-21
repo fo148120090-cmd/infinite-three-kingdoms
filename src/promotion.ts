@@ -157,8 +157,11 @@ export function grantExperience(hero:Hero,gain:number){
   const safeGain=Number.isFinite(Number(gain))?Math.max(0,Number(gain)):0;
   let next={...hero,level:safeLevel,experience:safeExperience+safeGain};
   let leveled=false;
-  while(next.experience>=100){
-    next.experience-=100;
+  // 고레벨/다회차에서도 초반과 동일한 100 XP 고정 요구량을 사용하지 않고,
+  // 레벨이 올라갈수록 필요한 경험치가 조금씩 증가하도록 성장 곡선을 완만하게 적용한다.
+  const xpRequired=(level:number)=>Math.round(100+Math.max(0,level-1)*2.5);
+  while(next.experience>=xpRequired(next.level)){
+    next.experience-=xpRequired(next.level);
     next.level+=1;
     next.skillPoints=(next.skillPoints||0)+1;
     next.hp=Math.round(next.hp*1.04);
