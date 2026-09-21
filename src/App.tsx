@@ -47,6 +47,14 @@ const scaleMonsterForSeals=(monster:ReturnType<typeof createMonster>,sealCount=0
   const mult=sealEnemyMultiplier(sealCount);
   return {...monster,hp:Math.max(1,Math.round(monster.hp*mult)),maxHp:Math.max(1,Math.round(monster.maxHp*mult)),attack:Math.max(1,Math.round(monster.attack*mult)),defense:Math.max(1,Math.round(monster.defense*mult)),speed:Math.max(.2,Math.round(monster.speed*(1+Math.max(0,sealCount)*.025)*100)/100)};
 };
+const worldRoundFromSealCount=(sealCount=0)=>Math.max(1,Math.floor(Number(sealCount)||0)+1);
+const dungeonLevelRange=(floor:number,sealCount=0)=>{
+  const normalizedFloor=Math.max(1,Math.min(6,Math.floor(Number(floor)||1)));
+  const worldRound=worldRoundFromSealCount(sealCount);
+  const floorMin=(worldRound-1)*30+(normalizedFloor-1)*5+1;
+  return {min:floorMin,max:floorMin+4,worldRound,floor:normalizedFloor};
+};
+
 const scaleBossMonster=(monster:ReturnType<typeof createMonster>,floor:number,sealCount=0)=>{
   const sealed=scaleMonsterForSeals(monster,sealCount);
   const mult=1.48+Math.min(.34,Math.max(0,floor)*.018)+Math.max(0,sealCount)*.04;
@@ -460,12 +468,12 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
       personality:h.personality,relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
   });
   const pool=floor<=2?["Goblin","Kobold","Slime"]:floor<=4?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
-  // 일반 던전 몬스터는 층당 5레벨 구간을 사용한다.
-  // 1F=Lv.1~5, 2F=Lv.6~10 ... 6F=Lv.26~30.
-  const floorTier=Math.max(0,Math.min(5,Math.floor((Math.max(1,floor)-1)/1)));
-  const floorMin=floorTier*5+1;
-  const floorMax=floorMin+4;
-  const monsterLevelFor=(index:number)=>Math.min(floorMax,floorMin+((Math.max(0,index)+Math.max(0,floor-1))%5));
+  // 세계 회차마다 30레벨씩 상승하며, 6개 층은 각각 5레벨 구간을 공유한다.
+  // 1회차: 1F=Lv.1~5 ... 6F=Lv.26~30 / 2회차: 1F=Lv.31~35 ... 6F=Lv.56~60.
+  const levelRange=dungeonLevelRange(floor,sealCount);
+  const floorMin=levelRange.min;
+  const floorMax=levelRange.max;
+  const monsterLevelFor=(index:number)=>floorMin+((Math.max(0,index)+Math.max(0,floor-1))%5);
   const count=room==="boss"||room==="evilCave"?3:room==="elite"?4:3;
   let es=Array.from({length:count},(_,i)=>{
     const grade=room==="boss"||room==="evilCave"?(i===0?"Named":"Elite"):room==="elite"?"Elite":"Normal";
@@ -473,7 +481,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
   });
   if(room==="boss"||room==="evilCave"){
     const bossSpecies=room==="evilCave"?"Demon":raidBossForFloor(floor);
-    const base=createMonster(bossSpecies,Math.min(30,Math.max(1,floorMin+4)),"Boss",0);
+    const base=createMonster(bossSpecies,floorMax,"Boss",0);
     const bossName=room==="evilCave"?"악의 동굴 수문장":bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
     es[0]={...base,name:bossName,pos:8.8};
   }
@@ -966,7 +974,9 @@ export default function App(){
             const count=Math.min(7,2+wave);
             const nextEnemies=Array.from({length:count},(_,i)=>{
               const waveGrade=wave>=6?"Named":wave>=4?"Elite":"Normal";
-              const m=scaleMonsterForSeals(createLinedMonster(pool[(i+wave+save.floor)%pool.length],Math.max(1,save.floor+wave-1),waveGrade,i,save.monsterLineages),save.sealCount||0);
+              const levelRange=dungeonLevelRange(save.floor,save.sealCount||0);
+              const defenseLevel=levelRange.min+((i+wave+Math.max(0,save.floor-1))%5);
+              const m=scaleMonsterForSeals(createLinedMonster(pool[(i+wave+save.floor)%pool.length],defenseLevel,waveGrade,i,save.monsterLineages),save.sealCount||0);
               return asEnemy({...m,pos:8.2+i*.55},"-w"+wave);
             });
             out.units=out.units.concat(nextEnemies);
@@ -1481,7 +1491,7 @@ export default function App(){
 
     {screen==="recruit"&&<section className="page management-page recruit-page"><div className="section-head"><div><span className="eyebrow">RECRUITMENT</span><h2>용사 모집란</h2><p className="muted">기초직업 5종의 신규 용사를 지속적으로 모집할 수 있습니다. 모집비 350 골드.</p></div><span className="counter">{save.heroes.length}명</span></div><div className="recruit-panel"><div><b>기초직업 모집</b><span>모집된 용사는 Lv.1에서 시작하며 기본 직업과 서로 다른 초기 성향을 가집니다.</span></div><div className="recruit-grid">{(Object.keys(jobKo) as Job[]).map(j=><article className="recruit-card" key={j}><div className="room-icon">{jobIcon[j]}</div><b>{jobKo[j]}</b><p>기초 직업 · 장기 성향이 성장하며 자동 전직합니다.</p><button className="primary-btn compact" disabled={save.gold<350} onClick={()=>recruit(j)}><UserPlus size={15}/> 모집 350G</button></article>)}</div></div><div className="subpanel"><div><b>모집 원칙</b><span>신규 용사의 미래는 실제 행동과 경험이 결정합니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("party")}><UserRound size={16}/> 캐릭터 보기</button></div></section>}
 
-    {screen==="dungeon"&&<section className="page play-page dungeon-page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다. · 세계 {(save.sealCount||0)+1}회차 · 적 전투력 +{sealEnemyEnhancement(save.sealCount||0)}%</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
+    {screen==="dungeon"&&<section className="page play-page dungeon-page"><div className="section-head"><div><span className="eyebrow">DUNGEON</span><h2>{save.floor}F · 다음 방 선택</h2><p className="muted">경로만 선택할 수 있습니다. 전투가 시작되면 AI가 전부 결정합니다. · 세계 {(save.sealCount||0)+1}회차 · 적 Lv.{dungeonLevelRange(save.floor,save.sealCount||0).min}~{dungeonLevelRange(save.floor,save.sealCount||0).max} · 적 전투력 +{sealEnemyEnhancement(save.sealCount||0)}%</p></div><button className="ghost-btn" onClick={()=>setScreen("party")}><UserRound size={16}/> 파티 수정</button></div>
       <NpcGuide floor={save.floor} mode={mode} compact onOpen={openNpc} dialogueIndex={npcTalkIndex}/>
       <div className="progress-strip">{Array.from({length:6},(_,i)=><div key={i} className={"progress-node "+(i<save.stage?"done":i===save.stage?"current":"")}><span>{i<save.stage?"✓":i+1}</span><small>{i===5?"BOSS":"ROOM "+(i+1)}</small></div>)}</div>
       {Object.keys(save.scenarioClears).length>0&&<div className="repeat-panel"><div><b>완료 시나리오 재도전</b><span>성장을 위해 완료한 시나리오를 반복할 수 있습니다. 반복할수록 보상이 감소하고 25% 확률로 정예 몬스터 무리가 등장합니다.</span></div><div className="repeat-list">{Object.keys(save.scenarioClears).sort((a,b)=>Number(b)-Number(a)).map(k=>{const n=save.scenarioClears[k];const mult=Math.max(.3,.6-.1*Math.max(0,n-1));return <button key={k} className="repeat-card" onClick={()=>startRepeat(Number(k))}><b>{k}F 시나리오</b><span>클리어 {n}회 · 다음 보상 {Math.round(mult*100)}%</span><ChevronRight size={16}/></button>})}</div></div>}
