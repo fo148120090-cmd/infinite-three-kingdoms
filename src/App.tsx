@@ -1498,7 +1498,7 @@ export default function App(){
           <div><span className="eyebrow">TACTICAL FRONTLINE MAP</span><b>철벽 전초기지 · 제1 방어선</b><small>시설을 눌러 준비하고, 성문을 통해 전장으로 이동합니다.</small></div>
           
         </div>
-        <div className="fortress-map">
+        <div className="fortress-map" style={{backgroundImage:"linear-gradient(rgba(8,13,21,.46),rgba(8,13,21,.66)),url('/assets/strategy/strategy-banner.svg')",backgroundSize:"cover",backgroundPosition:"center"}}>
           <div className="map-skyline"/>          <div className="map-mountain mountain-a"/>
           <div className="map-mountain mountain-b"/>
           <div className="map-road road-main"/>
