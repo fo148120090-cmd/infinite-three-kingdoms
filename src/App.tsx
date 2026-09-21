@@ -889,6 +889,8 @@ export default function App(){
   const [warehouseTab,setWarehouseTab]=useState<"all"|"weapon"|"armor"|"ring"|"accessory">("all");
   const [warehouseSort,setWarehouseSort]=useState<"recent"|"level"|"rarity">("recent");
   const [selectedWarehouseItem,setSelectedWarehouseItem]=useState<string|undefined>();
+  const [challengeMode,setChallengeMode]=useState<"defense"|"raid"|undefined>();
+  const [challengeLevel,setChallengeLevel]=useState(10);
   const [npcOpen,setNpcOpen]=useState(false);
   const [npcTalkIndex,setNpcTalkIndex]=useState(0);
   const [lastLoot,setLastLoot]=useState<Item[]>([]);
@@ -978,22 +980,33 @@ export default function App(){
     setPaused(false);setScreen("battle");setDecision(elitePack?"재도전 중 정예 무리의 전투 성향을 분석 중...":"완료 시나리오의 적 행동을 다시 분석 중...");
   };
 
-  const startMode=(nextMode:BattleMode)=>{
+  const challengeLevels=()=>{
+    const maxHeroLevel=Math.max(10,...save.heroes.map(h=>h.level));
+    const maxLevel=Math.max(10,Math.floor(maxHeroLevel/10)*10);
+    return Array.from({length:maxLevel/10},(_,i)=>(i+1)*10);
+  };
+  const startMode=(nextMode:BattleMode,challenge=save.floor*5)=>{
     setMode(nextMode);
     const room:RoomKind=nextMode==="raid"?"boss":"battle";
-    const env=environmentFor(save.floor,room,nextMode);
-    const units=spawn(save.heroes,save.party,room,save.floor,save.monsterLineages,nextMode,save.sealCount||0);
-    const objectiveKind=defenseObjectiveForFloor(save.floor);
+    const challengeFloor=Math.max(1,Math.ceil(challenge/5));
+    const env=environmentFor(challengeFloor,room,nextMode);
+    const units=spawn(save.heroes,save.party,room,challenge,save.monsterLineages,nextMode,save.sealCount||0);
+    const objectiveKind=defenseObjectiveForFloor(challengeFloor);
     const label=nextMode==="defense"
-      ? `방어전 시작 · ${defenseObjectiveKo[objectiveKind]} · ${formationLabel(party,nextMode)} · 30초 동안 웨이브가 계속됩니다.`
-      : `보스 레이드 시작 · ${raidBossForFloor(save.floor)} 보스 · ${formationLabel(party,nextMode)} · 페이즈는 AI가 자동 전환됩니다.`;
+      ? `방어전 Lv.${challenge} · ${defenseObjectiveKo[objectiveKind]} · ${formationLabel(party,nextMode)} · 30초 동안 웨이브가 계속됩니다.`
+      : `보스 레이드 Lv.${challenge} · ${raidBossForFloor(challengeFloor)} 보스 · ${formationLabel(party,nextMode)} · 페이즈는 AI가 자동 전환됩니다.`;
     const plan=battlePlanFor(party,nextMode);
     const boss=units.find(u=>u.team==="enemy"&&u.grade==="Boss");
-    const bossIntro=nextMode==="raid"&&boss?bossIntroFor(save.floor,"boss",boss.name,boss.species||raidBossForFloor(save.floor)):undefined;
+    const bossIntro=nextMode==="raid"&&boss?bossIntroFor(challengeFloor,"boss",boss.name,boss.species||raidBossForFloor(challengeFloor)):undefined;
     setBattle({units,plan,log:[label+" · "+plan.label+" · "+environmentInfo[env].name+(bossIntro?" · "+bossIntro.name+" 등장":"")],room,round:1,tick:0,ended:false,next:units[0].id,mode:nextMode,wave:1,deadline:nextMode==="defense"?Date.now()+30000:undefined,objectiveHp:100,phase:1,objectiveKind,environment:env,bossIntro,partyMemory:save.partyMemory||defaultPartyMemory});
-    setPaused(!!bossIntro);setScreen("battle");
+    setPaused(!!bossIntro);setScreen("battle");setChallengeMode(undefined);
     setDecision(bossIntro?"보스 등장 연출 · 고유 패턴을 분석 중...":nextMode==="defense"?"방어 목표와 생존 경로를 계산 중...":"보스 패턴과 페이즈 전환을 분석 중...");
     if(bossIntro)window.setTimeout(()=>{setBattle(b=>({...b,bossIntro:undefined}));setPaused(false);},2800);
+  };
+  const openChallenge=(nextMode:"defense"|"raid")=>{
+    const levels=challengeLevels();
+    setChallengeMode(nextMode);
+    setChallengeLevel(levels[0]);
   };
 
   useEffect(()=>{
@@ -1514,13 +1527,20 @@ export default function App(){
           <button className="gate-launch gate-dungeon" onClick={()=>setScreen("dungeon")}>
             <span>⚔</span><b>던전 출격문</b><small>다음 방 선택</small>
           </button>
-          <button className="gate-launch gate-defense" onClick={()=>startMode("defense")}>
+          <button className="gate-launch gate-defense" onClick={()=>openChallenge("defense")}>
             <span>🛡</span><b>방어선 출격</b><small>{defenseObjectiveKo[defenseObjectiveForFloor(save.floor)]} · 30초 방어</small>
           </button>
-          <button className="gate-launch gate-raid" onClick={()=>startMode("raid")}>
+          <button className="gate-launch gate-raid" onClick={()=>openChallenge("raid")}>
             <span>♛</span><b>레이드 관문</b><small>{raidBossForFloor(save.floor)} · 3페이즈</small>
           </button>
         </div>
+        {challengeMode&&<div className="challenge-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="challenge-modal">
+            <div className="challenge-modal-head"><div><span className="eyebrow">{challengeMode==="defense"?"DEFENSE FRONT":"BOSS RAID"}</span><h3>{challengeMode==="defense"?"방어전 도전 레벨":"보스 레이드 도전 레벨"}</h3><p>10레벨 단위로 도전 레벨을 직접 선택합니다.</p></div><button className="ghost-btn compact" onClick={()=>setChallengeMode(undefined)}>닫기</button></div>
+            <div className="challenge-level-grid">{challengeLevels().map(lv=><button key={lv} className={"challenge-level-btn "+(challengeLevel===lv?"selected":"")} onClick={()=>setChallengeLevel(lv)}><b>Lv.{lv}</b><small>{challengeMode==="defense"?"방어 웨이브":"보스 페이즈"} · 도전</small></button>)}</div>
+            <div className="challenge-modal-foot"><span>선택: <b>Lv.{challengeLevel}</b></span><button className="primary-btn" onClick={()=>startMode(challengeMode,challengeLevel)}>Lv.{challengeLevel} 도전 시작</button></div>
+          </div>
+        </div>}
         <div className="fortress-map-legend">
           <span><i className="legend-ready"/>준비 시설</span>
           <span><i className="legend-road"/>출격 경로</span>
