@@ -69,7 +69,10 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
 
     {elite&&<path d="M32 7L35 13L42 14L37 19L38 26L32 22L26 26L27 19L22 14L29 13Z" fill="#d6b86a" opacity=".9"/>}
     {named&&<circle cx="32" cy="8" r="4" fill="#b9c8ff" stroke="#eef3ff" strokeWidth="1"/>}
-    {boss&&<path d="M16 17L21 5L29 14L35 4L43 14L49 5L50 22" fill="none" stroke="#e5c46d" strokeWidth="2.4" strokeLinejoin="round"/>}
+    {boss&&isUruk&&<path d="M15 18L19 5L27 12L32 3L37 12L45 5L49 18L43 15L38 20L32 14L26 20L21 15Z" fill="none" stroke="#f2c76d" strokeWidth="2.2" strokeLinejoin="round"/>}
+    {boss&&isArachne&&<path d="M32 4L36 15L48 11L40 21L53 27L40 29L46 42L35 34L32 48L29 34L18 42L24 29L11 27L24 21L16 11L28 15Z" fill="none" stroke="#dfbff2" strokeWidth="1.5" strokeLinejoin="round" opacity=".9"/>}
+    {boss&&isDemon&&<path d="M14 18L20 7L29 15L32 3L35 15L44 7L50 18L42 17L37 22L32 17L27 22L22 17Z" fill="none" stroke="#f0a0a0" strokeWidth="2" strokeLinejoin="round"/>}
+    {boss&&!(isUruk||isArachne||isDemon)&&<path d="M16 17L21 5L29 14L35 4L43 14L49 5L50 22" fill="none" stroke="#e5c46d" strokeWidth="2.4" strokeLinejoin="round"/>}
     {boss&&<path d="M18 57 Q32 61 46 57" fill="none" stroke="#f2c76d" strokeWidth="1.8" opacity=".8"/>}
     <path d="M17 52 Q32 47 47 52" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="2"/>
   </svg>;
