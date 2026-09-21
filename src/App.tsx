@@ -1636,7 +1636,7 @@ export default function App(){
   {battle.result==="victory"&&<div className="clear-cutin"><span>MISSION CLEAR</span><b>{battle.room==="evilCave"?"WORLD SEAL BREAKER":"BATTLEFIELD DOMINANCE"}</b><i>전투 기록 · 경험 · 각성 진행이 저장되었습니다.</i></div>}
   <div className="result-report">
     <div className="battle-report">
-      <div className="report-head"><b>AI 전투 리포트</b><span>이번 전투의 핵심 행동만 표시</span></div>
+      <div className="report-head"><b>AI 전투 리포트</b><span>전투 전체 요약 · 캐릭터별 핵심 행동</span></div>
       <div className="battle-report-grid">{battle.units.filter(u=>u.team==="player").map(u=><div className="report-card" key={u.id}>
         <div className="report-card-head"><strong>{u.name}</strong><span>{jobKo[u.job as Job]||"전투원"}</span></div>
         <div className="report-metrics"><span><b>{u.battleStats?.actions||0}</b><small>행동</small></span><span><b>{u.battleStats?.damage||0}</b><small>피해</small></span><span><b>{u.battleStats?.healing||0}</b><small>회복</small></span><span><b>{u.battleStats?.taken||0}</b><small>받은 피해</small></span><span><b>{u.battleStats?.kills||0}</b><small>처치</small></span></div><small className="report-costume-fx">✦ 코스튬 효과 {(u.battleStats?.costumeFx||0)}회 · 치명타 {(u.battleStats?.critical||0)}회</small>
