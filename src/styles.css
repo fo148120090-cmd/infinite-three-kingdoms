@@ -3728,3 +3728,56 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .status-passive-awakenings{grid-template-columns:1fr}
   .status-promotion-pending>div{grid-template-columns:1fr}
 }
+
+
+/* 2026-09-21 hero progression visibility */
+.hero-xp-track{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:7px;
+  margin:5px 0 2px;
+}
+.hero-xp-track i{
+  display:block;
+  height:5px;
+  overflow:hidden;
+  border-radius:999px;
+  border:1px solid #293954;
+  background:#111b2a;
+}
+.hero-xp-track i em{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#536fbd,#c7a75d);
+}
+.hero-xp-track span{
+  color:#8593aa;
+  font-size:7px;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.hero-mini-xp{
+  display:block;
+  width:100%;
+  height:3px;
+  margin-top:3px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#182235;
+}
+.hero-mini-xp em{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#536fbd,#b99c57);
+}
+.character-selector-card>span:nth-child(2),
+.warehouse-target>span:nth-child(2){
+  min-width:0;
+}
+@media(max-width:650px){
+  .hero-xp-track{gap:5px}
+  .hero-xp-track span{font-size:6px}
+}
