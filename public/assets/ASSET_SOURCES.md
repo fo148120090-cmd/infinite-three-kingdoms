@@ -14,3 +14,13 @@
 
 ## License note
 The portrait asset above is CC0 according to its OpenGameArt listing. Kenney's Game Icons are also CC0 and are being considered for the next equipment/icon pass.
+
+## Dungeon / battle environment
+- **Dungeon / RPG battle background candidates** — OpenGameArt CC0 collections
+- Monster source: **50+ Monsters Pack 2D** — isaiah658, OpenGameArt
+- License: **CC0**
+- Source: https://opengameart.org/content/50-monsters-pack-2d
+- Usage: battle-stage visual treatment and future enemy sprite integration.
+
+## Asset integration note
+- Current enemy presentation remains gameplay-first; CC0 monster art is being introduced as a visual layer rather than replacing combat data or level rules.
