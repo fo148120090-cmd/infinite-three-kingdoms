@@ -2053,3 +2053,24 @@ body{
  .monster-asset-boss{width:76px;height:76px}
  .monster-asset-boss span{font-size:40px}
 }
+
+/* 2026-09-21 AAA art direction pass VIII: dungeon environment depth */
+.dungeon-page{background:
+ radial-gradient(ellipse at 50% 8%,rgba(72,112,166,.18),transparent 34%),
+ radial-gradient(ellipse at 15% 65%,rgba(26,52,76,.22),transparent 42%),
+ linear-gradient(180deg,#07101b 0%,#091522 48%,#050a11 100%)}
+.dungeon-page:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.55;background:
+ linear-gradient(105deg,transparent 0 18%,rgba(139,170,207,.035) 19%,transparent 20% 76%,rgba(139,170,207,.03) 77%,transparent 78%),
+ radial-gradient(circle at 50% 18%,rgba(255,255,255,.035),transparent 34%)}
+.dungeon-page .route-grid{position:relative}
+.dungeon-page .route-card{min-height:118px;overflow:hidden;border-color:rgba(105,132,165,.24);background:
+ linear-gradient(135deg,rgba(25,39,57,.96),rgba(8,14,22,.98));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 14px 30px rgba(0,0,0,.28)}
+.dungeon-page .route-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:
+ radial-gradient(circle at 12% 50%,rgba(106,158,214,.12),transparent 28%),
+ linear-gradient(90deg,transparent 55%,rgba(255,255,255,.025))}
+.dungeon-page .route-card:hover{transform:translateY(-3px);border-color:rgba(130,169,215,.48);box-shadow:0 18px 34px rgba(0,0,0,.4),0 0 22px rgba(62,120,180,.1)}
+.dungeon-page .room-icon{position:relative;z-index:1;width:58px;height:58px;border-radius:16px;display:grid;place-items:center;background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.12),transparent 48%),#0a111b;border:1px solid rgba(137,161,191,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 9px 18px rgba(0,0,0,.32);font-size:25px}
+.dungeon-page .route-intel{position:relative;z-index:1}
+.dungeon-page .progress-strip{position:relative;padding:12px 8px;border:1px solid rgba(101,129,162,.2);border-radius:16px;background:linear-gradient(180deg,rgba(13,23,35,.92),rgba(6,12,19,.92));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 12px 28px rgba(0,0,0,.25)}
+@media(max-width:650px){.dungeon-page .route-card{min-height:102px}.dungeon-page .room-icon{width:50px;height:50px;font-size:21px}}
