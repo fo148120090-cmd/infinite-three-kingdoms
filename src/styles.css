@@ -1810,3 +1810,11 @@ body{
 .battle-stage:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 76%,rgba(103,135,179,.18),transparent 48%),linear-gradient(90deg,rgba(3,7,12,.24),transparent 32%,transparent 68%,rgba(3,7,12,.3))}
 .battle-stage .battle-unit,.battle-stage .battle-token{filter:drop-shadow(0 10px 10px rgba(0,0,0,.38))}
 .battle-stage .battle-token{border-color:rgba(155,179,218,.3);box-shadow:0 0 0 1px rgba(0,0,0,.25),0 12px 20px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.07)}
+
+/* 2026-09-21 CC0 monster artwork layer */
+.battle-unit.enemy .unit-token{overflow:hidden;position:relative;background:radial-gradient(circle at 50% 35%,rgba(121,56,65,.24),rgba(8,12,19,.92) 72%)}
+.battle-unit.enemy .monster-asset{width:82px;height:82px;object-fit:cover;image-rendering:pixelated;opacity:.9;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5)) saturate(.9) contrast(1.08)}
+.battle-unit.enemy .monster-asset-elite{filter:drop-shadow(0 8px 8px rgba(0,0,0,.5)) saturate(1.15) contrast(1.12)}
+.battle-unit.enemy .monster-asset-named{filter:drop-shadow(0 8px 8px rgba(0,0,0,.55)) saturate(1.25) contrast(1.15)}
+.battle-unit.enemy .monster-asset-boss{filter:drop-shadow(0 10px 10px rgba(0,0,0,.6)) saturate(1.4) contrast(1.2) brightness(.82)}
+.battle-unit.enemy.dead .monster-asset{opacity:.22;filter:grayscale(1)}
