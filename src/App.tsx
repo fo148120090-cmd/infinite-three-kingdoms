@@ -634,7 +634,7 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
 }
 
 function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},statusEffects:(x.statusEffects||[]).map(s=>({...s})),fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0,critical:0,costumeFx:0,taken:0,kills:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const statusTurn=tickStatus(a); if(statusTurn.stunned){ a.behaviorCounts!["기절"]=(a.behaviorCounts!["기절"]||0)+1; a.battleStats!.actions+=1; a.actionText="기절 · 행동 취소"; return {units:n,decision:{action:"기절",detail:"상태이상으로 이번 행동이 취소됨",score:999},line:(statusTurn.line?statusTurn.line+" / ":"")+a.actionText}; } const d=weighted(decisions(a,n,env,partyMemory,plan,context));
+  const n:BattleUnit[]=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},statusEffects:(x.statusEffects||[]).map(s=>({...s})),fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0,critical:0,costumeFx:0,taken:0,kills:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const statusTurn=tickStatus(a); if(statusTurn.stunned){ a.behaviorCounts!["기절"]=(a.behaviorCounts!["기절"]||0)+1; a.battleStats!.actions+=1; a.actionText="기절 · 행동 취소"; return {units:n,decision:{action:"기절",detail:"상태이상으로 이번 행동이 취소됨",score:999},line:(statusTurn.line?statusTurn.line+" / ":"")+a.actionText}; } const d=weighted(decisions(a,n,env,partyMemory,plan,context));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -677,7 +677,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     const t=allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){const x=Math.round(t.maxHp*((.30+a.tendencies.cooperation*.001)*(1+((combinedCombatMods(equippedItemsOf(a)).healPct||0)+(a.passiveHealPct||0))/100)));t.hp=Math.min(t.maxHp,t.hp+x);fx(t,"heal","+"+x);t.guard=Math.max(t.guard,1);a.actionText="대회복 → "+t.name+" (+"+x+")";line=a.actionText;}
   } else if(d.action==="분열"){
     if(pct(a)>.55 && n.filter(x=>x.team==="enemy").length<8){
-      const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true,behaviorCounts:{},battleStats:{damage:0,healing:0,actions:0}};
+      const child={...a,id:a.id+"-split-"+Math.random().toString(36).slice(2,5),name:a.name+" 분열체",hp:Math.round(a.maxHp*.28),maxHp:Math.round(a.maxHp*.28),attack:Math.max(3,Math.round(a.attack*.45)),defense:Math.max(1,Math.round(a.defense*.45)),pos:Math.max(.4,a.pos-.4),alive:true,behaviorCounts:{},battleStats:{damage:0,healing:0,actions:0,critical:0,costumeFx:0,taken:0,kills:0}};
       n.push(child);a.hp=Math.round(a.hp*.72);a.actionText="분열 → "+child.name;line=a.actionText;
     } else {a.actionText="분열 대기";line=a.actionText;}
   } else if(d.action==="함정 투척"||d.action==="매복 함정"||d.action==="거미줄"){
