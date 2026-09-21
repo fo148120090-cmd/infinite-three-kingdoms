@@ -258,7 +258,9 @@ export function rollBattleLoot(level:number, room:RoomKind, preference?:Partial<
   const bossLike=room==="boss"||room==="evilCave";
   const eliteLike=room==="elite";
   const baseUniqueChance=room==="evilCave"?.55:room==="boss"?.35:room==="elite"?.16:.08;
-  const uniqueChance=baseUniqueChance*Math.max(.3,Math.min(1,rewardMultiplier));
+  // Later-level dungeons gain a small additional unique-drop chance, capped to keep the economy stable.
+  const levelBonus=Math.min(.04,Math.max(0,Math.floor(Number(level)||1)-6)*.0015);
+  const uniqueChance=(baseUniqueChance+levelBonus)*Math.max(.3,Math.min(1,rewardMultiplier));
   const loot=[general];
   if(bossLike||eliteLike||Math.random()<uniqueChance){
     if(Math.random()<uniqueChance){
