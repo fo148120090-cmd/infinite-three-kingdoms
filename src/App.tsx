@@ -1748,7 +1748,7 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
   const statSources=(key:"attack"|"defense"|"speed"|"range"|"hp")=>{
     const rows:{label:string;value:string}[]=[];
     if(key==="attack")rows.push(
-      {label:"성급",value:starMult===1?"기본":flat((starMult-1)*100)+"%"},
+      {label:"성급",value:starMult===1?"기본":percent(starMult-1)},
       {label:"장비",value:flat(gearMods.attack||0)},
       {label:"기재",value:flat(artifactMods.attack||0)},
       {label:"패시브·전직",value:flat((passive.attack||0)+(promotion.attack||0))},
@@ -1756,7 +1756,7 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
       {label:"코스튬",value:flat((costumeBonus.attack||0)+(costumePassive.attack||0))}
     );
     if(key==="defense")rows.push(
-      {label:"성급",value:starMult===1?"기본":flat((starMult-1)*100)+"%"},
+      {label:"성급",value:starMult===1?"기본":percent(starMult-1)},
       {label:"장비",value:flat(gearMods.defense||0)},
       {label:"기재",value:flat(artifactMods.defense||0)},
       {label:"패시브·전직",value:flat((passive.defense||0)+(promotion.defense||0))},
@@ -1764,7 +1764,7 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
       {label:"코스튬",value:flat((costumeBonus.defense||0)+(costumePassive.defense||0))}
     );
     if(key==="hp")rows.push(
-      {label:"성급",value:starMult===1?"기본":percent((starMult-1)*100)},
+      {label:"성급",value:starMult===1?"기본":percent(starMult-1)},
       {label:"장비·기재",value:percent((gearMods.hpPct||0)+(artifactMods.hpPct||0))},
       {label:"패시브·전직",value:percent((passive.hpPct||0)+(promotion.hpPct||0))},
       {label:"연대기",value:percent(bonus.hpPct||0)},
