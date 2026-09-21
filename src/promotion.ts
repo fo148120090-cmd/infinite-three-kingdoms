@@ -79,18 +79,31 @@ function queuePromotion(next:Hero){
   const choices=choicesForTier(next,tier);
   return choices.length?{...next,promotionPending:{tier,choices:choices.map(x=>x.name)}}:next;
 }
+const promotionBuilds:Record<string,{hp:number;attack:number;defense:number;style:string}> = {
+  광전사:{hp:0,attack:5,defense:-2,style:"폭딜"},기사:{hp:5,attack:1,defense:5,style:"균형"},검투사:{hp:0,attack:3,defense:1,style:"단일전투"},
+  철벽수호자:{hp:8,attack:-2,defense:8,style:"탱커"},가디언나이트:{hp:5,attack:0,defense:6,style:"수호"},방패전사:{hp:3,attack:3,defense:2,style:"공수균형"},
+  저격수:{hp:-1,attack:6,defense:-1,style:"정밀사격"},헌터:{hp:0,attack:4,defense:0,style:"추격"},레인저:{hp:2,attack:1,defense:2,style:"기동"},
+  엘리멘탈리스트:{hp:-2,attack:8,defense:-2,style:"광역마법"},주술사:{hp:1,attack:2,defense:1,style:"약화지원"},아케인메이지:{hp:-1,attack:6,defense:0,style:"집중마법"},
+  힐러:{hp:5,attack:-2,defense:4,style:"회복"},팔라딘:{hp:6,attack:0,defense:6,style:"성전수호"},저지:{hp:0,attack:4,defense:1,style:"심판"},
+  전쟁군주:{hp:0,attack:6,defense:-2,style:"폭딜"},학살자:{hp:-1,attack:7,defense:-3,style:"처형"},광란의파괴자:{hp:1,attack:8,defense:-4,style:"광란"},
+  성기사:{hp:6,attack:1,defense:6,style:"성전수호"},크루세이더:{hp:4,attack:3,defense:4,style:"공수균형"},왕실근위:{hp:8,attack:0,defense:8,style:"요새"},
+  결투가:{hp:0,attack:7,defense:1,style:"단일전투"},챔피언:{hp:4,attack:4,defense:3,style:"균형"},처형자:{hp:-1,attack:8,defense:-2,style:"처형"},
+  요새:{hp:10,attack:-2,defense:10,style:"탱커"},바스티온:{hp:7,attack:0,defense:9,style:"수호"},불가동벽:{hp:12,attack:-3,defense:8,style:"생존"},
+  중장벽:{hp:9,attack:-1,defense:8,style:"탱커"},방패파괴자:{hp:2,attack:7,defense:1,style:"공격수호"},아에기스:{hp:7,attack:1,defense:9,style:"수호"},
+  데드아이:{hp:-1,attack:8,defense:-1,style:"정밀사격"},명사수:{hp:1,attack:7,defense:0,style:"정밀사격"},탄환사냥꾼:{hp:0,attack:6,defense:1,style:"추격"},
+  비스트마스터:{hp:2,attack:4,defense:2,style:"지원추격"},추적자:{hp:0,attack:6,defense:0,style:"추격"},스토커:{hp:1,attack:5,defense:2,style:"기습"},
+  윈드러너:{hp:0,attack:5,defense:1,style:"기동"},패스파인더:{hp:3,attack:3,defense:3,style:"탐색"},스커미셔:{hp:1,attack:5,defense:2,style:"기습"},
+  인페르노:{hp:-2,attack:9,defense:-3,style:"화염폭발"},템페스트:{hp:-1,attack:8,defense:-2,style:"폭풍"},프로스트로드:{hp:2,attack:6,defense:1,style:"빙결제어"},
+  스피릿콜러:{hp:3,attack:4,defense:2,style:"소환지원"},폭풍주술사:{hp:0,attack:7,defense:-1,style:"원소폭발"},헥스위버:{hp:2,attack:5,defense:2,style:"저주"},
+  아르카니스트:{hp:-1,attack:8,defense:0,style:"집중마법"},스펠블레이드:{hp:1,attack:7,defense:2,style:"마검"},보이드세이지:{hp:2,attack:7,defense:1,style:"공허마법"},
+  대사제:{hp:7,attack:-1,defense:5,style:"대회복"},성인:{hp:8,attack:0,defense:7,style:"성역"},오라클:{hp:3,attack:4,defense:3,style:"예지지원"},
+  성전사:{hp:6,attack:3,defense:6,style:"성전수호"},여명의기사:{hp:4,attack:5,defense:4,style:"공격수호"},성스러운심판관:{hp:5,attack:4,defense:6,style:"심판"},
+  이단심문관:{hp:1,attack:7,defense:1,style:"처형"},중재자:{hp:4,attack:4,defense:4,style:"지원"},정화자:{hp:6,attack:5,defense:5,style:"정화"}
+};
 function promotionMultiplier(tier:number,name:string){
   const base=tier===1?{hp:1.12,attack:1.06,defense:1.06}:tier===2?{hp:1.10,attack:1.08,defense:1.08}:tier===3?{hp:1.15,attack:1.12,defense:1.12}:tier===4?{hp:1.18,attack:1.15,defense:1.15}:tier===5?{hp:1.22,attack:1.19,defense:1.19}:{hp:1.30,attack:1.25,defense:1.25};
-  const mods:Record<string,{hp:number;attack:number;defense:number}> = {
-    광전사:{hp:1,attack:1.05,defense:.98},기사:{hp:1.05,attack:1.01,defense:1.05},검투사:{hp:1,attack:1.03,defense:1.01},
-    철벽수호자:{hp:1.08,attack:.98,defense:1.08},가디언나이트:{hp:1.05,attack:1,defense:1.06},방패전사:{hp:1.03,attack:1.03,defense:1.02},
-    저격수:{hp:.99,attack:1.06,defense:.99},헌터:{hp:1,attack:1.04,defense:1},레인저:{hp:1.02,attack:1.01,defense:1.02},
-    엘리멘탈리스트:{hp:.98,attack:1.08,defense:.98},주술사:{hp:1.01,attack:1.02,defense:1.01},아케인메이지:{hp:.99,attack:1.06,defense:1},
-    힐러:{hp:1.05,attack:.98,defense:1.04},팔라딘:{hp:1.06,attack:1,defense:1.06},저지:{hp:1,attack:1.04,defense:1.01}
-  };
-  const compact=name.replace(/\s/g,"");
-  const m=mods[compact]||{hp:1,attack:1,defense:1};
-  return {hp:base.hp*m.hp,attack:base.attack*m.attack,defense:base.defense*m.defense};
+  const m=promotionBuilds[name.replace(/\\s/g,"")]||{hp:0,attack:0,defense:0,style:"균형"};
+  return {hp:base.hp*(1+m.hp/100),attack:base.attack*(1+m.attack/100),defense:base.defense*(1+m.defense/100)};
 }
 function pushPromotion(next:Hero,tier:number,name:string,mults:{hp:number;attack:number;defense:number}){
   return {...next,promotionTier:tier,promotionPath:[...(next.promotionPath||[]),name],promotionPending:undefined,
@@ -100,8 +113,9 @@ export function promotionOptions(hero:Hero){
   const pending=hero.promotionPending;
   if(!pending)return [];
   return choicesForTier(hero,pending.tier).filter(x=>pending.choices.includes(x.name)).map(x=>{
-    const role=/기사|수호|방패|팔라딘|성기사|성전사|요새|바스티온|방벽|성벽/.test(x.name)?"생존 · 방어":/저격|사수|검투|결투|처형|전쟁|광전|학살|원소|대마도|대현자|심판|집행/.test(x.name)?"화력 · 공격":"기동 · 지원";
-    return {name:x.name,detail:role+" · 성향 "+x.keys.join(" · "),tier:pending.tier};
+    const build=promotionBuilds[x.name.replace(/\\s/g,"")]||{hp:0,attack:0,defense:0,style:"균형"};
+    const stat=(n:number)=>n>0?"+"+n+"%":n+"%";
+    return {name:x.name,detail:build.style+" · HP "+stat(build.hp)+" · 공격 "+stat(build.attack)+" · 방어 "+stat(build.defense)+" · 성향 "+x.keys.join(" · "),tier:pending.tier};
   });
 }
 export function choosePromotion(hero:Hero,name:string){
