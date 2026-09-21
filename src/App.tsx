@@ -185,10 +185,13 @@ const recordRouteMemory=(memory:RouteMemory|undefined,kind:RoomKind,success:bool
 const normalizeLoadedHero=(h:Hero):Hero=>{
   const rawEquipment=Array.isArray(h.equipment)?h.equipment:(h.item?[h.item]:[]);
   const experience=Number(h.experience);
+  const normalizedMaxHp=Math.max(1,Math.round(Number(h.maxHp)||Number(h.hp)||1));
   const normalized={...h,
     star:Math.max(1,Math.min(6,Math.floor(Number(h.star)||1))),
     level:Math.max(1,Math.floor(Number(h.level)||1)),
     experience:Number.isFinite(experience)?Math.max(0,experience):0,
+    maxHp:normalizedMaxHp,
+    hp:Math.max(0,Math.min(normalizedMaxHp,Math.round(Number(h.hp)||0))),
     tendencies:{...defaultTendencies[h.job],...(h.tendencies||{})},
     personality:h.personality||buildPersonality(h),
     skinIds:Array.from(new Set([costumesForJob(h.job)[0]?.id,...(h.skinIds||[]),h.costumeId].filter((x):x is string=>!!x))),
@@ -217,7 +220,7 @@ function load(): Save {
       };
     }
   } catch {}
-  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[],personality:buildPersonality(h),skinIds:[h.job.toLowerCase()+"-base"],equippedSkinId:h.job.toLowerCase()+"-base"})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false,sealCount:0};
+  return {heroes:heroesSeed.map(({item,...h})=>({...h,maxHp:Math.max(1,Math.round(h.hp)),tendencies:cloneTendencies(h.tendencies),equipment:[],personality:buildPersonality(h),skinIds:[h.job.toLowerCase()+"-base"],equippedSkinId:h.job.toLowerCase()+"-base"})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false,sealCount:0};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
@@ -350,8 +353,12 @@ const combatStats=(hero:Hero)=>{
   const costumeIds=hero.skinIds||[hero.equippedSkinId||hero.costumeId||hero.job.toLowerCase()+"-base"];
   const costumeBonus=ownedCostumeCombatBonus(costumeIds);
   const costumePassive=ownedCostumePassive(costumeIds);
-  const hp=Math.round(hero.hp*starMult*(1+((m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0)+passive.hpPct+promotion.hpPct+costumeBonus.hpPct+costumePassive.hpPct)/100));
-  return {hp,maxHp:hp,attack:Math.round(hero.attack*starMult)+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0)+passive.attack+promotion.attack+costumeBonus.attack+costumePassive.attack,defense:Math.round(hero.defense*starMult)+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0)+passive.defense+promotion.defense+costumeBonus.defense+costumePassive.defense,speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0)+passive.speedPct+promotion.speedPct+costumeBonus.speedPct+costumePassive.speedPct)/100),range:hero.range+(m.range||0)+(artifactMods.range||0)+passive.range+promotion.range+costumeBonus.range+costumePassive.range};
+  const baseMaxHp=Math.max(1,Math.round(Number(hero.maxHp)||Number(hero.hp)||1));
+  const hpBonus=(m.hpPct||0)+(artifactMods.hpPct||0)+(bonus.hpPct||0)+passive.hpPct+promotion.hpPct+costumeBonus.hpPct+costumePassive.hpPct;
+  const maxHp=Math.max(1,Math.round(baseMaxHp*starMult*(1+hpBonus/100)));
+  const currentRatio=Math.max(0,Math.min(1,(Number(hero.hp)||0)/baseMaxHp));
+  const hp=Math.max(0,Math.min(maxHp,Math.round(maxHp*currentRatio)));
+  return {hp,maxHp,attack:Math.round(hero.attack*starMult)+(m.attack||0)+(artifactMods.attack||0)+(bonus.attack||0)+passive.attack+promotion.attack+costumeBonus.attack+costumePassive.attack,defense:Math.round(hero.defense*starMult)+(m.defense||0)+(artifactMods.defense||0)+(bonus.defense||0)+passive.defense+promotion.defense+costumeBonus.defense+costumePassive.defense,speed:hero.speed*(1+((m.speedPct||0)+(artifactMods.speedPct||0)+(bonus.speedPct||0)+passive.speedPct+promotion.speedPct+costumeBonus.speedPct+costumePassive.speedPct)/100),range:hero.range+(m.range||0)+(artifactMods.range||0)+passive.range+promotion.range+costumeBonus.range+costumePassive.range};
 };
 function autoFormation(heroes:Hero[],mode:BattleMode):Hero[]{
   const rank=(h:Hero)=>{
@@ -929,7 +936,8 @@ export default function App(){
           const update=outcome.heroUpdates[h.id];
           if(!update)return h;
           const nextT={...h.tendencies,...(update.tendencies||{})};
-          return {...h,hp:Math.min(h.hp,Math.max(1,h.hp+(update.hpDelta||0))),tendencies:nextT};
+          const maxHp=Math.max(1,Math.round(Number(h.maxHp)||Number(h.hp)||1));
+          return {...h,hp:Math.max(1,Math.min(maxHp,Math.round(h.hp+(update.hpDelta||0)))),maxHp,tendencies:nextT};
         }),
         gold:s.gold+outcome.gold+outcome.materials*10,
         routeMemory:recordRouteMemory(s.routeMemory,"hidden",true,outcome.gold),
@@ -961,7 +969,12 @@ export default function App(){
       return;
     }
     if(kind==="rest"){
-      setSave(s=>({...s,heroes:s.heroes.map(h=>save.party.includes(h.id)?{...grantExperience(h,4).hero,hp:Math.round(h.hp*1.15)}:h),routeMemory:recordRouteMemory(s.routeMemory,"rest",true,0),stage:s.stage+1}));
+      setSave(s=>({...s,heroes:s.heroes.map(h=>{
+        if(!save.party.includes(h.id))return h;
+        const next=grantExperience(h,4).hero;
+        const maxHp=Math.max(1,Math.round(Number(next.maxHp)||Number(next.hp)||1));
+        return {...next,maxHp,hp:Math.min(maxHp,Math.round(next.hp+maxHp*.15))};
+      }),routeMemory:recordRouteMemory(s.routeMemory,"rest",true,0),stage:s.stage+1}));
       notify("휴식: 경험 기록 +4 · HP 15% 회복");
       return;
     }
@@ -1099,6 +1112,7 @@ export default function App(){
       Object.entries(unit.behaviorCounts||{}).forEach(([name,count])=>{const gained=Math.max(0,count);if(gained)actionCounts[name]=(actionCounts[name]||0)+gained;});
       const combatProfile={actions:previousProfile.actions+(unit.battleStats?.actions||0),damage:previousProfile.damage+(unit.battleStats?.damage||0),healing:previousProfile.healing+(unit.battleStats?.healing||0),battles:previousProfile.battles+1,topActions:actionCounts};
       const withProfile={...base,combatProfile};
+      const battleHpRatio=unit.maxHp>0?Math.max(0,Math.min(1,unit.hp/unit.maxHp)):(unit.alive?1:0);
       const beforePromotion=promotionLabel(withProfile);
       const progressed=grantExperience(withProfile,experienceGain);
       if(progressed.leveled){
@@ -1110,7 +1124,9 @@ export default function App(){
         ...(isFinal&&won?{statusNote:"악의 동굴 수문장 격파 · 봉인 대기"}:{}),
         history:unit.actionText?[unit.actionText,...behaviorBase.history].slice(0,6):behaviorBase.history};
       const awarded=awardChronicle(behavioral);
-      return {...awarded,mood:systemMood(awarded),statusNote:systemStatus(awarded),evaluation:systemEvaluation(awarded)};
+      const maxHp=Math.max(1,Math.round(Number(progressed.hero.maxHp)||Number(progressed.hero.hp)||1));
+      const currentHp=unit.alive?Math.max(1,Math.min(maxHp,Math.round(maxHp*battleHpRatio))):0;
+      return {...awarded,maxHp,hp:currentHp,mood:systemMood(awarded),statusNote:systemStatus(awarded),evaluation:systemEvaluation(awarded)};
     };
     let battleGrowthReward:GrowthReward|undefined;
     if(victory){
@@ -1302,6 +1318,42 @@ export default function App(){
     });
     setSelectedWarehouseItem(undefined);
     notify(hero.name+" · "+item.name+" 장착 (슬롯 "+(slot+1)+")");
+  };
+  const equipForHero=(heroId:string,item:Item,slot:number)=>{
+    const safeSlot=Math.max(0,Math.min(2,Math.floor(slot)));
+    const target=save.heroes.find(h=>h.id===heroId);
+    if(!target){notify("캐릭터를 찾을 수 없습니다.");return;}
+    if(!save.items.some(x=>x.id===item.id)){notify("창고에서 선택한 장비를 찾을 수 없습니다.");return;}
+    setSave(s=>{
+      const current=s.heroes.find(h=>h.id===heroId);
+      if(!current||!s.items.some(x=>x.id===item.id))return s;
+      const slots=equipmentSlotsOf(current);
+      const replaced=slots[safeSlot];
+      slots[safeSlot]=item;
+      let items=s.items.filter(x=>x.id!==item.id);
+      if(replaced)items=[...items,replaced].slice(0,MAX_WAREHOUSE_ITEMS);
+      return {...s,heroes:s.heroes.map(h=>h.id===heroId?{...h,equipment:slots,item:slots[0]}:h),items};
+    });
+    setSelectedWarehouseItem(undefined);
+    notify(target.name+" · "+item.name+" 장착 (슬롯 "+(safeSlot+1)+")");
+  };
+  const unequipForHero=(heroId:string,slot:number)=>{
+    const safeSlot=Math.max(0,Math.min(2,Math.floor(slot)));
+    const target=save.heroes.find(h=>h.id===heroId);
+    const current=target?equipmentSlotsOf(target)[safeSlot]:undefined;
+    if(!target||!current){notify("선택한 슬롯이 비어 있습니다.");return;}
+    if(save.items.length>=MAX_WAREHOUSE_ITEMS){notify("용사단 창고가 가득 차 장비를 해제할 수 없습니다.");return;}
+    setSave(s=>({...s,
+      heroes:s.heroes.map(h=>{
+        if(h.id!==heroId)return h;
+        const slots=equipmentSlotsOf(h);
+        slots[safeSlot]=undefined;
+        return {...h,equipment:slots,item:slots[0]};
+      }),
+      items:[...s.items,current]
+    }));
+    setSelectedWarehouseItem(current.id);
+    notify(target.name+" · "+current.name+" 장비 해제 · 창고로 반환");
   };
   const unequip=(slot:number)=>{
     const current=equipmentSlotsOf(hero)[slot];
@@ -1655,40 +1707,128 @@ export default function App(){
       <div className="warehouse-equipment-strip"><div className="warehouse-strip-head"><div><b>{hero.name} 장비창</b><span>3칸 · 선택 슬롯 {selectedEquipSlot+1}</span></div><div className="equipment-head-actions"><button className="ghost-btn" onClick={recommendEquip}>✦ 추천 장착</button><button className="ghost-btn" onClick={()=>setSelectedEquipSlot((selectedEquipSlot+1)%3)}>다음 슬롯</button></div></div><div className="equipment-slots compact-five">{[0,1,2].map(slot=>{const item=equipmentSlotsOf(hero)[slot];return <div key={slot} className={"equipment-slot "+(selectedEquipSlot===slot?"selected":"")}><button onClick={()=>setSelectedEquipSlot(slot)} className="slot-main"><small>SLOT {slot+1}</small><b>{item?.name||"장비 없음"}</b><span>{item?item.rarity+" · Lv."+item.level:"아이콘을 선택해 장착"}</span></button>{item&&<button className="ghost-btn slot-action" onClick={()=>unequip(slot)}>해제</button>}</div>})}</div></div>
       <div className="warehouse-icon-grid">{sorted.length===0?<div className="subpanel empty-warehouse"><b>해당 카테고리에 장비가 없습니다.</b><span>전투 전리품과 보물방에서 장비를 획득하세요.</span></div>:sorted.map((item,idx)=><InventoryIcon item={item} key={item.id+"-"+idx} warehouse compare={equipmentPreview(hero,item,selectedEquipSlot)} onEquip={()=>equip(item,selectedEquipSlot)} onSell={()=>sellItem(item)}/>)}</div>
     </section>})()}
-    {statusHeroId&&save.heroes.find(h=>h.id===statusHeroId)&&<CharacterStatusModal heroes={save.heroes} hero={save.heroes.find(h=>h.id===statusHeroId)!} onClose={()=>setStatusHeroId(undefined)} onNavigate={id=>setStatusHeroId(id)} onTranscend={transcendHero} onUpgradePassive={upgradeHeroPassive} onChoosePromotion={chooseHeroPromotion}/>}
+    {statusHeroId&&save.heroes.find(h=>h.id===statusHeroId)&&<CharacterStatusModal heroes={save.heroes} hero={save.heroes.find(h=>h.id===statusHeroId)!} warehouseItems={save.items} onClose={()=>setStatusHeroId(undefined)} onNavigate={id=>setStatusHeroId(id)} onTranscend={transcendHero} onUpgradePassive={upgradeHeroPassive} onChoosePromotion={chooseHeroPromotion} onEquip={equipForHero} onUnequip={unequipForHero}/>}
     <footer><span>Prototype · autonomous dungeon AI</span><button onClick={reset}><RotateCcw size={14}/> 초기화</button></footer>
   </main>;
 }
 
-function CharacterStatusModal({hero,heroes,onClose,onNavigate,onTranscend,onUpgradePassive,onChoosePromotion}:{hero:Hero;heroes:Hero[];onClose:()=>void;onNavigate:(id:string)=>void;onTranscend:(heroId:string)=>void;onUpgradePassive:(heroId:string,skillId:string)=>void;onChoosePromotion:(heroId:string,name:string)=>void}){
+function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onTranscend,onUpgradePassive,onChoosePromotion,onEquip,onUnequip}:{hero:Hero;heroes:Hero[];warehouseItems:Item[];onClose:()=>void;onNavigate:(id:string)=>void;onTranscend:(heroId:string)=>void;onUpgradePassive:(heroId:string,skillId:string)=>void;onChoosePromotion:(heroId:string,name:string)=>void;onEquip:(heroId:string,item:Item,slot:number)=>void;onUnequip:(heroId:string,slot:number)=>void}){
   const stats=combatStats(hero);
   const bonus=chronicleBonuses(hero);
   const growth=promotionForecast(hero);
-  const items=equippedItemsOf(hero);
+  const slots=equipmentSlotsOf(hero);
+  const [equipSlot,setEquipSlot]=useState(0);
   const star=heroStar(hero);
   const traitMultiplier=traitStrengthMultiplier(hero);
   const transcendReq=transcendenceRequirement(hero);
   const transcendReady=!!transcendReq&&hero.level>=transcendReq.level;
-  const transcendCostLabel=transcendReq?transcendReq.gold+"G":"MAX";
   const personality=hero.personality||buildPersonality(hero);
   const index=Math.max(0,heroes.findIndex(h=>h.id===hero.id));
   const prev=heroes[index-1];
   const next=heroes[index+1];
+  const maxHp=Math.max(1,Math.round(stats.maxHp));
+  const currentHp=Math.max(0,Math.min(maxHp,Math.round(stats.hp)));
+  const hpPct=Math.round(currentHp/maxHp*100);
+  const chronicles=(hero.chronicle||[]).slice().sort((a,b)=>a.earnedAt-b.earnedAt);
+  const tendencies=(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>[k,tendencyKo[k],Math.round(clamp(hero.tendencies[k]))] as [keyof Tendencies,string,number]);
+  const warehouse=warehouseItems.slice().reverse().slice(0,12);
   return <div className="status-modal-backdrop" onClick={onClose}>
-    <section className="status-modal" role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}>
-      <div className="status-modal-head"><div className="status-modal-title-row"><div className="status-modal-portrait skin-avatar" style={{background:skinTheme(hero.equippedSkinId||hero.costumeId||hero.job.toLowerCase()+"-base").background}}><SkinPortrait job={hero.job} skinId={hero.equippedSkinId||hero.costumeId} compact /></div><button className="status-nav-btn" disabled={!prev} onClick={()=>prev&&onNavigate(prev.id)} aria-label="이전 캐릭터">‹</button><div><span className="eyebrow">CHARACTER STATUS</span><h2>{hero.name}</h2><p>{jobKo[hero.job]} · {promotionLabel(hero)} · Lv.{hero.level} · {starLabel(star)}</p></div><button className="status-nav-btn" disabled={!next} onClick={()=>next&&onNavigate(next.id)} aria-label="다음 캐릭터">›</button></div><div className="status-modal-actions"><span>{index+1} / {heroes.length}</span><button className="ghost-btn" onClick={onClose}>닫기</button></div></div>
-      <div className="status-modal-grid">
-        <div className="status-modal-card star-status-card"><div className="modal-card-title"><b>성급 · 초월</b><span>{star}/6성</span></div><div className="star-rank"><strong>{starLabel(star)}</strong><b>{star}성</b><span>특성 강화 ×{traitMultiplier.toFixed(1)}</span></div>{star<6&&<div className="transcend-info"><small>다음 초월 · {star+1}성 · Lv.{transcendReq?.level} 필요</small><small>비용 · {transcendCostLabel}</small><button className="primary-btn compact" onClick={()=>onTranscend(hero.id)} disabled={!transcendReady}>{transcendReady?"초월 · "+(star+1)+"성":"Lv."+transcendReq?.level+" 필요"}</button></div>}{star>=6&&<div className="transcend-info"><small>최대 성급에 도달했습니다.</small><span>6성 최종 초월 · 특성 효과 2.0배</span></div>}</div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>기본 스탯</b><span>기본값 → 적용값</span></div><div className="modal-stat-grid">{([["HP",Math.round(hero.hp),Math.round(stats.maxHp)],["공격",Math.round(hero.attack),Math.round(stats.attack)],["방어",Math.round(hero.defense),Math.round(stats.defense)],["속도",Math.round(hero.speed*100)/100,Math.round(stats.speed*100)/100],["사거리",Math.round(hero.range*100)/100,Math.round(stats.range*100)/100],["경험",hero.experience+"/"+xpRequiredForLevel(hero.level),hero.experience+"/"+xpRequiredForLevel(hero.level)]] as [string,string|number,string|number][]).map(x=><div key={x[0]}><small>{x[0]}</small><b>{x[1]}</b>{String(x[1])!==String(x[2])&&<span>→ {x[2]}</span>}</div>)}</div><div className="modal-note">연대기 가산 · 공격 +{bonus.attack||0} · 방어 +{bonus.defense||0} · HP +{bonus.hpPct||0}% · 속도 +{bonus.speedPct||0}%</div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>전투 방향</b><span>{compactTendency(hero)}</span></div><div className="compact-tendency-card"><b>{compactTendency(hero)}</b><p>세부 수치 대신 전투에서 드러나는 큰 방향만 표시합니다.</p></div></div>
-        <div className="status-modal-card" style={{gridColumn:"1 / -1"}}><div className="modal-card-title"><b>초월 각성</b><span>{(hero.awakenings||[]).length}/3 해금</span></div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>{[50,70,100].map(level=>{const data=(hero.awakenings||[]).find(x=>x.level===level);return <div key={level} style={{padding:10,borderRadius:10,border:"1px solid "+(data?"#8f7440":"#26364f"),background:data?"#17140d":"#0c1421"}}><b>{level===50?"🌱 개화":level===70?"⚡ 극점":"♾️ 무한"}</b><small style={{display:"block",marginTop:5,color:data?"#d7c18c":"#6f7c90"}}>{data?.name||"Lv."+level+" 해금"}</small><small style={{display:"block",marginTop:4,color:"#9aa9bf"}}>{data?.detail||"레벨 도달 시 영구 성장 보너스 획득"}</small></div>})}</div></div>
-        <div className="status-modal-card personality-status-card"><div className="modal-card-title"><b>캐릭터 개성</b><span>{personality.archetype}</span></div><div className="personality-quote"><b>“{personality.quote}”</b><small>{personality.temperament} · 유대 방식 · {personality.bondStyle}</small></div><div className="personality-detail-grid"><span><b>개성 핵심</b>{personality.archetype}</span><span><b>선호 행동</b>{personality.favoriteAction}</span><span><b>특징</b>{personality.quirk}</span></div></div>
-         <div className="status-modal-card"><div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div>{hero.promotionPending&&<div style={{padding:10,marginBottom:10,border:"1px solid #8f7440",borderRadius:10,background:"#17140d"}}><b style={{display:"block",color:"#e0c67c"}}>⚔ 플레이어 전직 선택</b><small style={{display:"block",marginTop:4,color:"#aebbd0"}}>자동 전직을 중단했습니다. 아래 3개 경로 중 하나를 직접 선택하세요.</small><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:8}}>{promotionOptions(hero).map(option=><button key={option.name} className="primary-btn compact" onClick={()=>onChoosePromotion(hero.id,option.name)}><b>{option.name}</b><small style={{display:"block",marginTop:3,opacity:.8}}>{option.detail}</small></button>)}</div></div>}<div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div><p className="growth-reason">{growth.reason}</p>{promotionPassive(hero)&&<div style={{marginTop:8,padding:"8px 10px",border:"1px solid #35435a",borderRadius:9,background:"#0c1420"}}><b style={{display:"block",color:"#c9a85c"}}>✦ {promotionPassive(hero)!.name}</b><small style={{display:"block",marginTop:3,color:"#9ba8ba"}}>{promotionPassive(hero)!.detail}</small></div>}<div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>현재 경험</b>{hero.experience}/{xpRequiredForLevel(hero.level)}</span></div></div>
-        <div className="status-modal-card" style={{gridColumn:"1 / -1"}}><div className="modal-card-title"><b>캐릭터별 패시브 스킬트리</b><span>스킬 포인트 {hero.skillPoints||0} · 각 패시브 최대 Lv.30</span></div><div style={{fontSize:10,color:"#8997ad",marginBottom:8}}>{passiveSetFor(hero).title} · 레벨업 시 스킬 포인트 +1 · 원하는 패시브에 자유롭게 투자</div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,position:"relative"}}><div style={{gridColumn:"1 / -1",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:2}}>{Array.from(new Set(passiveSetFor(hero).skills.map(s=>s.branch))).slice(0,3).map((branch,i)=><div key={branch} style={{padding:"6px 8px",textAlign:"center",fontSize:10,fontWeight:800,color:"#b89955",border:"1px solid #26364f",borderRadius:8,background:"#0a111d"}}>{branch} <span style={{color:"#6f8098"}}>Ⅰ ──→ Ⅱ ──→ Ⅲ</span></div>)}</div>{[1,2,3].map(tier=><div key={tier} style={{display:"flex",flexDirection:"column",gap:8,padding:8,borderRadius:12,border:"1px solid #26364f",background:"#0c1421"}}><div style={{fontWeight:800,color:"#b89955",fontSize:11}}>{tier===1?"Ⅰ 기초 단계":tier===2?"Ⅱ 중급 단계":"Ⅲ 최종 단계"} · 선행 조건 {tier===1?"없음":"이전 단계 Lv.5"}</div>{passiveSetFor(hero).skills.filter(s=>s.tier===tier).map(skill=>{const lv=hero.passiveSkills?.[skill.id]||0;const max=skill.maxLevel;const locked=!!skill.requires&&((hero.passiveSkills?.[skill.requires.skillId]||0)<skill.requires.level);const cost=skill.combatPerLevel;const ai=Object.entries(skill.aiMods).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(cost).map(([k,v])=>k==="attack"?"공격 +"+v+"%/Lv":k==="defense"?"방어 +"+v+"/Lv":k==="hpPct"?"HP +"+v+"%/Lv":k==="speedPct"?"속도 +"+v+"%/Lv":k==="range"?"사거리 +"+v+"/Lv":"치유 +"+v+"%/Lv").join(" · ");return <div key={skill.id} style={{padding:10,border:"1px solid "+(locked?"#1d2838":"#314766"),borderRadius:10,background:locked?"#0b111b":"#101927",opacity:locked?.58:1}}><div style={{display:"flex",justifyContent:"space-between",gap:6}}><b>{skill.name}</b><strong>Lv.{lv}/{max}</strong></div><div style={{height:5,background:"#202c40",borderRadius:4,margin:"7px 0"}}><div style={{height:"100%",width:(lv/max*100)+"%",background:"#b89955",borderRadius:4}}/></div><small style={{display:"block",color:"#aebbd0",minHeight:30}}>{skill.detail}</small><small style={{display:"block",color:"#8997ad",marginTop:6}}>AI · {ai}</small><small style={{display:"block",color:"#8997ad",marginTop:3}}>전투 · {combat}</small>{skill.requires&&<small style={{display:"block",color:locked?"#d27b7b":"#76b98c",marginTop:4}}>{locked?"🔒 ":"✓ "}선행: {skill.requires.skillId} Lv.{skill.requires.level}</small>}<button className="primary-btn compact" style={{marginTop:8,width:"100%"}} disabled={!hero.skillPoints||lv>=max||locked} onClick={()=>onUpgradePassive(hero.id,skill.id)}>{locked?"선행 스킬 필요":lv>=max?"MAX · Lv.30":"스킬 포인트 1 투자"}</button></div>})}</div>)}</div></div><div className="status-modal-card" style={{gridColumn:"1 / -1"}}><div className="modal-card-title"><b>패시브 각성 · 궁극 효과</b><span>Lv.10 / 20 / 30</span></div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>{[10,20,30].map(level=><div key={level} style={{padding:10,borderRadius:10,border:"1px solid #26364f",background:"#0c1421"}}><b>{level===10?"✨ 각성":level===20?"⚡ 극성":"👑 궁극"}</b><div style={{marginTop:5,fontSize:11,color:"#9aa9bf"}}>{passiveMilestones(hero).filter(x=>x.level===level).length}개 해금</div>{passiveMilestones(hero).filter(x=>x.level===level).slice(0,4).map(x=><small key={x.skillId} style={{display:"block",marginTop:5,color:"#c5d0df"}}>{x.name} · {x.detail}</small>)}{passiveMilestones(hero).filter(x=>x.level===level).length===0&&<small style={{display:"block",marginTop:5,color:"#6f7c90"}}>해금된 효과 없음</small>}</div>)}</div></div><div className="status-modal-card"><div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4 · ×{traitMultiplier.toFixed(1)}</span></div><div className="modal-traits">{(hero.traits||[]).map(name=>{const effect=eventTraitEffects[name]||growthTraitCatalog[name];return <div key={name}><b>{name}<em>×{traitMultiplier.toFixed(1)}</em></b><span>{effect?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>})}</div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>던전 획득 기록</b><span>최근 8회</span></div><div className="modal-event-rewards">{(hero.eventRewards||[]).slice().reverse().map((r,i)=><div key={r.name+"-"+r.floor+"-"+i}><span>{r.kind==="trait"?"특성":r.kind==="artifact"?"기재":"장비"} · {r.floor}F{r.source?" · "+r.source:""}</span><b>{r.name}</b><small>{r.detail}</small></div>)}{(!hero.eventRewards||hero.eventRewards.length===0)&&<small>던전 이벤트에서 획득한 특성·기재·장비 기록이 여기에 남습니다.</small>}</div></div>
-        <div className="status-modal-card"><div className="modal-card-title"><b>장비 · 특성 · 기재</b><span>{items.length}/3 장착</span></div><div className="modal-equipment">{[0,1,2].map(slot=><div key={slot}><small>SLOT {slot+1}</small><b>{items[slot]?.name||"장비 없음"}</b><span>{items[slot]?(items[slot].rarity+" · Lv."+items[slot].level):"비어 있음"}</span></div>)}</div><div className="modal-collection"><div><small>특성</small><b>{(hero.traits||[]).join(" · ")||"없음"}</b></div><div><small>기재</small>{(hero.artifacts||[]).length===0?<b>없음</b>:<div className="modal-artifact-list">{(hero.artifacts||[]).map(name=>{const effect=eventArtifactEffects[name]||growthArtifactCatalog[name];const ai=Object.entries(effect?.aiMods||{}).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(effect?.combatMods||{}).map(([k,v])=>(k==="attack"?"공격 +"+v:k==="defense"?"방어 +"+v:k==="hpPct"?"HP +"+v+"%":k==="speedPct"?"속도 +"+v+"%":k==="range"?"사거리 +"+v:k==="healPct"?"치유 +"+v+"%":k==="critPct"?"치명타 +"+v+"%":k+" +"+v)).join(" · ");return <div key={name}><b>{name}</b><small>{effect?.detail||"던전 이벤트에서 얻은 고유 기재입니다."}</small>{ai&&<em>AI · {ai}</em>}{combat&&<em>전투 · {combat}</em>}</div>})}</div>}</div></div><div className="modal-state-grid"><span><b>기분</b>{systemMood(hero)}</span><span><b>상태</b>{systemStatus(hero)}</span><span><b>평가</b>{systemEvaluation(hero)}</span></div></div>
+    <section className="status-modal" role="dialog" aria-modal="true" aria-label={hero.name+" 캐릭터 상태"} onClick={e=>e.stopPropagation()}>
+      <div className="status-modal-head">
+        <div className="status-modal-title-row">
+          <div className="status-modal-portrait skin-avatar" style={{background:skinTheme(hero.equippedSkinId||hero.costumeId||hero.job.toLowerCase()+"-base").background}}><SkinPortrait job={hero.job} skinId={hero.equippedSkinId||hero.costumeId} compact /></div>
+          <button className="status-nav-btn" disabled={!prev} onClick={()=>prev&&onNavigate(prev.id)} aria-label="이전 캐릭터">‹</button>
+          <div><span className="eyebrow">CHARACTER STATUS</span><h2>{hero.name}</h2><p>{jobKo[hero.job]} · {promotionLabel(hero)} · Lv.{hero.level} · {starLabel(star)}</p></div>
+          <button className="status-nav-btn" disabled={!next} onClick={()=>next&&onNavigate(next.id)} aria-label="다음 캐릭터">›</button>
+        </div>
+        <div className="status-modal-actions"><span>{index+1} / {heroes.length}</span><button className="ghost-btn" onClick={onClose}>닫기</button></div>
       </div>
-      <div className="status-modal-bottom"><div className="modal-bottom-card"><b>장기 전투 기록</b><span>{hero.combatProfile?.battles||0}전투 · {hero.combatProfile?.actions||0}행동 · {hero.combatProfile?.damage||0}피해 · {hero.combatProfile?.healing||0}회복</span><small>{Object.entries(hero.combatProfile?.topActions||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+" · "+x[1]+"회").join("  /  ")||"기록 없음"}</small></div><div className="modal-bottom-card"><b>최근 기억</b><span>{(hero.memories||[]).slice(0,2).map(m=>m.text+" · 영향 "+Math.round(m.weight*10)/10).join("  /  ")||"강하게 남은 기억 없음"}</span><small>스킨 · {skinLabel(hero.job,hero.equippedSkinId||hero.costumeId)} · 칭호 · {chronicleLabel(hero)}</small></div></div>
+
+      <div className="status-modal-grid">
+        <div className="status-modal-card star-status-card">
+          <div className="modal-card-title"><b>성급 · 초월</b><span>{star}/6성</span></div>
+          <div className="star-rank"><strong>{starLabel(star)}</strong><b>{star}성</b><span>특성 강화 ×{traitMultiplier.toFixed(1)}</span></div>
+          {star<6&&transcendReq&&<div className="transcend-info"><small>다음 초월 · {star+1}성 · Lv.{transcendReq.level} 필요</small><small>비용 · {transcendReq.gold}G</small><button className="primary-btn compact" onClick={()=>onTranscend(hero.id)} disabled={!transcendReady}>{transcendReady?"초월 · "+(star+1)+"성":"Lv."+transcendReq.level+" 필요"}</button></div>}
+          {star>=6&&<div className="transcend-info"><small>최대 성급에 도달했습니다.</small><span>6성 최종 초월 · 특성 효과 2.0배</span></div>}
+        </div>
+
+        <div className="status-modal-card status-core-stats">
+          <div className="modal-card-title"><b>기본 스탯</b><span>실시간 적용값</span></div>
+          <div className="modal-stat-grid">
+            {[["현재 HP",currentHp,maxHp],["최대 HP",maxHp,maxHp],["공격",Math.round(stats.attack),Math.round(hero.attack)],["방어",Math.round(stats.defense),Math.round(hero.defense)],["속도",Math.round(stats.speed*100)/100,Math.round(hero.speed*100)/100],["사거리",Math.round(stats.range*100)/100,Math.round(hero.range*100)/100],["경험",hero.experience+"/"+xpRequiredForLevel(hero.level),hero.experience+"/"+xpRequiredForLevel(hero.level)]]
+              .map(x=><div key={String(x[0])}><small>{String(x[0])}</small><b>{String(x[1])}</b>{x[0]!=="최대 HP"&&String(x[1])!==String(x[2])&&<span>기본 {String(x[2])}</span>}</div>)}
+          </div>
+          <div className="modal-hp-bar"><i><em style={{width:hpPct+"%"}}/></i><span>HP {currentHp} / {maxHp} · {hpPct}%</span></div>
+          <div className="modal-note">연대기 가산 · 공격 +{bonus.attack||0} · 방어 +{bonus.defense||0} · HP +{bonus.hpPct||0}% · 속도 +{bonus.speedPct||0}%</div>
+        </div>
+
+        <div className="status-modal-card">
+          <div className="modal-card-title"><b>전투 방향</b><span>{compactTendency(hero)}</span></div>
+          <div className="status-tendency-list">{tendencies.map(([key,label,value])=><div key={key}><span>{label}</span><b>{value}</b><i><em style={{width:value+"%"}}/></i></div>)}</div>
+        </div>
+
+        <div className="status-modal-card" style={{gridColumn:"1 / -1"}}>
+          <div className="modal-card-title"><b>초월 각성 · 50 / 70 / 100</b><span>{(hero.awakenings||[]).length}/3 해금</span></div>
+          <div className="status-awakening-grid">{[50,70,100].map(level=>{const data=(hero.awakenings||[]).find(x=>x.level===level);return <div key={level} className={data?"unlocked":"locked"}><b>{level===50?"🌱 개화":level===70?"⚡ 극점":"♾️ 무한"}</b><strong>Lv.{level}</strong><small>{data?.name||"해금 전"}</small><span>{data?.detail||"해당 레벨 도달 시 영구 성장 보너스가 해금됩니다."}</span></div>})}</div>
+          {hero.finalAwakening&&<div className="status-final-awakening"><b>◆ {hero.finalAwakening.name}</b><span>{hero.finalAwakening.skillName} · {hero.finalAwakening.skillDetail}</span></div>}
+        </div>
+
+        <div className="status-modal-card personality-status-card">
+          <div className="modal-card-title"><b>캐릭터 개성</b><span>{personality.archetype}</span></div>
+          <div className="personality-quote"><b>“{personality.quote}”</b><small>{personality.temperament} · 유대 방식 · {personality.bondStyle}</small></div>
+          <div className="personality-detail-grid"><span><b>개성 핵심</b>{personality.archetype}</span><span><b>선호 행동</b>{personality.favoriteAction}</span><span><b>특징</b>{personality.quirk}</span></div>
+        </div>
+
+        <div className="status-modal-card">
+          <div className="modal-card-title"><b>성장 전망</b><span>{growth.next}</span></div>
+          {hero.promotionPending&&<div className="status-promotion-pending"><b>⚔ 플레이어 전직 선택</b><small>자동 전직을 중단했습니다. 아래 3개 경로 중 하나를 직접 선택하세요.</small><div>{promotionOptions(hero).map(option=><button key={option.name} className="primary-btn compact" onClick={()=>onChoosePromotion(hero.id,option.name)}><b>{option.name}</b><small>{option.detail}</small></button>)}</div></div>}
+          <div className="growth-level"><div><b>Lv.{hero.level}</b><span>/ {growth.level}</span></div><i><em style={{width:growth.progress+"%"}}/></i></div>
+          <p className="growth-reason">{growth.reason}</p>
+          {promotionPassive(hero)&&<div className="status-promotion-passive"><b>✦ {promotionPassive(hero)!.name}</b><small>{promotionPassive(hero)!.detail}</small></div>}
+          <div className="growth-now"><span><b>현재 전직</b>{promotionLabel(hero)}</span><span><b>현재 경험</b>{hero.experience}/{xpRequiredForLevel(hero.level)}</span></div>
+        </div>
+
+        <div className="status-modal-card" style={{gridColumn:"1 / -1"}}>
+          <div className="modal-card-title"><b>캐릭터별 패시브 스킬트리</b><span>스킬 포인트 {hero.skillPoints||0} · 각 패시브 최대 Lv.30</span></div>
+          <div className="status-passive-subtitle">{passiveSetFor(hero).title} · 레벨업 시 스킬 포인트 +1 · 원하는 패시브에 자유롭게 투자</div>
+          <div className="status-passive-tree">{[1,2,3].map(tier=><div key={tier} className="status-passive-tier"><div className="status-passive-tier-head">{tier===1?"Ⅰ 기초 단계":tier===2?"Ⅱ 중급 단계":"Ⅲ 최종 단계"}</div>{passiveSetFor(hero).skills.filter(s=>s.tier===tier).map(skill=>{const lv=hero.passiveSkills?.[skill.id]||0;const max=skill.maxLevel;const locked=!!skill.requires&&((hero.passiveSkills?.[skill.requires.skillId]||0)<skill.requires.level);const ai=Object.entries(skill.aiMods).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(skill.combatPerLevel).map(([k,v])=>k==="attack"?"공격 +"+v+"%/Lv":k==="defense"?"방어 +"+v+" /Lv":k==="hpPct"?"HP +"+v+"%/Lv":k==="speedPct"?"속도 +"+v+"%/Lv":k==="range"?"사거리 +"+v+" /Lv":"치유 +"+v+"%/Lv").join(" · ");return <div key={skill.id} className={"status-skill "+(locked?"locked":"")}><div><b>{skill.name}</b><strong>Lv.{lv}/{max}</strong></div><i><em style={{width:(lv/max*100)+"%"}}/></i><small>{skill.detail}</small>{ai&&<span>AI · {ai}</span>}{combat&&<span>전투 · {combat}</span>}{skill.requires&&<span className={locked?"req-locked":"req-open"}>{locked?"🔒 ":"✓ "}선행 · {skill.requires.skillId} Lv.{skill.requires.level}</span>}<button className="primary-btn compact" disabled={!hero.skillPoints||lv>=max||locked} onClick={()=>onUpgradePassive(hero.id,skill.id)}>{locked?"선행 스킬 필요":lv>=max?"MAX · Lv.30":"스킬 포인트 1 투자"}</button></div>})}</div>)}</div>
+          <div className="status-passive-awakenings"><div className="modal-card-title"><b>패시브 각성</b><span>Lv.10 / 20 / 30</span></div>{[10,20,30].map(level=>{const unlocks=passiveMilestones(hero).filter(x=>x.level===level);return <div key={level}><b>{level===10?"✨ Lv.10":level===20?"⚡ Lv.20":"👑 Lv.30"}</b>{unlocks.length?unlocks.map(x=><small key={x.skillId}>{x.name} · {x.detail}</small>):<small>아직 해금된 효과 없음</small>}</div>})}</div>
+        </div>
+
+        <div className="status-modal-card">
+          <div className="modal-card-title"><b>캐릭터 특성</b><span>{(hero.traits||[]).length}/4 · ×{traitMultiplier.toFixed(1)}</span></div>
+          <div className="modal-traits">{(hero.traits||[]).map(name=>{const effect=eventTraitEffects[name]||growthTraitCatalog[name];return <div key={name}><b>{name}<em>×{traitMultiplier.toFixed(1)}</em></b><span>{effect?.detail||"던전에서 얻은 고유 특성입니다."}</span></div>})}{(!hero.traits||hero.traits.length===0)&&<div><b>특성 없음</b><span>던전 이벤트와 성장 보상에서 특성을 획득할 수 있습니다.</span></div>}</div>
+        </div>
+
+        <div className="status-modal-card">
+          <div className="modal-card-title"><b>던전 획득 기록</b><span>최근 8회</span></div>
+          <div className="modal-event-rewards">{(hero.eventRewards||[]).slice().reverse().slice(0,8).map((r,i)=><div key={r.name+"-"+r.floor+"-"+i}><span>{r.kind==="trait"?"특성":r.kind==="artifact"?"기재":"장비"} · {r.floor}F{r.source?" · "+r.source:""}</span><b>{r.name}</b><small>{r.detail}</small></div>)}{(!hero.eventRewards||hero.eventRewards.length===0)&&<small>던전 이벤트에서 획득한 특성·기재·장비 기록이 여기에 남습니다.</small>}</div>
+        </div>
+
+        <div className="status-modal-card" style={{gridColumn:"1 / -1"}}>
+          <div className="modal-card-title"><b>장비 · 특성 · 기재</b><span>{Object.values(slots).filter(Boolean).length}/3 장착 · 창고 {warehouseItems.length}개</span></div>
+          <div className="status-equipment-slots">{[0,1,2].map(slot=><div key={slot} className={equipSlot===slot?"active":""} onClick={()=>setEquipSlot(slot)}><span>SLOT {slot+1}</span><b>{slots[slot]?.name||"장비 없음"}</b><small>{slots[slot]?slots[slot]!.rarity+" · Lv."+slots[slot]!.level:"비어 있음"}</small><div><button className="ghost-btn compact" onClick={e=>{e.stopPropagation();setEquipSlot(slot)}}>{equipSlot===slot?"창고 선택 중":"이 슬롯 선택"}</button>{slots[slot]&&<button className="ghost-btn danger-btn compact" onClick={e=>{e.stopPropagation();onUnequip(hero.id,slot)}}>해제</button>}</div></div>)}</div>
+          <div className="status-equip-picker"><div className="modal-card-title"><b>SLOT {equipSlot+1} 장착 선택</b><span>모든 직업 장비 사용 가능 · 최근 획득 12개</span></div><div className="status-warehouse-mini">{warehouse.map((item,idx)=><div key={item.id+"-"+idx}><div><b>{item.name}</b><small>{item.rarity} · {item.slot} · Lv.{item.level} · +{enhancementLevel(item)}</small></div><button className="primary-btn compact" onClick={()=>onEquip(hero.id,item,equipSlot)}>장착</button></div>)}{warehouse.length===0&&<small>창고에 장착 가능한 장비가 없습니다.</small>}</div></div>
+          <div className="modal-collection"><div><small>특성</small><b>{(hero.traits||[]).join(" · ")||"없음"}</b></div><div><small>기재</small>{(hero.artifacts||[]).length===0?<b>없음</b>:<div className="modal-artifact-list">{(hero.artifacts||[]).map(name=>{const effect=eventArtifactEffects[name]||growthArtifactCatalog[name];const ai=Object.entries(effect?.aiMods||{}).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(effect?.combatMods||{}).map(([k,v])=>(k==="attack"?"공격 +"+v:k==="defense"?"방어 +"+v:k==="hpPct"?"HP +"+v+"%":k==="speedPct"?"속도 +"+v+"%":k==="range"?"사거리 +"+v:k==="healPct"?"치유 +"+v+"%":k==="critPct"?"치명타 +"+v+"%":k+" +"+v)).join(" · ");return <div key={name}><b>{name}</b><small>{effect?.detail||"던전 이벤트에서 얻은 고유 기재입니다."}</small>{ai&&<em>AI · {ai}</em>}{combat&&<em>전투 · {combat}</em>}</div>})}</div>}</div></div>
+        </div>
+
+        <div className="status-modal-card" style={{gridColumn:"1 / -1"}}>
+          <div className="modal-card-title"><b>현재 상태</b><span>전투·성향·성장 기록에 따라 갱신</span></div>
+          <div className="modal-live-state"><div><small>기분</small><b>{systemMood(hero)}</b></div><div><small>상태</small><b>{systemStatus(hero)}</b></div><div><small>평가</small><b>{systemEvaluation(hero)}</b></div></div>
+        </div>
+
+        <div className="status-modal-card">
+          <div className="modal-card-title"><b>영웅 업적 · 칭호</b><span>획득 순서</span></div>
+          <div className="status-chronicle-list">{chronicles.length?chronicles.map(entry=><div key={entry.id+"-"+entry.earnedAt}><small>{entry.kind==="achievement"?"업적":"칭호"} · {new Date(entry.earnedAt).toLocaleDateString("ko-KR")}</small><b>{entry.name}</b><span>{entry.description}</span></div>):<small>아직 기록된 업적과 칭호가 없습니다.</small>}</div>
+        </div>
+
+        <div className="status-modal-card">
+          <div className="modal-card-title"><b>최근 기억</b><span>{(hero.memories||[]).length}개</span></div>
+          <div className="status-memory-list">{(hero.memories||[]).slice(0,6).map((m,i)=><div key={m.createdAt+"-"+i}><b>{m.text}</b><span>기억 영향 {Math.round(m.weight*10)/10}</span></div>)}{(!hero.memories||hero.memories.length===0)&&<small>강하게 남은 전투 기억이 아직 없습니다.</small>}</div>
+        </div>
+      </div>
+
+      <div className="status-modal-bottom"><div className="modal-bottom-card"><b>장기 전투 기록</b><span>{hero.combatProfile?.battles||0}전투 · {hero.combatProfile?.actions||0}행동 · {hero.combatProfile?.damage||0}피해 · {hero.combatProfile?.healing||0}회복</span><small>{Object.entries(hero.combatProfile?.topActions||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+" · "+x[1]+"회").join("  /  ")||"기록 없음"}</small></div><div className="modal-bottom-card"><b>현재 스킨 · 칭호</b><span>{skinLabel(hero.job,hero.equippedSkinId||hero.costumeId)} · {chronicleLabel(hero)}</span><small>초월 각성 {(hero.awakenings||[]).map(x=>"Lv."+x.level).join(" · ")||"없음"}</small></div></div>
     </section>
   </div>;
 }
