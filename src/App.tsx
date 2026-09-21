@@ -1052,7 +1052,7 @@ export default function App(){
             wave+=1;
             const pool=["Goblin","Kobold","Gnoll","Orc","Uruk","Arachne","Ogre"];
             const count=Math.min(7,2+wave);
-            const defenseBaseLevel=Math.max(1,...prev.units.filter(x=>x.team==="enemy").map(x=>x.level));
+            const defenseBaseLevel=Math.max(1,...prev.units.filter(x=>x.team==="enemy").map(x=>Number(x.level)||1));
             const nextEnemies=Array.from({length:count},(_,i)=>{
               const waveGrade=wave>=6?"Named":wave>=4?"Elite":"Normal";
               const defenseLevel=Math.max(1,defenseBaseLevel+((i+wave)%3)-1);
