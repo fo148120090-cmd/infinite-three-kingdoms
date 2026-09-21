@@ -362,10 +362,13 @@ function formationPosition(hero:Hero,index:number,total:number,mode:BattleMode){
   const crowd=Math.max(0,total-1)*.16;
   const aggressive=hero.tendencies.aggression*.45+hero.tendencies.bravery*.3+hero.tendencies.pursuit*.25;
   const defensive=hero.tendencies.caution*.45+hero.tendencies.survival*.55;
-  let base=hero.job==="Guardian"?1.0:hero.job==="Warrior"?1.45:hero.job==="Cleric"?3.4:2.65;
+  // 최초 자동 진형은 전사/수호자를 전열, 마법사/성직자를 확실한 후열에 배치한다.
+  // 성향 보정은 유지하되 후열 직업의 기본 위치가 전열로 밀리지 않도록 한다.
+  let base=hero.job==="Guardian"?1.0:hero.job==="Warrior"?1.45:(hero.job==="Mage"||hero.job==="Cleric"?3.55:2.65);
   if(mode==="defense"&&(hero.job==="Guardian"||hero.job==="Warrior"))base-=.2;
   if(mode==="raid"&&(hero.job==="Cleric"||hero.job==="Mage"))base+=.18;
   base+=(defensive-aggressive)*.006;
+  if(hero.job==="Mage"||hero.job==="Cleric")base=Math.max(3.35,base);
   return Math.max(.55,Math.min(4.6,base+index*.28-crowd));
 }
 function formationLabel(heroes:Hero[],mode:BattleMode){
