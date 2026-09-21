@@ -1826,3 +1826,13 @@ body{
 .battle-unit.enemy .monster-asset-named{border-color:rgba(166,129,92,.5);background:radial-gradient(circle,rgba(151,99,55,.24),transparent 60%),#15100d}
 .battle-unit.enemy .monster-asset-boss{border-color:rgba(179,112,112,.55);background:radial-gradient(circle,rgba(133,45,55,.3),transparent 60%),#170b10}
 .battle-unit.enemy.dead .monster-asset{opacity:.28;filter:grayscale(1)}
+
+/* 2026-09-21 fantasy RPG UI polish inspired by CC0 GUI assets */
+.page.management-page,.dungeon-page,.battle-page{--ui-gold:#d9b86c;--ui-panel:rgba(12,18,28,.88);--ui-line:rgba(133,157,194,.28)}
+.section-head,.dungeon-page .route-intel,.dungeon-page .route-memory-panel,.warehouse-toolbar,.battle-header,.battle-summary-strip{border-color:var(--ui-line);background:linear-gradient(145deg,rgba(24,34,49,.88),var(--ui-panel));box-shadow:0 14px 34px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.045)}
+.section-head h2,.dungeon-page .section-head h2{letter-spacing:-.025em;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+.primary-btn,.warehouse-tab,.sort-btn{border:1px solid rgba(137,160,199,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 7px 16px rgba(0,0,0,.18);transition:transform .16s ease,filter .16s ease,border-color .16s ease}
+.primary-btn:hover,.warehouse-tab:hover,.sort-btn:hover{filter:brightness(1.08);transform:translateY(-1px);border-color:rgba(217,184,108,.5)}
+.warehouse-tab.active,.sort-btn.active{border-color:rgba(217,184,108,.62);box-shadow:0 0 0 1px rgba(217,184,108,.08),inset 0 1px 0 rgba(255,255,255,.06)}
+.dungeon-page .route-card:after{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid rgba(217,184,108,.08);border-radius:inherit}
+.battle-page .battle-header,.battle-page .battle-summary-strip{backdrop-filter:blur(10px)}
