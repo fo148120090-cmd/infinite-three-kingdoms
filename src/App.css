@@ -535,6 +535,29 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
 
 /* Frontline fortress map lobby */
 .fortress-lobby-page{display:grid;gap:12px}
+.fortress-lobby-page .muted{color:#bdc8d8!important;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.fortress-header .eyebrow,.fortress-map-topbar .eyebrow,.fortress-panel .eyebrow,.fortress-doctrine .eyebrow{color:#d8bd78;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.fortress-header h1,.fortress-map-topbar b,.fortress-panel b,.fortress-doctrine b{color:#f1f4f8;text-shadow:0 2px 5px rgba(0,0,0,.95)}
+.fortress-header p{color:#c0cada!important;text-shadow:0 1px 4px rgba(0,0,0,.95)}
+.fortress-status span,.fortress-status small{color:#9eabc0!important;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.fortress-status b{color:#f1f4f8!important;text-shadow:0 1px 4px rgba(0,0,0,.95)}
+.fortress-map-topbar small{color:#b2bfd1!important;text-shadow:0 1px 3px rgba(0,0,0,.95)}
+.fortress-outer-label{color:#d1d9e5!important;background:rgba(7,13,21,.84);text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.fortress-zone{color:#eef3fa}
+.fortress-zone small{color:#aab8ca!important;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.fortress-zone b{color:#f3f6fb!important;text-shadow:0 1px 4px rgba(0,0,0,.95)}
+.fortress-zone em{color:#b4c0d0!important;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.fortress-keep span{color:#aebbd0!important;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.fortress-keep b{color:#f2f5f9!important;text-shadow:0 2px 5px rgba(0,0,0,.95)}
+.fortress-keep small{color:#8798ad!important}
+.gate-launch b{color:#f3e7c9!important;text-shadow:0 2px 4px rgba(0,0,0,.95)}
+.gate-launch small{color:#c6b58e!important;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.fortress-panel-head small,.fortress-panel-head>span{color:#a9b6c8!important;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.fortress-party-list b{color:#eef2f7!important}
+.fortress-party-list small,.fortress-party-list strong{color:#aebbc9!important}
+.fortress-map-legend span{color:#a9b6c8!important;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.fortress-doctrine small{color:#aeb9c8!important;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+
 .fortress-header{display:flex;justify-content:space-between;align-items:end;gap:16px}
 .fortress-header>div:first-child{max-width:760px;display:grid;gap:5px}
 .fortress-header h1{margin:0;font-size:31px;letter-spacing:-.03em}
