@@ -2283,3 +2283,88 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .monster-art-arachne .monster-aura-ring{animation-duration:1.45s}
 .monster-art-skeleton .monster-aura-ring{stroke-dasharray:3 4;animation-duration:2.1s}
 .monster-art-wolf .monster-eye-glow{filter:drop-shadow(0 0 4px currentColor)}
+
+
+/* 2026-09-21 Monster attack FX + boss phase presentation pass
+   Visual-only layer: does not alter combat calculations or AI decisions. */
+.battle-scene .battle-unit.enemy .unit-token-frame{position:relative}
+.battle-scene .battle-unit.enemy .unit-token-frame:after{
+  content:"";
+  position:absolute;
+  left:50%; top:50%;
+  width:0; height:0;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  opacity:0;
+}
+.battle-scene .battle-unit.enemy:has(.monster-species-dragon) .unit-token-frame:after{
+  width:76px;height:18px;
+  left:78%;top:55%;
+  border-radius:50% 12% 12% 50%;
+  background:linear-gradient(90deg,rgba(255,225,130,.0),rgba(255,137,65,.55),rgba(255,70,45,.0));
+  filter:blur(2px);
+  animation:monster-attack-breath 1.9s ease-in-out infinite;
+}
+.battle-scene .battle-unit.enemy:has(.monster-species-spider) .unit-token-frame:after{
+  width:54px;height:54px;
+  border:1px solid rgba(214,168,235,.55);
+  border-right-color:transparent;
+  border-bottom-color:transparent;
+  transform:translate(-50%,-50%) rotate(25deg);
+  animation:monster-attack-web 2.3s ease-in-out infinite;
+}
+.battle-scene .battle-unit.enemy:has(.monster-species-demon) .unit-token-frame:after{
+  width:62px;height:18px;
+  border-top:2px solid rgba(255,130,135,.6);
+  border-radius:50%;
+  transform:translate(-50%,-50%) rotate(-18deg);
+  filter:drop-shadow(0 0 5px rgba(255,80,90,.4));
+  animation:monster-attack-slash 1.65s ease-in-out infinite;
+}
+.battle-scene .battle-unit.enemy:has(.monster-species-beast) .unit-token-frame:after{
+  width:64px;height:32px;
+  border-top:2px solid rgba(190,215,245,.52);
+  border-bottom:1px solid rgba(190,215,245,.2);
+  transform:translate(-50%,-50%) skewX(-22deg);
+  animation:monster-attack-claw 1.55s ease-in-out infinite;
+}
+.battle-scene .battle-unit.enemy:has(.monster-species-undead) .unit-token-frame:after{
+  width:38px;height:38px;
+  border:2px dotted rgba(145,226,255,.42);
+  animation:monster-attack-bone 2.1s linear infinite;
+}
+.battle-scene .battle-unit.enemy:has(.monster-species-orc) .unit-token-frame:after{
+  width:68px;height:16px;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,205,117,.38),transparent 68%);
+  box-shadow:0 0 14px rgba(255,155,65,.18);
+  animation:monster-attack-impact 1.7s ease-out infinite;
+}
+.battle-scene.battle-phase-2 .battle-unit.enemy .unit-token-frame:after{animation-duration:.78s}
+.battle-scene.battle-phase-3 .battle-unit.enemy .unit-token-frame:after{animation-duration:.52s}
+.battle-scene.battle-phase-3 .battle-unit.enemy .unit-token{
+  box-shadow:0 0 28px rgba(255,88,73,.30),0 12px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);
+}
+.battle-scene.battle-phase-3 .battle-unit.enemy:has(.monster-asset-boss) .monster-art-svg{
+  filter:drop-shadow(0 0 14px rgba(255,91,69,.48)) saturate(1.18);
+  animation:boss-phase-surge .8s ease-in-out infinite alternate;
+}
+.battle-scene.battle-phase-2 .raid-phase-hud{
+  box-shadow:0 0 22px rgba(221,164,75,.12),inset 0 0 18px rgba(221,164,75,.05);
+}
+.battle-scene.battle-phase-3 .raid-phase-hud{
+  border-color:rgba(238,112,94,.58);
+  box-shadow:0 0 28px rgba(238,82,69,.18),inset 0 0 22px rgba(238,82,69,.08);
+}
+@keyframes monster-attack-breath{0%,100%{opacity:0;transform:translate(-50%,-50%) scaleX(.35)}35%{opacity:.9}55%{opacity:.18;transform:translate(-50%,-50%) scaleX(1.15)}}
+@keyframes monster-attack-web{0%,100%{opacity:0;transform:translate(-50%,-50%) rotate(25deg) scale(.65)}45%{opacity:.8}70%{opacity:.12;transform:translate(-50%,-50%) rotate(115deg) scale(1.1)}}
+@keyframes monster-attack-slash{0%,100%{opacity:0;transform:translate(-50%,-50%) rotate(-18deg) scaleX(.35)}35%{opacity:.9}55%{opacity:.08;transform:translate(-50%,-50%) rotate(-18deg) scaleX(1.15)}}
+@keyframes monster-attack-claw{0%,100%{opacity:0;transform:translate(-50%,-50%) skewX(-22deg) translateX(-8px)}35%{opacity:.8}58%{opacity:.08;transform:translate(-50%,-50%) skewX(-22deg) translateX(10px)}}
+@keyframes monster-attack-bone{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.65)}35%{opacity:.65}100%{opacity:0;transform:translate(-50%,-50%) rotate(180deg) scale(1.15)}}
+@keyframes monster-attack-impact{0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.45)}30%{opacity:.7}65%{opacity:0;transform:translate(-50%,-50%) scale(1.25)}}
+@keyframes boss-phase-surge{from{transform:translateY(0) scale(1.08)}to{transform:translateY(-2px) scale(1.12)}}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene .battle-unit.enemy .unit-token-frame:after,
+  .battle-scene.battle-phase-3 .battle-unit.enemy:has(.monster-asset-boss) .monster-art-svg{animation:none!important}
+}
