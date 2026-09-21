@@ -2096,3 +2096,23 @@ body{
 @keyframes unit-critical-flash{0%{filter:brightness(1)}25%{filter:brightness(1.8) saturate(1.3)}100%{filter:brightness(1)}}
 @keyframes active-ring{0%,100%{opacity:.25;transform:scale(.98)}50%{opacity:.9;transform:scale(1.02)}}
 @media(prefers-reduced-motion:reduce){.battle-scene .combat-fx,.battle-scene .unit-token,.battle-scene .active-unit .unit-token-frame:after{animation:none!important}}
+
+/* 2026-09-21 UI pass: unified growth panel, visible skin stats, result modal */
+.skin-stat-preview{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0 3px}
+.skin-stat-preview em{padding:3px 6px;border:1px solid rgba(108,157,210,.24);border-radius:6px;background:rgba(70,116,164,.1);color:#a9c8e9;font-size:9px;font-style:normal;font-weight:800}
+.skin-card.locked .skin-stat-preview em{opacity:.7}
+.result-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(2,6,12,.72);backdrop-filter:blur(8px);animation:result-overlay-in .2s ease-out both}
+.result-overlay .result-panel{width:min(720px,calc(100vw - 28px));max-height:min(82vh,760px);overflow:auto;margin:0;border:1px solid rgba(141,169,205,.32);border-radius:22px;box-shadow:0 28px 80px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.07);background:linear-gradient(145deg,rgba(20,31,46,.98),rgba(6,11,18,.99))}
+.result-overlay .result-icon{width:64px;height:64px;margin:20px auto 8px;border-radius:18px;display:grid;place-items:center;font-size:30px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.result-overlay .clear-cutin{text-align:center;margin:8px 18px 18px;padding:14px;border-radius:14px;background:linear-gradient(180deg,rgba(105,151,210,.1),rgba(255,255,255,.025));border:1px solid rgba(127,160,202,.18)}
+.result-overlay .clear-cutin b{display:block;margin:3px 0;font-size:20px;letter-spacing:.08em}
+.result-overlay .battle-report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.result-overlay> .result-panel > div:not(.result-icon):not(.clear-cutin){padding-left:18px;padding-right:18px}
+.result-overlay .primary-btn{margin:16px 18px 20px;width:calc(100% - 36px)}
+@keyframes result-overlay-in{from{opacity:0}.to{opacity:1}}
+@media(max-width:650px){
+ .result-overlay{padding:10px}
+ .result-overlay .result-panel{width:100%;max-height:88vh;border-radius:18px}
+ .result-overlay .battle-report-grid{grid-template-columns:1fr}
+ .skin-stat-preview em{font-size:8px;padding:2px 5px}
+}
