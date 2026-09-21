@@ -1632,7 +1632,7 @@ function SkinPortrait({job,skinId,compact=false}:{job:Job;skinId?:string;compact
   const portraitIndex:Record<Job,number>={Warrior:0,Guardian:1,Archer:2,Mage:3,Cleric:4};
   const portraitCol=portraitIndex[job]%3;
   const portraitRow=Math.floor(portraitIndex[job]/3);
-  const portraitUrl="/assets/rpgportraits.png";
+  const portraitUrl="/assets/hero-portraits.svg";
   return <svg className={"skin-portrait "+(compact?"compact":"")} width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
     <defs>
       <linearGradient id={uid+"-bg"} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={theme.primary}/><stop offset="1" stopColor={theme.secondary}/></linearGradient>
