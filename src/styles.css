@@ -3549,3 +3549,92 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .report-metrics{grid-template-columns:repeat(5,minmax(42px,1fr));overflow-x:auto}
   .report-metrics>span{min-width:48px}
 }
+
+
+/* 2026-09-21 lobby visibility hotfix */
+.fortress-lobby-page{
+  color:#f3f6fb;
+}
+.fortress-lobby-page::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(4,8,14,.12),rgba(4,8,14,.22));
+  z-index:0;
+}
+.fortress-lobby-page>*{
+  position:relative;
+  z-index:1;
+}
+.fortress-lobby-page .fortress-header>div:first-child,
+.fortress-lobby-page .fortress-map-topbar>div,
+.fortress-lobby-page .fortress-status>div{
+  text-shadow:0 2px 6px rgba(0,0,0,.98);
+}
+.fortress-lobby-page .fortress-header h1{
+  color:#ffffff!important;
+}
+.fortress-lobby-page .fortress-header p{
+  color:#e0e7f0!important;
+  opacity:1!important;
+}
+.fortress-lobby-page .fortress-status span,
+.fortress-lobby-page .fortress-status small{
+  color:#c4cfdd!important;
+  opacity:1!important;
+}
+.fortress-lobby-page .fortress-status b{
+  color:#ffffff!important;
+}
+.fortress-lobby-page .fortress-map-topbar b{
+  color:#ffffff!important;
+}
+.fortress-lobby-page .fortress-map-topbar small{
+  color:#c7d1de!important;
+}
+.fortress-lobby-page .fortress-zone,
+.fortress-lobby-page .gate-launch,
+.fortress-lobby-page .fortress-keep{
+  z-index:3;
+}
+.fortress-lobby-page .fortress-zone{
+  background:linear-gradient(135deg,rgba(7,14,24,.98),rgba(7,13,21,.96))!important;
+}
+.fortress-lobby-page .fortress-zone small{
+  color:#bfcbd9!important;
+}
+.fortress-lobby-page .fortress-zone b{
+  color:#ffffff!important;
+}
+.fortress-lobby-page .fortress-zone em{
+  color:#c3cedb!important;
+}
+.fortress-lobby-page .fortress-keep{
+  background:radial-gradient(circle at 50% 24%,rgba(210,177,105,.2),transparent 34%),linear-gradient(180deg,rgba(18,30,47,.98),rgba(7,14,23,.98))!important;
+}
+.fortress-lobby-page .fortress-keep span,
+.fortress-lobby-page .fortress-keep b{
+  color:#ffffff!important;
+}
+.fortress-lobby-page .fortress-keep small{
+  color:#aab7c7!important;
+}
+.fortress-lobby-page .gate-launch{
+  background:linear-gradient(135deg,rgba(30,23,15,.99),rgba(12,13,17,.98))!important;
+}
+.fortress-lobby-page .gate-launch b{
+  color:#fff4d7!important;
+}
+.fortress-lobby-page .gate-launch small{
+  color:#d6c6a5!important;
+}
+.fortress-lobby-page .fortress-map-legend{
+  position:relative;
+  z-index:4;
+  background:rgba(7,12,19,.96)!important;
+}
+.fortress-lobby-page .fortress-map-legend span{
+  color:#c2ccd8!important;
+}
+
