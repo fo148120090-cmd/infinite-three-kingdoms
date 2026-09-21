@@ -2487,3 +2487,45 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
     animation:none!important;
   }
 }
+
+
+/* 2026-09-21 active enemy telegraph pass
+   Makes the current enemy's attack intent visually dominant without changing combat logic. */
+.battle-scene.battle-active-enemy .battle-unit.active-unit.enemy .unit-token-frame{
+  filter:brightness(1.08);
+}
+.battle-scene.battle-active-enemy .battle-unit.active-unit.enemy .monster-art-svg{
+  animation:enemy-active-ready .48s ease-in-out infinite alternate;
+}
+.battle-scene.battle-active-enemy .battle-unit.active-unit.enemy .unit-nameplate b{
+  text-shadow:0 0 10px rgba(255,190,105,.42);
+}
+.battle-scene.battle-active-enemy.battle-active-species-dragon .battle-unit.active-unit.enemy .unit-token-frame:after{
+  animation-name:monster-attack-breath-hit;
+}
+.battle-scene.battle-active-enemy.battle-active-species-spider .battle-unit.active-unit.enemy .unit-token-frame:after{
+  animation-name:monster-attack-web-hit;
+}
+.battle-scene.battle-active-enemy.battle-active-species-demon .battle-unit.active-unit.enemy .unit-token-frame:after{
+  animation-name:monster-attack-slash-hit;
+}
+.battle-scene.battle-active-enemy.battle-active-species-beast .battle-unit.active-unit.enemy .unit-token-frame:after{
+  animation-name:monster-attack-claw-hit;
+}
+.battle-scene.battle-active-enemy.battle-active-species-undead .battle-unit.active-unit.enemy .unit-token-frame:after{
+  animation-name:monster-attack-bone-hit;
+}
+.battle-scene.battle-active-enemy.battle-active-species-orc .battle-unit.active-unit.enemy .unit-token-frame:after{
+  animation-name:monster-attack-impact-hit;
+}
+.battle-scene.battle-active-enemy .battle-unit.active-unit.enemy .unit-token-frame:after{
+  animation-duration:.62s;
+  filter:brightness(1.18) drop-shadow(0 0 6px rgba(255,190,105,.28));
+}
+@keyframes enemy-active-ready{
+  from{transform:translateY(0) scale(1)}
+  to{transform:translateY(-2px) scale(1.035)}
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene.battle-active-enemy .battle-unit.active-unit.enemy .monster-art-svg{animation:none!important}
+}
