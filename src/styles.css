@@ -1840,3 +1840,22 @@ body{
 .battle-unit.enemy .monster-asset-elite{box-shadow:0 0 0 1px rgba(126,160,218,.1),0 0 22px rgba(73,110,166,.16),inset 0 1px 0 rgba(255,255,255,.08),0 10px 20px rgba(0,0,0,.4)}
 .battle-unit.enemy .monster-asset-named{box-shadow:0 0 0 1px rgba(166,129,92,.1),0 0 22px rgba(151,99,55,.12),inset 0 1px 0 rgba(255,255,255,.08),0 10px 20px rgba(0,0,0,.4)}
 .battle-unit.enemy .monster-asset-boss{box-shadow:0 0 0 1px rgba(179,112,112,.12),0 0 28px rgba(133,45,55,.18),inset 0 1px 0 rgba(255,255,255,.08),0 12px 24px rgba(0,0,0,.46)}
+
+/* 2026-09-21 character art scale pass: make portraits and silhouettes easier to read */
+.hero-card{gap:15px}
+.hero-avatar{width:68px;height:68px;border-radius:16px;font-size:28px}
+.hero-avatar.large{width:68px;height:68px;border-radius:16px}
+.hero-avatar.mini{width:42px;height:42px;border-radius:10px;font-size:18px}
+.hero-card-portrait{width:68px!important;height:68px!important}
+.hero-card-portrait .skin-portrait{width:64px;height:64px}
+.character-selector-card{gap:10px;padding:9px}
+.character-selector-card .skin-avatar{width:46px;height:46px;border-radius:11px;flex:none}
+.character-selector-card .skin-portrait{width:44px;height:44px}
+.character-equipment-identity .hero-avatar.large{width:76px;height:76px;border-radius:17px}
+.character-equipment-identity .hero-avatar.large .skin-portrait{width:72px;height:72px}
+.skin-card-portrait{width:64px;height:64px;border-radius:11px}
+.skin-card .skin-portrait,.skin-card-portrait .skin-portrait{width:60px;height:60px}
+.status-modal-portrait{width:68px!important;height:68px!important;border-radius:16px}
+.status-modal-portrait .skin-portrait{width:64px;height:64px}
+.battle-unit.player .unit-token{width:54px;height:54px}
+.battle-unit.player .unit-token .skin-portrait{width:48px;height:48px}
