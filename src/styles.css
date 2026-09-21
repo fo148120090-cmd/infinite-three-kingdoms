@@ -3127,3 +3127,27 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .battle-unit.costume-light-hero.active-unit .unit-token-frame,.battle-unit.costume-fallen-hero.active-unit .unit-token-frame{animation:costume-aura-pulse 1.15s ease-in-out infinite;}
 @keyframes costume-aura-pulse{50%{transform:scale(1.06);filter:brightness(1.14) drop-shadow(0 0 14px currentColor)}}
 @media (prefers-reduced-motion:reduce){.battle-unit.costume-light-hero.active-unit .unit-token-frame,.battle-unit.costume-fallen-hero.active-unit .unit-token-frame{animation:none}}
+
+/* Costume-specific hit / heal / critical FX. The existing fxKind trigger is reused. */
+.battle-unit[class*="costume-"].fx-damage .unit-token-frame::after,
+.battle-unit[class*="costume-"].fx-heal .unit-token-frame::after,
+.battle-unit[class*="costume-"].fx-critical .unit-token-frame::after{content:"";position:absolute;inset:-9px;border-radius:50%;pointer-events:none;opacity:0;}
+.battle-unit[class*="costume-"].fx-damage .unit-token-frame::after{animation:costume-hit-ring .42s ease-out;}
+.battle-unit[class*="costume-"].fx-heal .unit-token-frame::after{animation:costume-heal-ring .6s ease-out;}
+.battle-unit[class*="costume-"].fx-critical .unit-token-frame::after{animation:costume-critical-burst .5s ease-out;}
+.battle-unit.costume-beach.fx-damage .unit-token-frame::after,.battle-unit.costume-beach.fx-critical .unit-token-frame::after{box-shadow:0 0 0 2px rgba(74,190,214,.8),0 0 18px rgba(74,190,214,.7);}
+.battle-unit.costume-summer.fx-damage .unit-token-frame::after,.battle-unit.costume-summer.fx-critical .unit-token-frame::after{box-shadow:0 0 0 2px rgba(130,198,104,.8),0 0 18px rgba(130,198,104,.7);}
+.battle-unit.costume-fur-winter.fx-damage .unit-token-frame::after,.battle-unit.costume-fur-winter.fx-critical .unit-token-frame::after{box-shadow:0 0 0 2px rgba(174,218,245,.85),0 0 20px rgba(174,218,245,.72);}
+.battle-unit.costume-barbarian.fx-damage .unit-token-frame::after,.battle-unit.costume-barbarian.fx-critical .unit-token-frame::after{box-shadow:0 0 0 3px rgba(226,153,68,.9),0 0 22px rgba(226,153,68,.75);}
+.battle-unit.costume-bodysuit.fx-damage .unit-token-frame::after,.battle-unit.costume-bodysuit.fx-critical .unit-token-frame::after{box-shadow:0 0 0 2px rgba(82,214,224,.9),0 0 22px rgba(82,214,224,.8);}
+.battle-unit.costume-monster-disguise.fx-damage .unit-token-frame::after,.battle-unit.costume-monster-disguise.fx-critical .unit-token-frame::after{box-shadow:0 0 0 2px rgba(190,133,83,.9),0 0 20px rgba(190,133,83,.7);}
+.battle-unit.costume-light-hero.fx-damage .unit-token-frame::after,.battle-unit.costume-light-hero.fx-critical .unit-token-frame::after{box-shadow:0 0 0 3px rgba(255,246,186,.95),0 0 28px rgba(255,246,186,.85);}
+.battle-unit.costume-fallen-hero.fx-damage .unit-token-frame::after,.battle-unit.costume-fallen-hero.fx-critical .unit-token-frame::after{box-shadow:0 0 0 3px rgba(187,91,169,.95),0 0 26px rgba(187,91,169,.82);}
+.battle-unit.costume-beach.fx-heal .unit-token-frame::after,.battle-unit.costume-summer.fx-heal .unit-token-frame::after{box-shadow:0 0 0 2px rgba(100,219,194,.9),0 0 24px rgba(100,219,194,.8);}
+.battle-unit.costume-fur-winter.fx-heal .unit-token-frame::after,.battle-unit.costume-light-hero.fx-heal .unit-token-frame::after{box-shadow:0 0 0 3px rgba(220,246,255,.95),0 0 28px rgba(220,246,255,.85);}
+.battle-unit.costume-barbarian.fx-heal .unit-token-frame::after,.battle-unit.costume-fallen-hero.fx-heal .unit-token-frame::after{box-shadow:0 0 0 2px rgba(208,144,211,.9),0 0 24px rgba(208,144,211,.72);}
+.battle-unit.costume-bodysuit.fx-heal .unit-token-frame::after,.battle-unit.costume-monster-disguise.fx-heal .unit-token-frame::after{box-shadow:0 0 0 2px rgba(116,222,230,.9),0 0 24px rgba(116,222,230,.75);}
+@keyframes costume-hit-ring{0%{opacity:0;transform:scale(.65)}25%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+@keyframes costume-heal-ring{0%{opacity:0;transform:scale(.55)}30%{opacity:1}100%{opacity:0;transform:scale(1.3)}}
+@keyframes costume-critical-burst{0%{opacity:0;transform:scale(.5)}18%{opacity:1;transform:scale(.9)}55%{opacity:.9;transform:scale(1.25)}100%{opacity:0;transform:scale(1.5)}}
+@media (prefers-reduced-motion:reduce){.battle-unit[class*="costume-"].fx-damage .unit-token-frame::after,.battle-unit[class*="costume-"].fx-heal .unit-token-frame::after,.battle-unit[class*="costume-"].fx-critical .unit-token-frame::after{animation:none;opacity:.7}}
