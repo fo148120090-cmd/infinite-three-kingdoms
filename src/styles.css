@@ -1818,3 +1818,11 @@ body{
 .battle-unit.enemy .monster-asset-named{filter:drop-shadow(0 8px 8px rgba(0,0,0,.55)) saturate(1.25) contrast(1.15)}
 .battle-unit.enemy .monster-asset-boss{filter:drop-shadow(0 10px 10px rgba(0,0,0,.6)) saturate(1.4) contrast(1.2) brightness(.82)}
 .battle-unit.enemy.dead .monster-asset{opacity:.22;filter:grayscale(1)}
+
+/* 2026-09-21 stable monster grade tokens */
+.battle-unit.enemy .monster-asset{display:grid;place-items:center;width:56px;height:56px;border-radius:16px;border:1px solid rgba(180,196,225,.2);background:radial-gradient(circle at 50% 35%,rgba(114,139,184,.2),transparent 58%),linear-gradient(145deg,rgba(38,51,72,.95),rgba(9,14,22,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 9px 18px rgba(0,0,0,.35)}
+.battle-unit.enemy .monster-asset span{font-size:27px;line-height:1;text-shadow:0 3px 8px rgba(0,0,0,.6)}
+.battle-unit.enemy .monster-asset-elite{border-color:rgba(126,160,218,.42);background:radial-gradient(circle,rgba(73,110,166,.24),transparent 60%),#0b1320}
+.battle-unit.enemy .monster-asset-named{border-color:rgba(166,129,92,.5);background:radial-gradient(circle,rgba(151,99,55,.24),transparent 60%),#15100d}
+.battle-unit.enemy .monster-asset-boss{border-color:rgba(179,112,112,.55);background:radial-gradient(circle,rgba(133,45,55,.3),transparent 60%),#170b10}
+.battle-unit.enemy.dead .monster-asset{opacity:.28;filter:grayscale(1)}
