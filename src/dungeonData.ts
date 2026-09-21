@@ -22,7 +22,7 @@ export type StatusEffect = {kind:StatusEffectKind; turns:number; power?:number};
 export type Hero = {
   id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
   speed:number; range:number; tendencies:Tendencies; item?:Item; equipment?:[Item?,Item?,Item?]; experience:number;
-  history:string[]; color:string; star?:number; promotionTier?:number; promotionPath?:string[];
+  history:string[]; color:string; star?:number; promotionTier?:number; promotionPath?:string[]; promotionPending?:{tier:number;choices:string[]};
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
   traits?:string[];
   personality?:CharacterPersonality;
