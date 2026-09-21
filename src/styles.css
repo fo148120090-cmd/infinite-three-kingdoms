@@ -2239,3 +2239,13 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .result-popup .loot-summary{margin-top:9px;padding:9px 10px;display:flex;gap:8px;align-items:flex-start;border:1px solid #3b3a2c;border-radius:9px;background:#15150f}.result-popup .loot-summary b{font-size:9px;color:#d6b96f;white-space:nowrap}.result-popup .loot-summary span{font-size:9px;color:#c0cad9;line-height:1.4}
 .result-popup>.result-action-btn{grid-area:action;margin:14px 0 0;width:100%}
 @media(max-width:650px){.result-popup{grid-template-columns:54px 1fr;padding:14px;max-height:90vh}.result-popup>.result-icon{width:48px;height:48px;font-size:24px}.result-summary h3{font-size:20px}.result-popup .battle-report-grid{grid-template-columns:1fr}.report-head{display:grid;gap:2px}.result-popup .loot-summary{display:grid;gap:3px}}
+
+
+/* 2026-09-21 original monster art pass */
+.monster-asset{display:grid;place-items:center;position:relative;overflow:visible}
+.monster-art-svg{display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.42));transform:translateY(1px)}
+.monster-asset-normal .monster-art-svg{filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.monster-asset-elite .monster-art-svg{filter:drop-shadow(0 0 7px rgba(214,184,106,.28))}
+.monster-asset-named .monster-art-svg{filter:drop-shadow(0 0 8px rgba(185,200,255,.26))}
+.monster-asset-boss .monster-art-svg{filter:drop-shadow(0 0 11px rgba(229,196,109,.34));transform:translateY(0) scale(1.08)}
+.monster-asset i{position:absolute;right:-4px;top:-4px;font-style:normal;font-size:9px;line-height:14px;min-width:14px;text-align:center;border-radius:50%;background:#111827;color:#d9c477;border:1px solid #4b3d27}
