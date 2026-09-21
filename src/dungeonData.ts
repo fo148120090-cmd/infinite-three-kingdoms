@@ -249,8 +249,19 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
   };
 }
 
-function uniqueLootCopy(item:Item):Item {
-  return {...item,id:item.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)};
+function uniqueLootCopy(item:Item,level:number):Item {
+  const normalizedLevel=Math.max(1,Math.floor(Number(level)||1));
+  // 고유 장비도 후반 회차에서 기본 레벨과 전투 수치가 자연스럽게 따라오도록 한다.
+  // 증가폭은 일반 장비와 동일하게 완만하게 제한한다.
+  const powerScale=1+Math.max(0,normalizedLevel-item.level)*.02;
+  const combatMods=item.combatMods?Object.fromEntries(Object.entries(item.combatMods).map(([key,value])=>[key,Math.max(1,Math.round((value||0)*powerScale*100)/100)])):undefined;
+  return {
+    ...item,
+    id:item.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
+    level:Math.max(item.level,normalizedLevel),
+    combatMods,
+    stats:combatMods?item.stats.map(stat=>stat):item.stats
+  };
 }
 
 export function rollBattleLoot(level:number, room:RoomKind, preference?:Partial<Tendencies>, rewardMultiplier=1): Item[] {
@@ -264,7 +275,7 @@ export function rollBattleLoot(level:number, room:RoomKind, preference?:Partial<
   const loot=[general];
   if(bossLike||eliteLike||Math.random()<uniqueChance){
     if(Math.random()<uniqueChance){
-      loot.push(uniqueLootCopy(uniqueItems[Math.floor(Math.random()*uniqueItems.length)]));
+      loot.push(uniqueLootCopy(uniqueItems[Math.floor(Math.random()*uniqueItems.length)],level));
     } else if(bossLike||eliteLike){
       loot.push(randomGeneralItem(Math.max(1,level+1),preference));
     }
