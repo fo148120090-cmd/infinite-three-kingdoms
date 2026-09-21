@@ -639,7 +639,21 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
   };
   let line="";
   const fx=(target:BattleUnit,kind:"damage"|"heal"|"critical"|"status",text:string)=>{target.fx=text;target.fxKind=kind;};
-  if(d.action==="광폭 돌격"){
+  if(d.action==="폭딜"||d.action==="탱커"||d.action==="단일전투"||d.action==="수호"||d.action==="정밀사격"||d.action==="추격"||d.action==="기동"||d.action==="광역마법"||d.action==="약화지원"||d.action==="집중마법"||d.action==="회복"||d.action==="성전수호"||d.action==="심판"){
+    const t=by(d.target)||nearest||weak;
+    if(d.action==="회복"&&allies.length){
+      const h=allies.slice().sort((x,y)=>pct(x)-pct(y))[0],x=Math.max(4,Math.round(h.maxHp*.16));
+      h.hp=Math.min(h.maxHp,h.hp+x);fx(h,"heal","+"+x);a.actionText=d.action+" → "+h.name+" (+"+x+")";line=a.actionText;
+    } else if(t){
+      if(dist(a,t)>a.range)move(t);
+      const mult=d.action==="광역마법"?0.72:d.action==="정밀사격"?1.18:d.action==="탱커"?0.92:d.action==="성전수호"?1.05:1.08;
+      const x=hit(a,t,mult);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;
+      if(d.action==="수호"||d.action==="탱커"||d.action==="성전수호"){a.guard=Math.max(a.guard,2);t.guard=Math.max(t.guard,1);}
+      if(d.action==="약화지원")addStatus(t,"slow",2);
+      fx(t,d.action==="정밀사격"||d.action==="집중마법"?"critical":"damage","-"+x);
+      a.actionText=d.action+" → "+t.name+" (-"+x+")";line=a.actionText;
+    }
+  } else if(d.action==="광폭 돌격"){
     const t=by(d.target)||nearest; if(t){if(dist(a,t)>a.range)move(t);else{const x=hit(a,t,1.35);t.hp=Math.max(0,t.hp-x);t.alive=t.hp>0;fx(t,"damage","-"+x);a.pos=Math.min(9.7,a.pos+.25);a.actionText="광폭 돌격 → "+t.name+" (-"+x+")";line=a.actionText;}}
   } else if(d.action==="수호 맹세"){
     const t=by(d.target)||allies.slice().sort((x,y)=>pct(x)-pct(y))[0]; if(t){a.pos += t.pos>a.pos?.55:-.55;a.guard=3;t.guard=Math.max(t.guard,2);a.actionText="수호 맹세 → "+t.name;line=a.actionText;}
