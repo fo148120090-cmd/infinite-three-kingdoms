@@ -1342,7 +1342,7 @@ export default function App(){
   const strategyRewardMaterials=(n:number)=>setSave(s=>({...s,materials:s.materials+n}));
   const strategyDispatch=(cityId:string)=>{
     const cityBonus=cityId==="luoyang"?2:cityId==="xuchang"?3:cityId==="chengdu"?4:cityId==="jianye"?5:1;
-    setSave(s=>({...s,floor:Math.max(1,Math.min(99,s.floor+cityBonus)),stage:0}));
+    // 던전은 세계당 6개 층을 기준으로 레벨 구간을 정의하므로 전략 원정도 6F를 넘기지 않는다.\n    setSave(s=>({...s,floor:Math.max(1,Math.min(6,s.floor+cityBonus)),stage:0}));
     setMode("dungeon");setScreen("dungeon");
     notify("전략 원정 출격 · "+cityId+" 전선으로 연결");
   };
