@@ -124,6 +124,9 @@ export default function ThreeKingdoms({gold,onSpendGold,onRewardGold,onDispatch,
 
     <div style={{display:"grid",gridTemplateColumns:"1.4fr .6fr",gap:10,marginBottom:10}}>
       <div className="panel" style={{padding:12}}>
+        <div style={{position:"relative",height:82,borderRadius:10,overflow:"hidden",marginBottom:9,border:"1px solid #33445d",backgroundImage:"linear-gradient(90deg,rgba(8,12,20,.96),rgba(8,12,20,.58),rgba(8,12,20,.2)),url('/assets/strategy/strategy-banner.svg')",backgroundSize:"cover",backgroundPosition:"center"}}>
+          <div style={{position:"absolute",left:12,top:10}}><span className="eyebrow">THREE KINGDOMS · WAR ROOM</span><b style={{display:"block",fontSize:18,marginTop:3}}>천하를 뒤흔드는 전선</b><small style={{color:"#b8c4d6"}}>영토·장수·외교가 하나의 전략 흐름으로 연결됩니다.</small></div>
+        </div>
         <div style={{display:"flex",gap:6,marginBottom:9}}>{(["map","generals","diplomacy"] as const).map(t=><button key={t} className={tab===t?"nav-on":"secondary-btn"} onClick={()=>setTab(t)}>{t==="map"?"전략 지도":t==="generals"?"장수":"외교"}</button>)}</div>
         {tab==="map"&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7}}>{cities.map(c=>{const owner=save.cityOwners[c.id];const f=owner==="neutral"?undefined:factionOf(owner);return <button key={c.id} onClick={()=>setSelected(c.id)} style={{textAlign:"left",padding:10,border:"1px solid "+(selected===c.id?"#b89955":"#26364f"),borderRadius:10,background:selected===c.id?"#1c1b16":"#101927",color:"#d9e1ef",cursor:"pointer"}}><b>{c.name}</b><small style={{display:"block",color:"#8997ad",marginTop:4}}>{c.region} · {f?.name||"중립"} · 수입 {c.income}G</small><span style={{display:"block",marginTop:5,fontSize:10}}>방어 {c.defense} · 주둔 {c.garrison}</span></button>})}</div>}
         {tab==="generals"&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7}}>{available.map(g=>{const own=save.recruited.includes(g.id);return <div key={g.id} style={{padding:10,border:"1px solid #26364f",borderRadius:10,background:"#101927"}}><b>{g.name}</b><small style={{display:"block",color:"#8997ad"}}>{g.role} · 전투력 {generalPower(g)}</small><div style={{fontSize:9,lineHeight:1.5,margin:"7px 0"}}>무력 {g.war} · 지력 {g.intellect} · 통솔 {g.command}<br/>정치 {g.politics} · 매력 {g.charisma}<br/><span style={{color:"#d3bd77"}}>{g.skill}</span></div>{own?<button className="secondary-btn" disabled>등용 완료</button>:<button className="primary-btn" onClick={()=>recruit(g.id)}>등용 · {recruitCost(g,save.faction)}G</button>}</div>})}</div>}
@@ -144,7 +147,9 @@ export default function ThreeKingdoms({gold,onSpendGold,onRewardGold,onDispatch,
           <div style={{fontSize:9,color:"#75839a",marginTop:5}}>현재 영지 수입 {roundedTurnIncome}G{save.faction==="wei"?" · 위 세력 병참 보너스 적용":""} · 국정 1회마다 영향력 +2</div>
         </div>
         <hr style={{border:"0",borderTop:"1px solid #24344d",margin:"10px 0"}}/>
-        <b>선택 도시 · {target.name}</b>
+        <div style={{height:74,borderRadius:9,overflow:"hidden",marginTop:8,marginBottom:7,border:"1px solid #2b3c56",backgroundImage:"linear-gradient(90deg,rgba(9,13,20,.8),rgba(9,13,20,.32)),url('/assets/strategy/strategy-city.svg')",backgroundSize:"cover",backgroundPosition:"center"}}>
+          <div style={{padding:9}}><span className="eyebrow">CITY FRONT</span><b style={{display:"block",fontSize:15}}>선택 도시 · {target.name}</b><small style={{color:"#c3cede"}}>{target.region} · {targetOwner==="neutral"?"중립":factionOf(targetOwner as FactionId).name}</small></div>
+        </div>
         <div style={{fontSize:10,color:"#8997ad",margin:"6px 0"}}>{target.region} · {targetOwner==="neutral"?"중립":factionOf(targetOwner as FactionId).name}<br/>도시 전투력 {Math.round(enemyPower)} · 우리 원정군 {Math.round(armyPower)}</div>
         <div style={{display:"grid",gap:6}}><button className="primary-btn" onClick={conquer}>AI 원정군으로 정벌 · 병참 {55+Math.round(target.defense*.45)}</button><button className="secondary-btn" onClick={()=>onDispatch(target.id)}>기존 던전 원정으로 출격</button></div>
         <small style={{display:"block",color:"#75839a",marginTop:7}}>정벌 결과는 지휘관 능력·영지·명성에 따라 자동 판정됩니다. 전투 명령은 기존 AI가 계속 담당합니다.</small>
