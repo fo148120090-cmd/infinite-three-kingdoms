@@ -3496,3 +3496,35 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .character-inventory-head .recommend-hint{font-size:8px;padding:3px 6px}
   .warehouse-equipment-strip .equipment-head-actions .ghost-btn:first-child{padding-inline:7px}
 }
+
+
+/* 2026-09-21 battle lane readability pass */
+.battle-layout .cave-panel{position:relative;overflow:hidden}
+.battle-layout .cave-panel:before{
+  content:"";
+  position:absolute;
+  inset:48px 16px 54px;
+  pointer-events:none;
+  border-radius:18px;
+  background:linear-gradient(90deg,rgba(86,117,190,.045),transparent 35%,transparent 65%,rgba(190,79,96,.055));
+  box-shadow:inset 1px 0 0 rgba(91,119,181,.08),inset -1px 0 0 rgba(184,76,92,.08);
+}
+.battle-layout .cave-lane:before,
+.battle-layout .cave-lane:after{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:1px;
+  pointer-events:none;
+  opacity:.35;
+}
+.battle-layout .cave-lane:before{left:33.33%;background:linear-gradient(180deg,transparent,#33425d,transparent)}
+.battle-layout .cave-lane:after{right:33.33%;background:linear-gradient(180deg,transparent,#51313d,transparent)}
+.battle-unit.player .unit-token{box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 14px rgba(92,116,210,.08)}
+.battle-unit.enemy .unit-token{box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 14px rgba(180,76,94,.08)}
+@media(max-width:650px){
+  .battle-layout .cave-panel:before{inset:42px 10px 48px}
+  .battle-layout .cave-lane:before{left:30%}
+  .battle-layout .cave-lane:after{right:30%}
+}
