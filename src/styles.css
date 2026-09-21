@@ -2529,3 +2529,60 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @media(prefers-reduced-motion:reduce){
   .battle-scene.battle-active-enemy .battle-unit.active-unit.enemy .monster-art-svg{animation:none!important}
 }
+
+/* 2026-09-21 boss pattern readability pass
+   Phase/species-specific telegraph label; combat calculations remain unchanged. */
+.boss-pattern-badge{
+  display:block;
+  width:max-content;
+  max-width:190px;
+  margin:3px auto 0;
+  padding:3px 7px;
+  border:1px solid rgba(235,185,87,.28);
+  border-radius:999px;
+  background:rgba(12,15,24,.72);
+  color:rgba(247,220,157,.9);
+  font-size:8px;
+  line-height:1.2;
+  letter-spacing:.02em;
+  text-shadow:0 0 7px rgba(235,185,87,.24);
+  box-shadow:inset 0 0 10px rgba(235,185,87,.05);
+  animation:boss-pattern-breathe 1.15s ease-in-out infinite;
+}
+.boss-pattern-badge i{
+  font-style:normal;
+  color:rgba(255,125,95,.9);
+}
+.battle-scene.battle-phase-2 .boss-pattern-badge{
+  border-color:rgba(235,185,87,.52);
+  color:rgba(255,226,155,.98);
+  box-shadow:0 0 12px rgba(235,185,87,.12),inset 0 0 10px rgba(235,185,87,.07);
+}
+.battle-scene.battle-phase-3 .boss-pattern-badge{
+  border-color:rgba(255,105,84,.68);
+  color:rgba(255,190,165,.98);
+  background:rgba(30,10,12,.76);
+  box-shadow:0 0 15px rgba(255,82,65,.18),inset 0 0 12px rgba(255,82,65,.08);
+  animation-duration:.62s;
+}
+.battle-scene.battle-active-enemy.battle-active-species-orc .boss-pattern-badge{
+  text-shadow:0 0 8px rgba(255,188,93,.38);
+}
+.battle-scene.battle-active-enemy.battle-active-species-spider .boss-pattern-badge{
+  border-color:rgba(214,168,235,.44);
+  color:rgba(239,213,250,.95);
+}
+.battle-scene.battle-active-enemy.battle-active-species-demon .boss-pattern-badge{
+  border-color:rgba(255,111,111,.5);
+  color:rgba(255,190,190,.95);
+}
+@keyframes boss-pattern-breathe{
+  0%,100%{opacity:.72;transform:translateY(0)}
+  50%{opacity:1;transform:translateY(-1px)}
+}
+@media(max-width:720px){
+  .boss-pattern-badge{max-width:150px;font-size:7px;padding:2px 5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .boss-pattern-badge{animation:none!important}
+}
