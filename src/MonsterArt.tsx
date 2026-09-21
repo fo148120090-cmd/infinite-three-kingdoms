@@ -19,6 +19,7 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
   const key=/dragon|drake|용|드래곤/i.test(normalized)?"Dragon":/wolf|늑대/i.test(normalized)?"Wolf":/skeleton|undead|해골|언데드/i.test(normalized)?"Skeleton":normalized;
   const p=palette[key]||palette.Goblin;
   const silhouette=key==="Dragon"?"dragon":key==="Wolf"?"wolf":key==="Skeleton"?"undead":key==="Arachne"||key==="Darkworm"?"arachnid":key==="Demon"?"demon":key==="Orc"||key==="Uruk"?"brute":"humanoid";
+  const isUruk=key==="Uruk", isArachne=key==="Arachne", isDemon=key==="Demon";
   const boss=grade==="Boss", elite=grade==="Elite", named=grade==="Named";
   const frameColor=boss?"#f2c76d":elite?"#d6b86a":named?"#b9c8ff":"#64748b";
 
@@ -41,10 +42,11 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
       ? <g fill={p.body} stroke="#1b2230" strokeWidth="1.4"><path d="M16 27L12 10L25 17L32 8L39 17L52 10L48 27Z"/><path d="M21 20L27 15L32 20L37 15L43 20" fill={p.accent}/></g>
       : <g fill={p.body} stroke="#1b2230" strokeWidth="1.4"><path d="M18 25L10 11L25 18L32 14L39 18L54 11L46 25Z"/><path d="M22 21L27 17M42 21L37 17" fill="none" stroke={p.accent} strokeWidth="2"/></g>}
 
-    {key==="Demon"||key==="Orc"||key==="Uruk" ? <path d="M20 25L25 12L31 23L39 12L44 25" fill={p.accent} stroke="#1b2230" strokeWidth="1.2"/> : null}
-    <ellipse cx="24" cy="33" rx="5" ry="4" fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
-    <ellipse cx="40" cy="33" rx="5" ry="4" fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
-    <circle className="monster-eye-glow" cx="24" cy="33" r={boss?3:2.3} fill={p.eye}/><circle className="monster-eye-glow" cx="40" cy="33" r={boss?3:2.3} fill={p.eye}/>
+    {isUruk ? <g fill={p.accent} stroke="#1b2230" strokeWidth="1.2"><path d="M18 27L11 8L25 17L32 10L39 17L53 8L46 27Z"/><path d="M21 24L26 15L32 23L38 15L43 24Z" fill={p.body}/></g> : isDemon ? <path d="M18 26L24 10L30 21L34 10L42 26" fill={p.accent} stroke="#1b2230" strokeWidth="1.4"/> : key==="Orc" ? <path d="M19 26L25 13L31 22L39 13L45 26" fill={p.accent} stroke="#1b2230" strokeWidth="1.2"/> : null}
+    {isArachne&&<g fill="none" stroke={p.accent} strokeWidth="1.15" opacity=".9"><path d="M15 24Q32 11 49 24M11 34Q32 21 53 34M14 45Q32 32 50 45"/><path d="M32 18V50M20 20L44 48M44 20L20 48"/></g>}
+    <ellipse cx="24" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
+    <ellipse cx="40" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
+    {isArachne ? <g className="monster-eye-cluster" fill={p.eye}><circle cx="21" cy="31" r="1.4"/><circle cx="24" cy="29.5" r="1.4"/><circle cx="27" cy="31" r="1.4"/><circle cx="37" cy="31" r="1.4"/><circle cx="40" cy="29.5" r="1.4"/><circle cx="43" cy="31" r="1.4"/></g> : <><circle className="monster-eye-glow" cx="24" cy="33" r={boss?3:2.3} fill={p.eye}/><circle className="monster-eye-glow" cx="40" cy="33" r={boss?3:2.3} fill={p.eye}/></>}
     {key==="Demon"||key==="Dragon"||key==="Arachne"||boss?<path className="monster-aura-ring" d="M12 32 Q16 10 32 8 Q48 10 52 32 Q48 52 32 56 Q16 52 12 32Z" fill="none" stroke={p.eye} strokeWidth={boss?1.8:1.1} opacity={boss?.7:.32}/>:null}
     <path d={key==="Skeleton"?"M22 44L27 47L32 44L37 47L42 44":"M24 43 Q32 48 40 43"} fill="none" stroke={p.accent} strokeWidth="2" strokeLinecap="round"/>
 
