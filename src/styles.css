@@ -1791,3 +1791,9 @@ body{
 .skin-portrait image{image-rendering:pixelated;shape-rendering:crispEdges}
 .skin-avatar{overflow:hidden;position:relative}
 .skin-avatar:after{content:"";position:absolute;inset:5px;border:1px solid rgba(255,255,255,.08);border-radius:50%;pointer-events:none;box-shadow:inset 0 0 14px rgba(0,0,0,.18)}
+
+/* 2026-09-21 CC0 equipment icon presentation */
+.item-asset-icon{position:relative;display:grid;place-items:center;width:42px;height:42px;border:1px solid #354963;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 50% 35%,rgba(115,143,199,.16),transparent 62%),#0b121c;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.item-asset-icon img{position:absolute;width:34px;height:34px;object-fit:cover;opacity:.24;filter:saturate(.7) contrast(1.08);image-rendering:auto}
+.item-asset-icon b{position:relative;font-size:20px;text-shadow:0 2px 5px rgba(0,0,0,.55)}
+.inventory-icon-wrap:hover .item-asset-icon{border-color:#647ba5;box-shadow:0 0 14px rgba(91,115,193,.12),inset 0 1px 0 rgba(255,255,255,.05)}
