@@ -2916,3 +2916,88 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @media(prefers-reduced-motion:reduce){
   .raid-phase-hud{animation:none!important}
 }
+
+
+/* 2026-09-21 boss pattern battlefield reaction
+   Visual-only activation pulse; combat calculations are unchanged. */
+.battle-scene.boss-pattern-active .battle-vignette{
+  animation:boss-pattern-vignette .62s ease-out both;
+}
+.battle-scene.boss-pattern-active .battle-sky-glow{
+  animation:boss-pattern-sky .62s ease-out both;
+}
+.battle-scene.boss-pattern-active .battle-action-overlay{
+  animation:boss-pattern-action .62s ease-out both;
+}
+.battle-scene.boss-pattern-active.battle-phase-1{
+  --boss-pattern-color:rgba(235,185,87,.18);
+}
+.battle-scene.boss-pattern-active.battle-phase-2{
+  --boss-pattern-color:rgba(235,185,87,.34);
+}
+.battle-scene.boss-pattern-active.battle-phase-3{
+  --boss-pattern-color:rgba(255,76,65,.42);
+}
+.battle-scene.boss-pattern-active::after{
+  content:"";
+  position:absolute;
+  inset:8%;
+  border:1px solid var(--boss-pattern-color,rgba(235,185,87,.22));
+  border-radius:18px;
+  pointer-events:none;
+  z-index:3;
+  animation:boss-pattern-field  .62s ease-out both;
+}
+.battle-scene.boss-pattern-active.battle-active-species-orc::after{
+  border-radius:6px;
+  animation-name:boss-pattern-command;
+}
+.battle-scene.boss-pattern-active.battle-active-species-spider::after{
+  border-radius:50%;
+  animation-name:boss-pattern-web;
+}
+.battle-scene.boss-pattern-active.battle-active-species-demon::after{
+  border-radius:28%;
+  animation-name:boss-pattern-demon;
+}
+@keyframes boss-pattern-field{
+  0%{opacity:0;transform:scale(.94);box-shadow:0 0 0 var(--boss-pattern-color)}
+  32%{opacity:1;transform:scale(1);box-shadow:0 0 26px var(--boss-pattern-color),inset 0 0 20px var(--boss-pattern-color)}
+  100%{opacity:0;transform:scale(1.035);box-shadow:0 0 44px transparent,inset 0 0 30px transparent}
+}
+@keyframes boss-pattern-command{
+  0%{opacity:0;transform:scaleX(.65);box-shadow:0 0 0 transparent}
+  35%{opacity:1;transform:scaleX(1);box-shadow:0 10px 30px var(--boss-pattern-color),0 -10px 30px var(--boss-pattern-color)}
+  100%{opacity:0;transform:scaleX(1.08)}
+}
+@keyframes boss-pattern-web{
+  0%{opacity:0;transform:scale(.72) rotate(0deg);box-shadow:0 0 0 transparent}
+  40%{opacity:1;transform:scale(1) rotate(4deg);box-shadow:0 0 34px var(--boss-pattern-color),inset 0 0 28px var(--boss-pattern-color)}
+  100%{opacity:0;transform:scale(1.12) rotate(-3deg)}
+}
+@keyframes boss-pattern-demon{
+  0%{opacity:0;transform:scale(1.08);filter:brightness(1)}
+  35%{opacity:1;transform:scale(.98);filter:brightness(.84);box-shadow:0 0 36px var(--boss-pattern-color),inset 0 0 32px var(--boss-pattern-color)}
+  100%{opacity:0;transform:scale(.92);filter:brightness(1)}
+}
+@keyframes boss-pattern-vignette{
+  0%{opacity:.35}
+  35%{opacity:.82}
+  100%{opacity:.35}
+}
+@keyframes boss-pattern-sky{
+  0%{filter:brightness(1)}
+  35%{filter:brightness(1.18)}
+  100%{filter:brightness(1)}
+}
+@keyframes boss-pattern-action{
+  0%{transform:translateY(4px);filter:brightness(1)}
+  30%{transform:translateY(0);filter:brightness(1.28)}
+  100%{transform:none;filter:brightness(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene.boss-pattern-active .battle-vignette,
+  .battle-scene.boss-pattern-active .battle-sky-glow,
+  .battle-scene.boss-pattern-active .battle-action-overlay,
+  .battle-scene.boss-pattern-active::after{animation:none!important}
+}
