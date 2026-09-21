@@ -1125,8 +1125,7 @@ export default function App(){
         progressionNotices.push("성장 후보 · "+battleGrowthReward.name);
       }
       return {...s,
-        gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier)+overflowGold:0),
-        gold:s.gold+(victory?Math.max(50,Math.round(baseMaterials*rewardMultiplier)*10):0),
+        gold:s.gold+(victory?(Math.round(baseGold*rewardMultiplier)+overflowGold+Math.max(50,Math.round(baseMaterials*rewardMultiplier)*10)):0),
         items:victory?addWarehouseItems(s.items,storedLoot):s.items,
         scenarioClears,
         monsterLineages:nextLineages,
