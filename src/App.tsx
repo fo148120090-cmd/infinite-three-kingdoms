@@ -1112,7 +1112,7 @@ export default function App(){
       const overflowLoot=victory?loot.slice(storedLoot.length):[];
       // 창고가 가득 찬 경우 전리품을 완전히 버리지 않고 희귀도에 따라 골드로 전환한다.
       // 기존 창고 한도와 드랍 수에는 영향을 주지 않아 경제 변동을 작게 유지한다.
-      const overflowGold=overflowLoot.reduce((sum,item)=>sum+({고급:75,희귀:120,영웅:200,전설:350,신화:500}[item.rarity]||60),0);
+      const overflowGold=overflowLoot.reduce((sum,item)=>sum+({일반:35,고급:75,희귀:120,영웅:200,전설:350,고대:425,신화:500}[item.rarity]||60),0);
       const routeLearning=battle.mode==="dungeon"&&!isRepeat&&(battle.room==="battle"||battle.room==="elite"||battle.room==="boss"||battle.room==="evilCave");
       if(victory) setLastLoot(storedLoot);
       if(victory&&storedLoot.length) window.setTimeout(()=>notify("전리품 획득 · "+storedLoot.map(x=>x.name).join(" · ")),0);
