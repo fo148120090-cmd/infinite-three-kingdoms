@@ -3390,3 +3390,25 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @media(prefers-reduced-motion:reduce){
   .battle-scene .battle-unit.enemy.boss-unit .unit-token-frame{transform:scale(1.08)}
 }
+
+/* 2026-09-21 boss crest finishing pass */
+.battle-scene .battle-unit.enemy.boss-unit .monster-art-svg{
+  overflow:visible;
+}
+.battle-scene .battle-unit.enemy.boss-unit .monster-art-uruk .monster-aura{
+  filter:drop-shadow(0 0 6px rgba(242,199,109,.34));
+}
+.battle-scene .battle-unit.enemy.boss-unit .monster-art-arachne .monster-aura{
+  filter:drop-shadow(0 0 8px rgba(183,134,198,.4));
+}
+.battle-scene .battle-unit.enemy.boss-unit .monster-art-demon .monster-aura{
+  filter:drop-shadow(0 0 9px rgba(209,123,131,.46));
+}
+.battle-scene.battle-phase-3 .battle-unit.enemy.boss-unit .monster-art-uruk .monster-aura,
+.battle-scene.battle-phase-3 .battle-unit.enemy.boss-unit .monster-art-arachne .monster-aura,
+.battle-scene.battle-phase-3 .battle-unit.enemy.boss-unit .monster-art-demon .monster-aura{
+  filter:drop-shadow(0 0 12px rgba(255,105,84,.24));
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene .battle-unit.enemy.boss-unit .monster-art-svg{animation:none!important}
+}
