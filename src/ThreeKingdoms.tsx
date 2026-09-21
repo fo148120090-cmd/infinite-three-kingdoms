@@ -46,6 +46,28 @@ export default function ThreeKingdoms({gold,onSpendGold,onRewardGold,onDispatch,
   const enemyPower=target.defense+target.garrison/25;
   const commander=recruited.slice().sort((a,b)=>generalPower(b!)-generalPower(a!))[0];
   const armyPower=(commander?generalPower(commander):40)+ownedCities.length*5+save.renown*.15;
+  const incomeMultiplier=save.faction==="wei"?1.1:1;
+  const turnIncome=ownedCities.reduce((sum,c)=>sum+c.income,0)*incomeMultiplier;
+  const roundedTurnIncome=Math.max(0,Math.round(turnIncome));
+
+  const advanceTurn=()=>{
+    const income=roundedTurnIncome;
+    setSave(s=>{
+      const relations={...s.relations};
+      (Object.keys(relations) as FactionId[]).forEach(id=>{
+        if(id!==s.faction) relations[id]=Math.max(0,Math.min(100,(relations[id]||40)-1));
+      });
+      return {
+        ...s,
+        turns:s.turns+1,
+        influence:Math.min(100,s.influence+2),
+        renown:Math.max(0,s.renown+Math.floor(ownedCities.length/2)),
+        relations
+      };
+    });
+    if(income>0) onRewardGold(income);
+    onToast(`국정 정산 · ${income}G 수입 · 영향력 +2`);
+  };
 
   const chooseFaction=(id:FactionId)=>{
     setSave(s=>({...s,faction:id,recruited:[generals.find(g=>g.faction===id&&g.role==="군주")?.id||"cao-cao"],influence:40,renown:0,cityOwners:Object.fromEntries(cities.map(c=>[c.id,c.owner])),relations:{wei:50,shu:45,wu:45,han:60}}));
@@ -89,8 +111,9 @@ export default function ThreeKingdoms({gold,onSpendGold,onRewardGold,onDispatch,
     if(id===save.faction){onToast("우리 세력입니다.");return;}
     if(gold<120){onToast("외교 자금 120G가 필요합니다.");return;}
     onSpendGold(120);
-    setSave(s=>({...s,relations:{...s.relations,[id]:Math.min(100,(s.relations[id]||40)+12)},influence:Math.min(100,s.influence+5),turns:s.turns+1}));
-    onToast(factionOf(id).name+"과 외교 관계 개선 · 관계 +12");
+    const relationGain=save.faction==="shu"?14:12;
+    setSave(s=>({...s,relations:{...s.relations,[id]:Math.min(100,(s.relations[id]||40)+relationGain)},influence:Math.min(100,s.influence+5),turns:s.turns+1}));
+    onToast(factionOf(id).name+"과 외교 관계 개선 · 관계 +"+relationGain);
   };
 
   return <section className="page strategy-page" style={{height:"100%",overflow:"auto",padding:"4px 2px"}}>
@@ -113,6 +136,13 @@ export default function ThreeKingdoms({gold,onSpendGold,onRewardGold,onDispatch,
         <p className="muted">{faction.description}</p>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,margin:"10px 0"}}>{[["영지",ownedCities.length],["장수",recruited.length],["영향력",Math.round(save.influence)],["명성",Math.round(save.renown)],["턴",save.turns],["금",gold]].map(x=><div key={x[0]} style={{padding:8,background:"#101927",borderRadius:8}}><small>{x[0]}</small><b style={{display:"block",fontSize:15}}>{x[1]}</b></div>)}</div>
         <b>세력 특성</b>{faction.bonuses.map(x=><div key={x} style={{fontSize:10,color:"#aebbd0",padding:"4px 0"}}>◆ {x}</div>)}
+        <div style={{marginTop:9,padding:9,border:"1px solid #2d405c",borderRadius:9,background:"#0e1725"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+            <div><b style={{fontSize:12}}>국정 정산</b><small style={{display:"block",color:"#8997ad",marginTop:3}}>보유 영지의 세수를 1턴 수입으로 정산합니다.</small></div>
+            <button className="primary-btn" onClick={advanceTurn}>턴 종료 · +{roundedTurnIncome}G</button>
+          </div>
+          <div style={{fontSize:9,color:"#75839a",marginTop:5}}>현재 영지 수입 {roundedTurnIncome}G{save.faction==="wei"?" · 위 세력 병참 보너스 적용":""} · 국정 1회마다 영향력 +2</div>
+        </div>
         <hr style={{border:"0",borderTop:"1px solid #24344d",margin:"10px 0"}}/>
         <b>선택 도시 · {target.name}</b>
         <div style={{fontSize:10,color:"#8997ad",margin:"6px 0"}}>{target.region} · {targetOwner==="neutral"?"중립":factionOf(targetOwner as FactionId).name}<br/>도시 전투력 {Math.round(enemyPower)} · 우리 원정군 {Math.round(armyPower)}</div>
