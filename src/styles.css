@@ -3273,3 +3273,61 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .fortress-lobby-page .fortress-map .gate-launch{width:29%}
   .fortress-lobby-page .fortress-brief-grid .fortress-panel-head small{display:none}
 }
+
+/* 2026-09-21 boss asset finishing pass: species-specific phase presence */
+.monster-art-uruk.monster-art-grade-boss .monster-aura{
+  filter:drop-shadow(0 0 5px rgba(242,199,109,.34)) drop-shadow(0 3px 2px rgba(0,0,0,.45));
+}
+.monster-art-arachne.monster-art-grade-boss .monster-aura{
+  filter:drop-shadow(0 0 7px rgba(183,134,198,.38)) drop-shadow(0 3px 2px rgba(0,0,0,.45));
+}
+.monster-art-demon.monster-art-grade-boss .monster-aura{
+  filter:drop-shadow(0 0 8px rgba(209,123,131,.42)) drop-shadow(0 3px 2px rgba(0,0,0,.5));
+}
+.battle-scene.battle-phase-1 .monster-art-uruk.monster-art-grade-boss .monster-aura-ring{
+  opacity:.58;
+}
+.battle-scene.battle-phase-2 .monster-art-uruk.monster-art-grade-boss .monster-aura-ring{
+  opacity:.82;
+  stroke-width:2.1;
+}
+.battle-scene.battle-phase-3 .monster-art-uruk.monster-art-grade-boss .monster-aura-ring{
+  opacity:1;
+  stroke-width:2.6;
+}
+.battle-scene.battle-phase-1 .monster-art-arachne.monster-art-grade-boss .monster-aura-ring{
+  opacity:.55;
+}
+.battle-scene.battle-phase-2 .monster-art-arachne.monster-art-grade-boss .monster-aura-ring{
+  opacity:.82;
+  stroke-width:2.2;
+}
+.battle-scene.battle-phase-3 .monster-art-arachne.monster-art-grade-boss .monster-aura-ring{
+  opacity:1;
+  stroke-width:2.8;
+}
+.battle-scene.battle-phase-1 .monster-art-demon.monster-art-grade-boss .monster-aura-ring{
+  opacity:.6;
+}
+.battle-scene.battle-phase-2 .monster-art-demon.monster-art-grade-boss .monster-aura-ring{
+  opacity:.86;
+  stroke-width:2.3;
+}
+.battle-scene.battle-phase-3 .monster-art-demon.monster-art-grade-boss .monster-aura-ring{
+  opacity:1;
+  stroke-width:3;
+}
+.monster-art-uruk.monster-art-grade-boss .monster-eye-glow{
+  filter:drop-shadow(0 0 5px rgba(255,209,107,.9));
+}
+.monster-art-arachne.monster-art-grade-boss .monster-eye-cluster{
+  filter:drop-shadow(0 0 4px rgba(255,231,160,.95));
+}
+.monster-art-demon.monster-art-grade-boss .monster-eye-glow{
+  filter:drop-shadow(0 0 6px rgba(255,224,123,1));
+}
+@media(prefers-reduced-motion:reduce){
+  .monster-art-uruk.monster-art-grade-boss .monster-aura-ring,
+  .monster-art-arachne.monster-art-grade-boss .monster-aura-ring,
+  .monster-art-demon.monster-art-grade-boss .monster-aura-ring{animation:none!important}
+}
