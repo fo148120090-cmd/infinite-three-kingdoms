@@ -1668,7 +1668,7 @@ function HeroCard({hero,active,onClick,onStatus}:{hero:Hero;active:boolean;onCli
   const bond=hero.relationships?Object.entries(hero.relationships).sort((a,b)=>(b[1]?.bond||0)-(a[1]?.bond||0))[0]:undefined;
   const bondName=heroesSeed.find(h=>h.id===bond?.[0])?.name;
   return <article className={"hero-card "+(active?"hero-selected":"")} onClick={onClick}>
-    <div className="hero-avatar large skin-avatar hero-card-portrait" style={{background:skinTheme(hero.equippedSkinId||hero.costumeId||hero.job.toLowerCase()+"-base").background}}><SkinPortrait job={hero.job} skinId={hero.equippedSkinId||hero.costumeId} compact /></div>
+    <div className="hero-showcase-art" style={{background:skinTheme(hero.equippedSkinId||hero.costumeId||hero.job.toLowerCase()+"-base").background}}><div className="hero-showcase-glow"/><div className="hero-avatar large skin-avatar hero-card-portrait"><SkinPortrait job={hero.job} skinId={hero.equippedSkinId||hero.costumeId} /></div><span className="hero-showcase-job">{jobKo[hero.job]}</span></div>
     <div className="hero-card-main">
       <div className="name-row"><b>{hero.name}</b><span>{starLabel(heroStar(hero))}</span><span>Lv.{hero.level}</span></div>
       <p>{jobKo[hero.job]} · {promotionLabel(hero)} · 경험 {hero.experience}/{xpRequiredForLevel(hero.level)}</p>
