@@ -66,6 +66,14 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
     {isWolf&&<g fill={p.accent} opacity=".85"><path d="M12 43L7 31L19 35L25 28L32 35L39 28L45 35L57 31L52 43Z"/></g>}
     {isSkeleton&&<g fill="none" stroke={p.accent} strokeWidth="1.4" opacity=".85"><path d="M20 38L44 38M19 43L45 43M22 48L42 48"/><path d="M24 37L23 50M32 37V51M40 37L41 50"/></g>}
 
+    {/* Species identity layer: restrained texture marks make families readable at small sizes. */}
+    {isDragon&&<path d="M20 30L25 26L30 30L35 26L40 30L45 26M19 38L24 34L29 38L34 34L39 38L44 34M21 46L26 42L31 46L36 42L41 46" fill="none" stroke={p.accent} strokeWidth="1" opacity=".55"/>}
+    {isLizardman&&<path d="M20 31L24 28L28 31L32 28L36 31L40 28L44 31M21 38L25 35L29 38L33 35L37 38L41 35M23 45L27 42L31 45L35 42L39 45" fill="none" stroke={p.accent} strokeWidth="1.1" opacity=".55"/>}
+    {isOrc||isUruk?<path d="M19 35Q25 30 32 35T45 35M20 42Q26 37 32 42T44 42M23 48Q28 44 32 48T41 48" fill="none" stroke={p.accent} strokeWidth="1.2" opacity=".5"/>:null}
+    {isNaga&&<path d="M18 28Q24 24 30 28T42 28M17 35Q24 31 31 35T45 35M19 42Q26 38 33 42T43 42" fill="none" stroke={p.accent} strokeWidth="1" opacity=".48"/>}
+    {isSlime&&<g fill={p.accent} opacity=".28"><circle cx="18" cy="31" r="1.8"/><circle cx="47" cy="34" r="2.2"/><circle cx="24" cy="45" r="1.3"/><circle cx="40" cy="47" r="1.6"/></g>}
+    {isDemon&&<path d="M22 30L27 25L32 30L37 25L42 30M24 39L29 34L32 38L35 34L40 39M27 47L32 42L37 47" fill="none" stroke={p.eye} strokeWidth="1" opacity=".45"/>}
+
 
     <ellipse cx="24" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
     <ellipse cx="40" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
