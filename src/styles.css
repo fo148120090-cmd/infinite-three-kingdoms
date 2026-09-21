@@ -2885,3 +2885,34 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @media(prefers-reduced-motion:reduce){
   .battle-scene .battle-unit.enemy.boss-unit .monster-art-svg{animation:none!important}
 }
+
+
+/* 2026-09-21 raid phase HUD pattern emphasis */
+.raid-phase-hud{
+  position:relative;
+}
+.raid-phase-hud em{
+  display:block;
+  margin-top:3px;
+  font-style:normal;
+  font-size:8px;
+  letter-spacing:.03em;
+  color:rgba(218,226,242,.72);
+  text-shadow:0 0 8px rgba(255,255,255,.08);
+}
+.raid-phase-hud.raid-phase-2 em{
+  color:rgba(255,219,142,.9);
+}
+.raid-phase-hud.raid-phase-3 em{
+  color:rgba(255,169,151,.96);
+  text-shadow:0 0 9px rgba(255,76,65,.2);
+}
+.battle-scene.battle-phase-2 .raid-phase-hud{
+  box-shadow:0 0 20px rgba(235,185,87,.1),inset 0 0 18px rgba(235,185,87,.04);
+}
+.battle-scene.battle-phase-3 .raid-phase-hud{
+  box-shadow:0 0 24px rgba(255,82,65,.14),inset 0 0 20px rgba(255,82,65,.05);
+}
+@media(prefers-reduced-motion:reduce){
+  .raid-phase-hud{animation:none!important}
+}
