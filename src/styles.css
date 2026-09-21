@@ -2808,3 +2808,80 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .battle-scene .battle-unit.enemy.fx-critical .monster-art-svg{animation:none!important}
 }
 
+
+
+/* 2026-09-21 boss phase attack release pass
+   Visual-only: phase/species-specific boss release motion. */
+.battle-scene .battle-unit.enemy.boss-unit.boss-species-orc.fx-damage .monster-art-svg,
+.battle-scene .battle-unit.enemy.boss-unit.boss-species-orc.fx-critical .monster-art-svg{
+  animation:boss-release-uruk var(--boss-release-speed,.46s) ease-out both;
+}
+.battle-scene .battle-unit.enemy.boss-unit.boss-species-spider.fx-damage .monster-art-svg,
+.battle-scene .battle-unit.enemy.boss-unit.boss-species-spider.fx-critical .monster-art-svg{
+  animation:boss-release-arachne var(--boss-release-speed,.46s) ease-out both;
+}
+.battle-scene .battle-unit.enemy.boss-unit.boss-species-demon.fx-damage .monster-art-svg,
+.battle-scene .battle-unit.enemy.boss-unit.boss-species-demon.fx-critical .monster-art-svg{
+  animation:boss-release-demon var(--boss-release-speed,.46s) ease-out both;
+}
+
+/* Phase 1 — controlled pattern release */
+.battle-scene.battle-phase-1 .boss-unit.boss-species-orc{--boss-release-speed:.52s}
+.battle-scene.battle-phase-1 .boss-unit.boss-species-spider{--boss-release-speed:.58s}
+.battle-scene.battle-phase-1 .boss-unit.boss-species-demon{--boss-release-speed:.54s}
+
+/* Phase 2 — intensified release */
+.battle-scene.battle-phase-2 .boss-unit.boss-species-orc{--boss-release-speed:.43s}
+.battle-scene.battle-phase-2 .boss-unit.boss-species-spider{--boss-release-speed:.46s}
+.battle-scene.battle-phase-2 .boss-unit.boss-species-demon{--boss-release-speed:.43s}
+
+/* Phase 3 — final pattern burst */
+.battle-scene.battle-phase-3 .boss-unit.boss-species-orc{--boss-release-speed:.34s}
+.battle-scene.battle-phase-3 .boss-unit.boss-species-spider{--boss-release-speed:.36s}
+.battle-scene.battle-phase-3 .boss-unit.boss-species-demon{--boss-release-speed:.34s}
+
+.battle-scene.battle-phase-2 .boss-unit.boss-species-orc .monster-asset{
+  filter:brightness(1.16) drop-shadow(0 0 10px rgba(245,188,83,.28));
+}
+.battle-scene.battle-phase-3 .boss-unit.boss-species-orc .monster-asset{
+  filter:brightness(1.22) drop-shadow(0 0 15px rgba(255,118,74,.38));
+}
+.battle-scene.battle-phase-2 .boss-unit.boss-species-spider .monster-asset{
+  filter:brightness(1.1) drop-shadow(0 0 10px rgba(211,165,235,.28));
+}
+.battle-scene.battle-phase-3 .boss-unit.boss-species-spider .monster-asset{
+  filter:brightness(1.16) drop-shadow(0 0 15px rgba(214,128,220,.4));
+}
+.battle-scene.battle-phase-2 .boss-unit.boss-species-demon .monster-asset{
+  filter:brightness(1.14) drop-shadow(0 0 11px rgba(255,91,91,.3));
+}
+.battle-scene.battle-phase-3 .boss-unit.boss-species-demon .monster-asset{
+  filter:brightness(1.2) drop-shadow(0 0 17px rgba(255,64,72,.44));
+}
+
+@keyframes boss-release-uruk{
+  0%{transform:translateY(0) scale(1);filter:brightness(1)}
+  18%{transform:translateY(-4px) scale(1.05)}
+  38%{transform:translateY(3px) scale(.93)}
+  52%{transform:translateY(-2px) scale(1.08);filter:brightness(1.28)}
+  68%{transform:translateY(2px) scale(.97)}
+  100%{transform:none;filter:brightness(1)}
+}
+@keyframes boss-release-arachne{
+  0%{transform:rotate(0) scale(1)}
+  20%{transform:rotate(-8deg) scale(1.04)}
+  40%{transform:rotate(7deg) scale(.96)}
+  60%{transform:rotate(-4deg) scale(1.08)}
+  100%{transform:rotate(0) scale(1)}
+}
+@keyframes boss-release-demon{
+  0%{transform:translateX(0) scale(1);filter:brightness(1)}
+  22%{transform:translateX(8px) rotate(-4deg) scale(1.07);filter:brightness(1.2)}
+  42%{transform:translateX(-5px) rotate(3deg) scale(.94)}
+  62%{transform:translateX(3px) scale(1.09);filter:brightness(1.34)}
+  100%{transform:none;filter:brightness(1)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .battle-scene .battle-unit.enemy.boss-unit .monster-art-svg{animation:none!important}
+}
