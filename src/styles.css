@@ -2225,3 +2225,17 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .monster-species-undead span{color:#dfe4e8}
 .monster-species-generic{background:radial-gradient(circle at 50% 35%,rgba(147,94,72,.25),transparent 52%),linear-gradient(145deg,#29201d,#0b0b0d)}
 .monster-asset:has(.monster-species-dragon) i,.monster-asset-boss i{color:#ffd982}
+
+
+/* 2026-09-21 battle result readability pass */
+.result-popup{display:grid;grid-template-columns:72px 1fr;grid-template-areas:"icon summary" "cutin cutin" "report report" "action action";column-gap:14px;row-gap:0;padding:18px;overflow:auto}
+.result-popup>.result-icon{grid-area:icon;margin:2px 0 0;width:64px;height:64px}
+.result-popup>.result-summary{grid-area:summary;align-self:center;padding:0!important}
+.result-summary small{font-size:10px;letter-spacing:.08em}.result-summary h3{font-size:24px;margin:4px 0}.result-summary p{font-size:11px!important;line-height:1.45}
+.result-popup>.clear-cutin{grid-area:cutin;margin:14px 0 0;padding:11px 14px}.result-popup>.clear-cutin b{font-size:17px}.result-popup>.clear-cutin i{font-size:10px}
+.result-report{grid-area:report;min-width:0}.result-popup .battle-report{margin-top:14px;padding-top:12px}.report-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.report-head>b{font-size:11px;letter-spacing:.08em;color:#d0b66f}.report-head>span{font-size:9px;color:#71809a}
+.result-popup .battle-report-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.result-popup .report-card{padding:10px;gap:7px}.report-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}.report-card-head strong{font-size:12px}.report-card-head>span{font-size:9px;color:#7e91b0;white-space:nowrap}
+.result-popup .report-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.result-popup .report-metrics span{padding:6px 4px;border:1px solid #27344b;border-radius:7px;background:#0c1420;text-align:center}.result-popup .report-metrics b{display:block;font-size:13px;color:#dce6f5}.result-popup .report-metrics small{font-size:8px;color:#78869d}.result-popup .report-actions{font-size:9px!important;color:#aebbd0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result-popup .loot-summary{margin-top:9px;padding:9px 10px;display:flex;gap:8px;align-items:flex-start;border:1px solid #3b3a2c;border-radius:9px;background:#15150f}.result-popup .loot-summary b{font-size:9px;color:#d6b96f;white-space:nowrap}.result-popup .loot-summary span{font-size:9px;color:#c0cad9;line-height:1.4}
+.result-popup>.result-action-btn{grid-area:action;margin:14px 0 0;width:100%}
+@media(max-width:650px){.result-popup{grid-template-columns:54px 1fr;padding:14px;max-height:90vh}.result-popup>.result-icon{width:48px;height:48px;font-size:24px}.result-summary h3{font-size:20px}.result-popup .battle-report-grid{grid-template-columns:1fr}.report-head{display:grid;gap:2px}.result-popup .loot-summary{display:grid;gap:3px}}
