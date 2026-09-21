@@ -1637,8 +1637,9 @@ export default function App(){
   <div className="result-report">
     <div className="battle-report">
       <div className="report-head"><b>AI 전투 리포트</b><span>전투 전체 요약 · 피해 · 회복 · 처치 · 생존 지표</span></div>
+      <div className="result-kpi-row"><span>참전 <b>{battle.units.filter(u=>u.team==="player").length}명</b></span><span>생존 <b>{battle.units.filter(u=>u.team==="player"&&u.alive).length}명</b></span><span>최종 라운드 <b>{battle.round}</b></span><span>적 처치 <b>{battle.units.filter(u=>u.team==="enemy"&&!u.alive).length}</b></span></div>
       <div className="battle-report-grid">{battle.units.filter(u=>u.team==="player").map(u=><div className="report-card" key={u.id}>
-        <div className="report-card-head"><strong>{u.name}</strong><span>{jobKo[u.job as Job]||"전투원"}</span></div>
+        <div className="report-card-head"><strong>{u.name}</strong><span>{jobKo[u.job as Job]||"전투원"} · {u.alive?"생존":"전투불능"}</span></div>
         <div className="report-metrics"><span><b>{u.battleStats?.actions||0}</b><small>행동</small></span><span><b>{u.battleStats?.damage||0}</b><small>피해</small></span><span><b>{u.battleStats?.healing||0}</b><small>회복</small></span><span><b>{u.battleStats?.taken||0}</b><small>받은 피해</small></span><span><b>{u.battleStats?.kills||0}</b><small>처치</small></span></div><small className="report-costume-fx">✦ 코스튬 효과 {(u.battleStats?.costumeFx||0)}회 · 치명타 {(u.battleStats?.critical||0)}회</small>
         <small className="report-actions">{Object.entries(u.behaviorCounts||{}).sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>x[0]+" "+x[1]+"회").join(" · ")||"주요 행동 기록 없음"}</small>
       </div>)}</div>
