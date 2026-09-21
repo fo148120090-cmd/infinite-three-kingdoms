@@ -13,11 +13,8 @@ type CampaignSave = {
 
 type Props = {
   gold: number;
-  materials: number;
   onSpendGold:(n:number)=>void;
-  onSpendMaterials:(n:number)=>void;
   onRewardGold:(n:number)=>void;
-  onRewardMaterials:(n:number)=>void;
   onDispatch:(cityId:string)=>void;
   onToast:(s:string)=>void;
 };
@@ -33,7 +30,7 @@ const initial=():CampaignSave=>({
   turns:0
 });
 
-export default function ThreeKingdoms({gold,materials,onSpendGold,onSpendMaterials,onRewardGold,onRewardMaterials,onDispatch,onToast}:Props){
+export default function ThreeKingdoms({gold,onSpendGold,onRewardGold,onDispatch,onToast}:Props){
   const [save,setSave]=useState<CampaignSave>(()=>{try{const x=JSON.parse(localStorage.getItem(KEY)||"null");return x?{...initial(),...x}:initial()}catch{return initial()}});
   const [tab,setTab]=useState<"map"|"generals"|"diplomacy">("map");
   const [selected,setSelected]=useState("luoyang");
@@ -67,8 +64,8 @@ export default function ThreeKingdoms({gold,materials,onSpendGold,onSpendMateria
   const conquer=()=>{
     if(targetOwner===save.faction){onToast(target.name+"은 이미 우리 세력의 영지입니다.");return;}
     const cost=55+Math.round(target.defense*.45);
-    if(materials<cost){onToast("병참 자원이 부족합니다 · "+cost+" 필요");return;}
-    onSpendMaterials(cost);
+    if(gold<cost){onToast("골드가 부족합니다 · "+cost+"G 필요");return;}
+    onSpendGold(cost);
     const success=armyPower>=enemyPower*.78;
     setSave(s=>{
       const relations={...s.relations};
