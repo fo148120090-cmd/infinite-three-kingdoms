@@ -20,7 +20,7 @@ export type StatusEffectKind = "poison"|"slow"|"stun"|"fear";
 export type StatusEffect = {kind:StatusEffectKind; turns:number; power?:number};
 
 export type Hero = {
-  id:string; name:string; job:Job; level:number; hp:number; attack:number; defense:number;
+  id:string; name:string; job:Job; level:number; hp:number; maxHp?:number; attack:number; defense:number;
   speed:number; range:number; tendencies:Tendencies; item?:Item; equipment?:[Item?,Item?,Item?]; experience:number;
   history:string[]; color:string; star?:number; promotionTier?:number; promotionPath?:string[]; promotionPending?:{tier:number;choices:string[]};
   relationships?:Record<string,Relationship>; memories?:Memory[]; behaviorCounts?:Record<string,number>;
@@ -338,7 +338,7 @@ export function createRecruitHero(job:Job):Hero{
   const name=recruitNames[Math.floor(Math.random()*recruitNames.length)]+" "+String(Math.floor(Math.random()*90)+10);
     return {
     id:"recruit-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
-    name,job,level:1,star:1,hp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
+    name,job,level:1,star:1,hp:115,maxHp:115,attack:20,defense:11,speed:.92,range:job==="Archer"||job==="Mage"||job==="Cleric"?4.2:1.4,
     tendencies,equipment:[],experience:0,skillPoints:0,passiveSkills:{},history:["모집된 신규 용사"],color:"#6f819b",personality:buildPersonality({id:"recruit-temp",name,job,tendencies}),skinIds:[job.toLowerCase()+"-base"],equippedSkinId:job.toLowerCase()+"-base",
     campaignStats:{wins:0,losses:0,eliteWins:0,bossWins:0,repeatWins:0,finalWins:0},
     chronicle:[]
