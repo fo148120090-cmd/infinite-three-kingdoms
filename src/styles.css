@@ -1797,3 +1797,10 @@ body{
 .item-asset-icon img{position:absolute;width:34px;height:34px;object-fit:cover;opacity:.24;filter:saturate(.7) contrast(1.08);image-rendering:auto}
 .item-asset-icon b{position:relative;font-size:20px;text-shadow:0 2px 5px rgba(0,0,0,.55)}
 .inventory-icon-wrap:hover .item-asset-icon{border-color:#647ba5;box-shadow:0 0 14px rgba(91,115,193,.12),inset 0 1px 0 rgba(255,255,255,.05)}
+
+/* 2026-09-21 CC0 dungeon environment pass */
+.dungeon-page{position:relative;isolation:isolate;background:linear-gradient(180deg,rgba(7,12,20,.94),rgba(9,14,24,.97)),url("https://opengameart.org/sites/default/files/dungeon.png") center/cover fixed;background-blend-mode:normal,soft-light}
+.dungeon-page:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 50% 8%,rgba(84,116,168,.16),transparent 42%),linear-gradient(90deg,rgba(4,8,14,.28),transparent 35%,transparent 65%,rgba(4,8,14,.34))}
+.dungeon-page .route-card{background:linear-gradient(145deg,rgba(19,29,44,.92),rgba(10,16,25,.94)),url("https://opengameart.org/sites/default/files/dungeon.png") center/cover; background-blend-mode:normal,soft-light;border-color:rgba(108,134,175,.3);box-shadow:0 14px 34px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.045)}
+.dungeon-page .room-icon{box-shadow:0 0 0 1px rgba(140,166,210,.12),0 8px 18px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.06)}
+.dungeon-page .route-card:hover{transform:translateY(-2px);border-color:rgba(133,160,205,.5);box-shadow:0 18px 38px rgba(0,0,0,.36),0 0 24px rgba(82,111,164,.08)}
