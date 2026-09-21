@@ -2115,3 +2115,36 @@ body{
  .result-popup .battle-report-grid{grid-template-columns:1fr}
  .skin-stat-preview em{font-size:8px;padding:2px 5px}
 }
+
+
+/* 2026-09-21 Infinite Three Kingdoms original art direction — Stage 1
+   Original visual language: imperial steel, lacquered crimson, moonlit sapphire. */
+:root{--art-ink:#070b12;--art-panel:#0d1420;--art-line:#34435f;--art-silver:#c8d5e8;--art-blue:#6f8fe8;--art-red:#b85b67;--art-gold:#d4b66e}
+body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transparent 34%),radial-gradient(ellipse at 8% 48%,rgba(122,45,58,.08),transparent 27%),#070b12}
+.game-shell:before{background:radial-gradient(circle at 50% 9%,rgba(104,130,197,.14),transparent 24%),radial-gradient(circle at 18% 72%,rgba(136,48,61,.08),transparent 25%),linear-gradient(180deg,#080d16 0%,#070b12 55%,#05080d 100%)}
+.topbar{border-color:rgba(111,143,232,.28);background:linear-gradient(135deg,rgba(19,28,44,.96),rgba(8,13,21,.92));box-shadow:0 14px 40px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.045)}
+.brand-mark{background:linear-gradient(145deg,#344d9a,#8b394d 72%,#c19c58);box-shadow:0 0 28px rgba(96,111,194,.22)}
+.hero-panel{position:relative;border-color:rgba(111,143,232,.30);background:radial-gradient(circle at 82% 42%,rgba(84,109,181,.28),transparent 31%),radial-gradient(circle at 8% 100%,rgba(132,46,60,.12),transparent 32%),linear-gradient(145deg,#141e30,#0b111c 68%,#090d15);box-shadow:0 24px 70px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.045)}
+.hero-panel:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 0 62%,rgba(196,213,242,.055) 63%,transparent 64% 100%)}
+.hero-showcase-art,.hero-card-portrait,.character-equipment-identity .hero-avatar{filter:drop-shadow(0 14px 24px rgba(0,0,0,.42))}
+.hero-showcase-art{position:relative}
+.hero-showcase-art:before{content:"";position:absolute;inset:8px -10px -8px;border-radius:28px;background:radial-gradient(ellipse,rgba(88,116,208,.20),transparent 68%);pointer-events:none}
+.hero-avatar,.skin-avatar{background:linear-gradient(145deg,#1c2940,#0b111b);border:1px solid rgba(161,181,220,.24)}
+.hero-card,.feature-card,.subpanel,.status-panel,.costume-panel,.quick-equipment-panel,.memory-panel{border-color:rgba(87,107,143,.30);background:linear-gradient(145deg,rgba(18,27,42,.96),rgba(9,14,22,.96));box-shadow:0 12px 34px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025)}
+.hero-card:hover{border-color:rgba(111,143,232,.62);box-shadow:0 16px 38px rgba(0,0,0,.25),0 0 0 1px rgba(111,143,232,.08) inset}
+.hero-selected{border-color:rgba(116,143,230,.86);background:linear-gradient(145deg,#17243a,#0d1522)}
+.route-card{position:relative;overflow:hidden;border-color:rgba(84,105,143,.32);background:linear-gradient(145deg,#141e2d,#0b111a);box-shadow:0 12px 30px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025)}
+.route-card:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(125deg,rgba(255,255,255,.035),transparent 28%,transparent 72%,rgba(86,110,180,.045))}
+.route-card:hover{border-color:rgba(111,143,232,.68);box-shadow:0 18px 42px rgba(0,0,0,.28)}
+.room-icon{border:1px solid rgba(146,164,197,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.22)}
+.battle-scene,.cave-lane{border-color:rgba(92,112,151,.42);background:radial-gradient(ellipse at 50% 22%,rgba(71,91,138,.18),transparent 38%),linear-gradient(180deg,#121b29 0%,#0a1018 62%,#080c12 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 22px 55px rgba(0,0,0,.30)}
+.battle-unit .unit-token{border-color:rgba(171,188,218,.30);background:radial-gradient(circle at 35% 25%,#34435e,#111a29 70%);box-shadow:0 12px 28px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.08)}
+.battle-unit.player .unit-token{border-color:rgba(111,143,232,.82);background:radial-gradient(circle at 35% 25%,#4b659f,#17233d 72%)}
+.battle-unit.enemy .unit-token{border-color:rgba(184,91,103,.82);background:radial-gradient(circle at 35% 25%,#713842,#24151d 72%)}
+.monster-asset-boss{filter:drop-shadow(0 0 18px rgba(191,87,82,.45))}
+.item-card{border-color:rgba(82,103,141,.30);background:linear-gradient(145deg,#141d2c,#0b111a);box-shadow:0 12px 28px rgba(0,0,0,.20)}
+.unique-item{border-color:rgba(212,182,110,.46);background:linear-gradient(145deg,#211d16,#11151d 68%);box-shadow:0 0 24px rgba(212,182,110,.08),inset 0 1px 0 rgba(255,235,175,.06)}
+.primary-btn{background:linear-gradient(135deg,#6079df,#81556e);box-shadow:0 8px 24px rgba(91,108,205,.24),inset 0 1px 0 rgba(255,255,255,.12)}
+.primary-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.result-popup{border-color:rgba(118,145,205,.42);background:linear-gradient(145deg,rgba(20,30,46,.99),rgba(7,11,18,.99));box-shadow:0 0 0 100vmax rgba(2,6,12,.74),0 30px 90px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,255,255,.06)}
+@media(max-width:650px){.hero-panel{box-shadow:0 16px 42px rgba(0,0,0,.28)}.hero-showcase-art:before{inset:4px -4px -5px}}
