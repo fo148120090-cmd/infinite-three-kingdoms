@@ -96,7 +96,7 @@ export default function ThreeKingdoms({gold,materials,onSpendGold,onSpendMateria
     onToast(factionOf(id).name+"과 외교 관계 개선 · 관계 +12");
   };
 
-  return <section className="page" style={{height:"100%",overflow:"auto",padding:"4px 2px"}}>
+  return <section className="page strategy-page" style={{height:"100%",overflow:"auto",padding:"4px 2px"}}>
     <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"end",marginBottom:10}}>
       <div><span className="eyebrow">THREE KINGDOMS · GRAND STRATEGY</span><h1 style={{margin:"4px 0"}}>천하전략</h1><p className="muted" style={{margin:0}}>세력·장수·도시·외교를 관리하고, 출정 버튼을 누르면 기존 AI 전투 시스템으로 연결됩니다.</p></div>
       <div style={{display:"flex",gap:6}}>{factions.map(f=><button key={f.id} className={save.faction===f.id?"primary-btn":"secondary-btn"} onClick={()=>chooseFaction(f.id)}>{f.name} · {f.ruler}</button>)}</div>
