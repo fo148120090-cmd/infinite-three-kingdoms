@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from "react";
-import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map as MapIcon, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
+import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Heart, Map as MapIcon, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
 import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, uniqueLootCopy, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, type StatusEffect, type StatusEffectKind, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionForecast, promotionLabel, xpRequiredForLevel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
@@ -22,7 +22,7 @@ type BattleMode = "dungeon" | "defense" | "raid";
 type DefenseObjective = "gate" | "relic" | "escort";
 type RouteMemoryEntry = { attempts:number; clears:number; failures:number; rewardSamples:number; rewardGold:number };
 type RouteMemory = Partial<Record<RoomKind,RouteMemoryEntry>>;
-type Save = { heroes: Hero[]; party: string[]; gold: number; materials: number; gems: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; routeMemory?:RouteMemory; worldSealed?:boolean; sealCount?:number };
+type Save = { heroes: Hero[]; party: string[]; gold: number; floor: number; stage: number; items: Item[]; monsterLineages: MonsterLineage[]; scenarioClears:Record<string,number>; partyMemory?:PartyMemory; routeMemory?:RouteMemory; worldSealed?:boolean; sealCount?:number };
 type Decision = { action: string; target?: string; detail: string; score: number };
 type BattlePlan = { key:"aggressive"|"defensive"|"focused"|"balanced"; label:string; detail:string };
 type BattleContext = { mode:BattleMode; objectiveKind?:DefenseObjective; objectiveHp:number; phase:number };
@@ -173,7 +173,7 @@ function load(): Save {
       };
     }
   } catch {}
-  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[],personality:buildPersonality(h),skinIds:[h.job.toLowerCase()+"-base"],equippedSkinId:h.job.toLowerCase()+"-base"})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,materials:100,gems:100,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false,sealCount:0};
+  return {heroes:heroesSeed.map(({item,...h})=>({...h,tendencies:cloneTendencies(h.tendencies),equipment:[],personality:buildPersonality(h),skinIds:[h.job.toLowerCase()+"-base"],equippedSkinId:h.job.toLowerCase()+"-base"})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false,sealCount:0};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
@@ -278,7 +278,7 @@ const aiT=(t:Tendencies,items:Item[]=[],artifacts:string[]=[],hero?:Hero):Tenden
   }
   return n;
 };
-const transcendenceRequirements=[undefined,{level:20,materials:120,gems:5},{level:40,materials:220,gems:10},{level:60,materials:360,gems:15},{level:80,materials:550,gems:25},{level:100,materials:800,gems:40}] as const;
+const transcendenceRequirements=[undefined,{level:20,gold:1200},{level:40,gold:2400},{level:60,gold:4000},{level:80,gold:6000},{level:100,gold:9000}] as const;
 const transcendenceRequirement=(hero:Hero)=>{
   const star=heroStar(hero);
   return star>=6?undefined:transcendenceRequirements[star];
@@ -864,7 +864,7 @@ export default function App(){
           const nextT={...h.tendencies,...(update.tendencies||{})};
           return {...h,hp:Math.min(h.hp,Math.max(1,h.hp+(update.hpDelta||0))),tendencies:nextT};
         }),
-        gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,
+        gold:s.gold+outcome.gold+outcome.materials*10,
         routeMemory:recordRouteMemory(s.routeMemory,"hidden",true,outcome.gold),
         stage:s.stage+1
       }));
@@ -1126,7 +1126,7 @@ export default function App(){
       }
       return {...s,
         gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier)+overflowGold:0),
-        materials:s.materials+(victory?Math.max(5,Math.round(baseMaterials*rewardMultiplier)):0),
+        gold:s.gold+(victory?Math.max(50,Math.round(baseMaterials*rewardMultiplier)*10):0),
         items:victory?addWarehouseItems(s.items,storedLoot):s.items,
         scenarioClears,
         monsterLineages:nextLineages,
@@ -1264,10 +1264,10 @@ export default function App(){
     if(star>=6){notify(target.name+" · 6성 최대 초월");return;}
     const req=transcendenceRequirement(target)!;
     if(target.level<req.level){notify(target.name+" · Lv."+req.level+"부터 "+(star+1)+"성 초월 가능");return;}
-    if(save.materials<req.materials||save.gems<req.gems){notify("초월 재료 부족 · "+req.materials+" 자원 / "+req.gems+" 보석 필요");return;}
+    if(save.gold<req.gold){notify("초월 골드 부족 · 필요 골드 "+req.gold+"G");return;}
     const nextStar=star+1;
     setSave(s=>({...s,
-      materials:s.materials-req.materials,
+      gold:s.gold-req.gold,
       gems:s.gems-req.gems,
       heroes:s.heroes.map(h=>h.id!==heroId?h:{...h,star:nextStar,history:["초월 · "+nextStar+"성 도달",...(h.history||[])].slice(0,6),statusNote:nextStar+"성 초월 완료 · 특성 강화 ×"+traitStrengthMultiplier({...h,star:nextStar}).toFixed(1)})
     }));
@@ -1285,8 +1285,8 @@ export default function App(){
     if(!skin)return;
     if((hero.skinIds||[]).includes(skinId)){equipSkin(skinId);return;}
     const cost=skinCost(skin);
-    if(save.gold<cost.gold||save.materials<cost.materials){notify("스킨 해금 자원이 부족합니다. "+skinUnlockText(skin)+" 필요");return;}
-    setSave(s=>({...s,gold:s.gold-cost.gold,materials:s.materials-cost.materials,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,skinIds:Array.from(new Set([...(h.skinIds||[]),skinId]))}:h)}));
+    if(save.gold<cost.gold+cost.materials*10){notify("스킨 해금 골드가 부족합니다. "+skinUnlockText(skin)+" 필요");return;}
+    setSave(s=>({...s,gold:s.gold-cost.gold-cost.materials*10,heroes:s.heroes.map(h=>h.id===selectedHero?{...h,skinIds:Array.from(new Set([...(h.skinIds||[]),skinId]))}:h)}));
     notify(hero.name+" · "+skinLabel(hero.job,skinId)+" 해금");
   };
   const chooseDungeonEvent=(choiceId:string)=>{
@@ -1324,7 +1324,7 @@ export default function App(){
           return {...h,eventRewards:records};
         }),
         items:storedEventEquipment&&outcome.rewardItem?addWarehouseItems(s.items,[outcome.rewardItem]):s.items,
-        gold:s.gold+outcome.gold,materials:s.materials+outcome.materials,stage:s.stage+1
+        gold:s.gold+outcome.gold,stage:s.stage+1
       };
     });
     setPendingEvent(undefined);
@@ -1349,9 +1349,9 @@ export default function App(){
     notify("세계의 구멍을 "+((save.sealCount||0)+1)+"회 봉인했습니다. 다음 세계의 적이 강화됩니다.");
   };
   const strategySpendGold=(n:number)=>setSave(s=>({...s,gold:Math.max(0,s.gold-n)}));
-  const strategySpendMaterials=(n:number)=>setSave(s=>({...s,materials:Math.max(0,s.materials-n)}));
+  const strategySpendMaterials=(n:number)=>setSave(s=>({...s,gold:Math.max(0,s.gold-n*10)}));
   const strategyRewardGold=(n:number)=>setSave(s=>({...s,gold:s.gold+n}));
-  const strategyRewardMaterials=(n:number)=>setSave(s=>({...s,materials:s.materials+n}));
+  const strategyRewardMaterials=(n:number)=>setSave(s=>({...s,gold:s.gold+n*10}));
   const strategyDispatch=(cityId:string)=>{
     const cityBonus=cityId==="luoyang"?2:cityId==="xuchang"?3:cityId==="chengdu"?4:cityId==="jianye"?5:1;
     // 던전은 세계당 6개 층을 기준으로 레벨 구간을 정의하므로 전략 원정도 6F를 넘기지 않는다.\n    setSave(s=>({...s,floor:Math.max(1,Math.min(6,s.floor+cityBonus)),stage:0}));
@@ -1362,7 +1362,7 @@ export default function App(){
 
   return <main className="game-shell">
     <header className="topbar"><div className="brand" onClick={()=>setScreen("home")}><div className="brand-mark"><Brain size={21}/></div><div><b>무한 던전 : AI Chronicle</b><small>자율 AI 던전 RPG / RTS 프로토타입</small></div></div>
-      <div className="resources"><span><Coins size={15}/> {save.gold}</span><span><Gem size={15}/> {save.gems}</span><span>🧱 {save.materials}</span><span>심도 {save.floor}F</span></div></header>
+      <div className="resources"><span><Coins size={15}/> {save.gold}G</span><span>심도 {save.floor}F</span></div></header>
     <nav className="main-nav">{([["home","로비"],["strategy","삼국전략"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"],["recruit","모집"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
     {toast&&<div className="toast">{toast}</div>}
     {npcOpen&&<div className="npc-overlay" onClick={()=>setNpcOpen(false)}><div className="npc-dialog" onClick={e=>e.stopPropagation()}>
@@ -1386,7 +1386,7 @@ export default function App(){
 
     {screen==="strategy"&&<ThreeKingdoms
       gold={save.gold}
-      materials={save.materials}
+      
       onSpendGold={strategySpendGold}
       onSpendMaterials={strategySpendMaterials}
       onRewardGold={strategyRewardGold}
@@ -1476,7 +1476,7 @@ export default function App(){
         </section>
         <section className="fortress-panel">
           <div className="fortress-panel-head"><div><span className="eyebrow">SUPPLY</span><b>보급 현황</b><small>출격에 필요한 자원과 창고 상태입니다.</small></div></div>
-          <div className="fortress-supply-grid"><div><span>골드</span><b>{save.gold}</b><small>G</small></div><div><span>보급</span><b>{save.materials}</b><small>자원</small></div><div><span>창고</span><b>{save.items.length}/60</b><small>장비</small></div><div><span>세계</span><b>{(save.sealCount||0)+1}</b><small>현재 회차</small></div></div>
+          <div className="fortress-supply-grid"><div><span>골드</span><b>{save.gold}</b><small>G</small></div><div><span>창고</span><b>{save.items.length}/60</b><small>장비</small></div><div><span>세계</span><b>{(save.sealCount||0)+1}</b><small>현재 회차</small></div></div>
         </section>
       </div>
       <div className="fortress-doctrine"><span className="eyebrow">FORTRESS DOCTRINE</span><b>준비는 요새에서, 판단은 전장에서.</b><small>파티와 장비를 준비한 뒤 출격하면 전투 행동은 AI가 수행합니다.</small></div>
@@ -1506,7 +1506,7 @@ export default function App(){
           </div>        </div>
       </div>
       <div className="memory-panel"><div><b>{hero.name}의 최근 기억</b><span>최근 전투에서 강하게 남은 경험이 다음 판단에 영향을 줍니다.</span></div><div className="memory-list">{(hero.memories||[]).slice(0,4).map((m,i)=><em key={i}>{m.text} · 영향 {Math.round(m.weight*10)/10}</em>)}</div></div>
-       <div className="skin-panel"><div><b>캐릭터 스킨</b><span>{skinLabel(hero.job,hero.equippedSkinId||hero.costumeId)} · 보유 {(hero.skinIds||[]).length}/{costumesForJob(hero.job).length}</span></div><div className="skin-grid">{costumesForJob(hero.job).map(c=>{const owned=(hero.skinIds||[]).includes(c.id);const equipped=(hero.equippedSkinId||hero.costumeId||costumesForJob(hero.job)[0]?.id)===c.id;const cost=skinCost(c);return <button key={c.id} className={"skin-card "+c.tier+(equipped?" equipped":"")+(owned?" owned":" locked")} onClick={()=>owned?equipSkin(c.id):unlockSkin(c.id)} disabled={!owned&&(save.gold<cost.gold||save.materials<cost.materials)}><div className="skin-card-top"><span className="skin-card-portrait" style={{background:skinTheme(c.id).background}}><SkinPortrait job={hero.job} skinId={c.id} compact /></span><small>{c.tier} · {owned?"보유":"잠김"}</small></div><b>{c.name.split(" · ")[1]}</b><span>{c.description}</span><em>{equipped?"장착 중":owned?"장착":skinUnlockText(c)}</em></button>})}</div></div></section>}
+       <div className="skin-panel"><div><b>캐릭터 스킨</b><span>{skinLabel(hero.job,hero.equippedSkinId||hero.costumeId)} · 보유 {(hero.skinIds||[]).length}/{costumesForJob(hero.job).length}</span></div><div className="skin-grid">{costumesForJob(hero.job).map(c=>{const owned=(hero.skinIds||[]).includes(c.id);const equipped=(hero.equippedSkinId||hero.costumeId||costumesForJob(hero.job)[0]?.id)===c.id;const cost=skinCost(c);return <button key={c.id} className={"skin-card "+c.tier+(equipped?" equipped":"")+(owned?" owned":" locked")} onClick={()=>owned?equipSkin(c.id):unlockSkin(c.id)} disabled={!owned&&(save.gold<cost.gold+cost.materials*10)}><div className="skin-card-top"><span className="skin-card-portrait" style={{background:skinTheme(c.id).background}}><SkinPortrait job={hero.job} skinId={c.id} compact /></span><small>{c.tier} · {owned?"보유":"잠김"}</small></div><b>{c.name.split(" · ")[1]}</b><span>{c.description}</span><em>{equipped?"장착 중":owned?"장착":skinUnlockText(c)}</em></button>})}</div></div></section>}
 
     {screen==="recruit"&&<section className="page management-page recruit-page"><div className="section-head"><div><span className="eyebrow">RECRUITMENT</span><h2>용사 모집란</h2><p className="muted">기초직업 5종의 신규 용사를 지속적으로 모집할 수 있습니다. 모집비 350 골드.</p></div><span className="counter">{save.heroes.length}명</span></div><div className="recruit-panel"><div><b>기초직업 모집</b><span>모집된 용사는 Lv.1에서 시작하며 기본 직업과 서로 다른 초기 성향을 가집니다.</span></div><div className="recruit-grid">{(Object.keys(jobKo) as Job[]).map(j=><article className="recruit-card" key={j}><div className="room-icon">{jobIcon[j]}</div><b>{jobKo[j]}</b><p>기초 직업 · 장기 성향이 성장하며 자동 전직합니다.</p><button className="primary-btn compact" disabled={save.gold<350} onClick={()=>recruit(j)}><UserPlus size={15}/> 모집 350G</button></article>)}</div></div><div className="subpanel"><div><b>모집 원칙</b><span>신규 용사의 미래는 실제 행동과 경험이 결정합니다.</span></div><button className="primary-btn compact" onClick={()=>setScreen("party")}><UserRound size={16}/> 캐릭터 보기</button></div></section>}
 
@@ -1557,7 +1557,7 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate,onTranscend,onUpgr
   const traitMultiplier=traitStrengthMultiplier(hero);
   const transcendReq=transcendenceRequirement(hero);
   const transcendReady=!!transcendReq&&hero.level>=transcendReq.level;
-  const transcendCostLabel=transcendReq?transcendReq.materials+" 자원 · "+transcendReq.gems+" 보석":"MAX";
+  const transcendCostLabel=transcendReq?transcendReq.gold+"G":"MAX";
   const personality=hero.personality||buildPersonality(hero);
   const index=Math.max(0,heroes.findIndex(h=>h.id===hero.id));
   const prev=heroes[index-1];
