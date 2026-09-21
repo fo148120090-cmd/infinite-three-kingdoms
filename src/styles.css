@@ -2249,3 +2249,27 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .monster-asset-named .monster-art-svg{filter:drop-shadow(0 0 8px rgba(185,200,255,.26))}
 .monster-asset-boss .monster-art-svg{filter:drop-shadow(0 0 11px rgba(229,196,109,.34));transform:translateY(0) scale(1.08)}
 .monster-asset i{position:absolute;right:-4px;top:-4px;font-style:normal;font-size:9px;line-height:14px;min-width:14px;text-align:center;border-radius:50%;background:#111827;color:#d9c477;border:1px solid #4b3d27}
+
+
+/* 2026-09-21 monster combat FX pass — species aura, eye energy, hit response */
+.monster-art-svg .monster-eye-glow{filter:drop-shadow(0 0 3px currentColor)}
+.monster-art-svg .monster-aura-ring{transform-origin:32px 32px;animation:monster-aura-pulse 1.8s ease-in-out infinite}
+.monster-art-demon .monster-eye-glow,.monster-art-dragon .monster-eye-glow{filter:drop-shadow(0 0 5px currentColor)}
+.monster-art-arachne .monster-eye-glow,.monster-art-darkworm .monster-eye-glow{filter:drop-shadow(0 0 4px currentColor)}
+.monster-art-skeleton .monster-eye-glow{filter:drop-shadow(0 0 6px currentColor)}
+.monster-art-grade-boss .monster-eye-glow{animation:monster-eye-surge .85s ease-in-out infinite alternate}
+.monster-art-grade-elite .monster-aura-ring{animation-duration:1.25s}
+.battle-unit.fx-damage .monster-art-svg{animation:monster-hit-react .28s ease-out both}
+.battle-unit.fx-critical .monster-art-svg{animation:monster-critical-react .46s ease-out both}
+.battle-unit.fx-heal .monster-art-svg{animation:monster-heal-react .52s ease-out both}
+.battle-unit.fx-buff .monster-art-svg{animation:monster-buff-react .52s ease-out both}
+.battle-unit.fx-debuff .monster-art-svg{animation:monster-debuff-react .44s ease-out both}
+.battle-unit.dead .monster-art-svg{filter:grayscale(.85) brightness(.55) saturate(.55);opacity:.68}
+@keyframes monster-aura-pulse{0%,100%{opacity:.22;transform:scale(.96)}50%{opacity:.72;transform:scale(1.04)}}
+@keyframes monster-eye-surge{from{opacity:.55;transform:scale(.92)}to{opacity:1;transform:scale(1.14)}}
+@keyframes monster-hit-react{0%,100%{transform:translate(0,1px)}20%{transform:translate(-3px,1px) rotate(-2deg)}45%{transform:translate(3px,1px) rotate(2deg)}70%{transform:translate(-1px,1px)}}
+@keyframes monster-critical-react{0%{filter:brightness(1)}20%{filter:brightness(1.9) saturate(1.4)}45%{filter:brightness(1.25) saturate(1.15)}100%{filter:brightness(1)}}
+@keyframes monster-heal-react{0%{filter:brightness(1)}40%{filter:brightness(1.35) saturate(1.2)}100%{filter:brightness(1)}}
+@keyframes monster-buff-react{0%,100%{transform:translateY(1px)}50%{transform:translateY(-2px) scale(1.03)}}
+@keyframes monster-debuff-react{0%,100%{opacity:1}50%{opacity:.58;filter:saturate(.65) brightness(.8)}}
+@media(prefers-reduced-motion:reduce){.monster-art-svg,.monster-aura-ring,.monster-eye-glow{animation:none!important}}
