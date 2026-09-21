@@ -1495,3 +1495,101 @@ body{
   .battle-controls button{min-height:42px}
   .character-inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* 2026-09-21 equipment / interface art pass */
+.character-equipment-panel{
+  background:
+    radial-gradient(circle at 72% 12%,rgba(108,133,196,.10),transparent 28%),
+    linear-gradient(145deg,#0f1826,#090f17);
+  border-color:#344863;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 16px 36px rgba(0,0,0,.20);
+}
+.character-equipment-identity{
+  position:relative;
+  padding:12px;
+  border:1px solid #2c3d56;
+  border-radius:12px;
+  background:linear-gradient(135deg,rgba(25,38,58,.88),rgba(10,16,25,.92));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.character-equipment-identity:after{
+  content:"";
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(210,191,132,.24),transparent);
+}
+.character-equipment-stats{
+  gap:6px;
+}
+.character-equipment-stats>span{
+  border:1px solid #2b3b53;
+  background:linear-gradient(180deg,#142034,#0d1521);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.character-equipment-slots{
+  gap:8px;
+}
+.character-equipment-slot{
+  min-height:84px;
+  background:
+    radial-gradient(circle at 85% 15%,rgba(117,143,202,.08),transparent 35%),
+    linear-gradient(145deg,#121d2c,#0a111a);
+}
+.character-equipment-slot.active{
+  border-color:#788fd1;
+  box-shadow:inset 0 0 0 1px #536aa2,0 0 18px rgba(91,116,197,.10);
+}
+.warehouse-toolbar{
+  border:1px solid #2e405a;
+  border-radius:12px;
+  background:linear-gradient(180deg,#121c2b,#0b121c);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.warehouse-tab,.sort-btn{
+  transition:.15s ease;
+}
+.warehouse-tab:hover,.sort-btn:hover{
+  border-color:#5c7197;
+  transform:translateY(-1px);
+}
+.warehouse-tab.active,.sort-btn.active{
+  border-color:#738bd0;
+  background:linear-gradient(180deg,#253654,#16233a);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 14px rgba(91,116,194,.08);
+}
+.warehouse-target-panel{
+  background:
+    radial-gradient(circle at 90% 50%,rgba(188,157,79,.08),transparent 25%),
+    linear-gradient(145deg,#151f2e,#0c141f);
+  border-color:#3b4d68;
+}
+.warehouse-target{
+  border-color:#30425d;
+  background:linear-gradient(180deg,#172337,#0e1724);
+}
+.warehouse-target:hover{
+  border-color:#6379a1;
+}
+.warehouse-target.active{
+  border-color:#7b90d1;
+  box-shadow:inset 0 0 0 1px #586fa8,0 0 16px rgba(91,115,193,.09);
+}
+.inventory-icon-wrap{
+  border-color:#2f4059;
+  background:
+    radial-gradient(circle at 50% 25%,rgba(109,133,192,.09),transparent 45%),
+    linear-gradient(145deg,#131e2d,#0a111a);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 6px 16px rgba(0,0,0,.16);
+}
+.inventory-icon-wrap:hover{
+  border-color:#647ba5;
+  transform:translateY(-2px);
+}
+.empty-warehouse{
+  border-style:dashed;
+  background:linear-gradient(145deg,#101925,#0b111a);
+}
