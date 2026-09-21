@@ -516,7 +516,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
     const s=combatStats(h);
     return {id:h.id,name:h.name,job:h.job,level:h.level,team:"player" as const,hp:s.hp,maxHp:s.maxHp,attack:s.attack,defense:s.defense,
       speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,passiveHealPct:passiveCombatBonus(h).healPct+(promotionPassive(h)?.healPct||0),tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[],h),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],skinId:h.equippedSkinId||h.costumeId,
-      personality:h.personality,relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
+      personality:h.personality,relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{},fx:undefined,fxKind:undefined,battleStats:{damage:0,healing:0,actions:0,critical:0,costumeFx:0,taken:0,kills:0}}};
   });
   const pool=floor<=2?["Goblin","Kobold","Slime"]:floor<=4?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
   // 세계 회차마다 30레벨씩 상승하며, 6개 층은 각각 5레벨 구간을 공유한다.
@@ -542,7 +542,7 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
 }
 
 function asEnemy(e:ReturnType<typeof createMonster>,suffix=""):BattleUnit{
-  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,level:e.level,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,promotionTier:e.promotionTier,promotionPath:e.promotionPath,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0};
+  return {id:e.id+suffix,name:e.name,species:e.species,grade:e.grade,level:e.level,team:"enemy" as const,hp:e.hp,maxHp:e.maxHp,attack:e.attack,defense:e.defense,speed:e.speed,range:e.range,pos:e.pos,alive:true,tendencies:e.tendencies,evolutionStage:e.evolutionStage,evolutionPath:e.evolutionPath,evolutionFocus:e.evolutionFocus,promotionTier:e.promotionTier,promotionPath:e.promotionPath,mutation:e.mutation,actionText:"대기",cooldown:0,guard:0,xp:0,fx:undefined,fxKind:undefined,battleStats:{damage:0,healing:0,actions:0,critical:0,costumeFx:0,taken:0,kills:0}};
 }
 
 function decisions(a:BattleUnit,u:BattleUnit[],env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):Decision[] {
