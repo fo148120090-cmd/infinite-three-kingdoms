@@ -2750,3 +2750,61 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .battle-scene .battle-unit.enemy.fx-critical .monster-style-badge{animation:none}
 }
 
+
+
+/* monster species attack release differentiation */
+.battle-scene .battle-unit.enemy.fx-damage.battle-active-species-Dragon .monster-art-svg,
+.battle-scene .battle-unit.enemy.fx-critical.battle-active-species-Dragon .monster-art-svg{animation:monster-release-breath .38s ease-out both}
+.battle-scene .battle-unit.enemy.fx-damage.battle-active-species-Spider .monster-art-svg,
+.battle-scene .battle-unit.enemy.fx-critical.battle-active-species-Spider .monster-art-svg{animation:monster-release-web .38s ease-out both}
+.battle-scene .battle-unit.enemy.fx-damage.battle-active-species-Demon .monster-art-svg,
+.battle-scene .battle-unit.enemy.fx-critical.battle-active-species-Demon .monster-art-svg{animation:monster-release-slash .38s ease-out both}
+.battle-scene .battle-unit.enemy.fx-damage.battle-active-species-Beast .monster-art-svg,
+.battle-scene .battle-unit.enemy.fx-critical.battle-active-species-Beast .monster-art-svg{animation:monster-release-claw .38s ease-out both}
+.battle-scene .battle-unit.enemy.fx-damage.battle-active-species-Undead .monster-art-svg,
+.battle-scene .battle-unit.enemy.fx-critical.battle-active-species-Undead .monster-art-svg{animation:monster-release-bone .38s ease-out both}
+.battle-scene .battle-unit.enemy.fx-damage.battle-active-species-Orc .monster-art-svg,
+.battle-scene .battle-unit.enemy.fx-critical.battle-active-species-Orc .monster-art-svg{animation:monster-release-impact .38s ease-out both}
+
+@keyframes monster-release-breath{
+  0%{transform:translateX(0) scale(1);filter:brightness(1)}
+  28%{transform:translateX(7px) scale(1.06);filter:brightness(1.28)}
+  58%{transform:translateX(-2px) scale(.98);filter:brightness(1.08)}
+  100%{transform:none;filter:brightness(1)}
+}
+@keyframes monster-release-web{
+  0%{transform:rotate(0) scale(1)}
+  28%{transform:rotate(-7deg) scale(1.06)}
+  55%{transform:rotate(6deg) scale(.98)}
+  100%{transform:rotate(0) scale(1)}
+}
+@keyframes monster-release-slash{
+  0%{transform:translateX(0) rotate(0) scale(1)}
+  24%{transform:translateX(8px) rotate(-5deg) scale(1.07)}
+  48%{transform:translateX(-4px) rotate(3deg) scale(.97)}
+  100%{transform:none}
+}
+@keyframes monster-release-claw{
+  0%{transform:translateX(0) scale(1)}
+  25%{transform:translateX(10px) scale(1.08)}
+  48%{transform:translateX(-5px) scale(.96)}
+  100%{transform:none}
+}
+@keyframes monster-release-bone{
+  0%{transform:translateY(0) scale(1);filter:brightness(1)}
+  25%{transform:translateY(-5px) scale(1.07);filter:brightness(1.24)}
+  55%{transform:translateY(2px) scale(.97);filter:brightness(1.08)}
+  100%{transform:none;filter:brightness(1)}
+}
+@keyframes monster-release-impact{
+  0%{transform:translateY(0) scale(1)}
+  20%{transform:translateY(-3px) scale(1.08)}
+  38%{transform:translateY(2px) scale(.94)}
+  56%{transform:translateY(-1px) scale(1.03)}
+  100%{transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene .battle-unit.enemy.fx-damage .monster-art-svg,
+  .battle-scene .battle-unit.enemy.fx-critical .monster-art-svg{animation:none!important}
+}
+
