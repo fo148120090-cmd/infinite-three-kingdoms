@@ -249,7 +249,7 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
   };
 }
 
-function uniqueLootCopy(item:Item,level:number):Item {
+export function uniqueLootCopy(item:Item,level:number):Item {
   const normalizedLevel=Math.max(1,Math.floor(Number(level)||1));
   // 고유 장비도 후반 회차에서 기본 레벨과 전투 수치가 자연스럽게 따라오도록 한다.
   // 증가폭은 일반 장비보다 조금 낮게 잡고, 표시 옵션과 실제 전투 수치를 함께 맞춘다.
