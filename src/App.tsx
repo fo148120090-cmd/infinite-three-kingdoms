@@ -634,7 +634,7 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
 }
 
 function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},statusEffects:(x.statusEffects||[]).map(s=>({...s})),fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0,critical:0,costumeFx:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const statusTurn=tickStatus(a); if(statusTurn.stunned){ a.behaviorCounts!["기절"]=(a.behaviorCounts!["기절"]||0)+1; a.battleStats!.actions+=1; a.actionText="기절 · 행동 취소"; return {units:n,decision:{action:"기절",detail:"상태이상으로 이번 행동이 취소됨",score:999},line:(statusTurn.line?statusTurn.line+" / ":"")+a.actionText}; } const d=weighted(decisions(a,n,env,partyMemory,plan,context));
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},statusEffects:(x.statusEffects||[]).map(s=>({...s})),fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0,critical:0,costumeFx:0,taken:0,kills:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const statusTurn=tickStatus(a); if(statusTurn.stunned){ a.behaviorCounts!["기절"]=(a.behaviorCounts!["기절"]||0)+1; a.battleStats!.actions+=1; a.actionText="기절 · 행동 취소"; return {units:n,decision:{action:"기절",detail:"상태이상으로 이번 행동이 취소됨",score:999},line:(statusTurn.line?statusTurn.line+" / ":"")+a.actionText}; } const d=weighted(decisions(a,n,env,partyMemory,plan,context));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -787,7 +787,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
   }
   if(["광폭 돌격","수호 맹세","결투 집중","정밀 사격","사냥 본능","심판","철벽 진형","원소 폭발","저주 확산","비전 해방","대회복","분열","함정 투척","매복 함정","거미줄","무리 사냥","약점 추적","연계 공격","전투 함성","지휘 명령","측면 습격","급강하","굴 파기 기습","독성 압박","매혹","대지 강타","회피 기동","역할 분석","전선 재편","둥지 확장","공포의 심문","영역 지배","광폭화"].includes(d.action))a.cooldown=1.2;
   n.forEach(x=>{if(!x.alive)x.hp=0;if(x.guard>0&&x.id!==a.id)x.guard-=.2;if(x.id!==a.id&&x.cooldown>0)x.cooldown=Math.max(0,x.cooldown-.25);});
-  n.forEach(x=>{const before=hpBefore.get(x.id)||x.hp;const delta=before-x.hp;if(x.id!==a.id&&delta>0)a.battleStats!.damage+=Math.round(delta);if(x.id!==a.id&&delta<0)a.battleStats!.healing+=Math.round(-delta);});
+  n.forEach(x=>{const before=hpBefore.get(x.id)||x.hp;const delta=before-x.hp;if(x.id!==a.id&&delta>0){a.battleStats!.damage+=Math.round(delta);if(x.team!==a.team&&x.hp<=0&&before>0)a.battleStats!.kills=(a.battleStats!.kills||0)+1;}if(x.id!==a.id&&delta<0)a.battleStats!.healing+=Math.round(-delta);if(x.id!==a.id&&x.team!==a.team&&delta>0)x.battleStats!.taken=(x.battleStats!.taken||0)+Math.round(delta);});
   const personalityLine=a.team==="player"&&((a.personality?.favoriteAction===d.action)||Math.random()<.26)?personalityBattleLine(a as any,d.action):"";
   const finalLine=personalityLine?(line||a.actionText)+" · "+personalityLine:(line||a.actionText);
   return {units:n,decision:d,line:finalLine};
@@ -1641,7 +1641,7 @@ export default function App(){
       <div className="report-head"><b>AI 전투 리포트</b><span>이번 전투의 핵심 행동만 표시</span></div>
       <div className="battle-report-grid">{battle.units.filter(u=>u.team==="player").map(u=><div className="report-card" key={u.id}>
         <div className="report-card-head"><strong>{u.name}</strong><span>{jobKo[u.job as Job]||"전투원"}</span></div>
-        <div className="report-metrics"><span><b>{u.battleStats?.actions||0}</b><small>행동</small></span><span><b>{u.battleStats?.damage||0}</b><small>피해</small></span><span><b>{u.battleStats?.healing||0}</b><small>회복</small></span></div><small className="report-costume-fx">✦ 코스튬 효과 {(u.battleStats?.costumeFx||0)}회 · 치명타 {(u.battleStats?.critical||0)}회</small>
+        <div className="report-metrics"><span><b>{u.battleStats?.actions||0}</b><small>행동</small></span><span><b>{u.battleStats?.damage||0}</b><small>피해</small></span><span><b>{u.battleStats?.healing||0}</b><small>회복</small></span><span><b>{u.battleStats?.taken||0}</b><small>받은 피해</small></span><span><b>{u.battleStats?.kills||0}</b><small>처치</small></span></div><small className="report-costume-fx">✦ 코스튬 효과 {(u.battleStats?.costumeFx||0)}회 · 치명타 {(u.battleStats?.critical||0)}회</small>
         <small className="report-actions">{Object.entries(u.behaviorCounts||{}).sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>x[0]+" "+x[1]+"회").join(" · ")||"주요 행동 기록 없음"}</small>
       </div>)}</div>
     </div>
