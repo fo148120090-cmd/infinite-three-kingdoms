@@ -911,7 +911,7 @@ export default function App(){
   const [lastLoot,setLastLoot]=useState<Item[]>([]);
   const [pendingEvent,setPendingEvent]=useState<DungeonChoiceEvent|undefined>();
   const [pendingGrowth,setPendingGrowth]=useState<{heroId:string;options:GrowthReward[];source:string}|undefined>();
-  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean;phaseNotice?:string;partyMemory?:PartyMemory;plan?:BattlePlan;bossIntro?:{name:string;species:string;subtitle:string;quote:string}}>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1,bossIntro:undefined,partyMemory:defaultPartyMemory});
+  const [battle,setBattle]=useState<{units:BattleUnit[];log:string[];room:RoomKind;round:number;tick:number;ended:boolean;result?:string;next?:string;mode:BattleMode;wave:number;deadline?:number;objectiveHp:number;phase:number;objectiveKind?:DefenseObjective;environment?:EnvironmentKind;repeatScenarioFloor?:number;repeatCount?:number;rewardMultiplier?:number;elitePack?:boolean;phaseNotice?:string;partyMemory?:PartyMemory;plan?:BattlePlan;bossIntro?:{name:string;species:string;subtitle:string;quote:string};growthReport?:{heroId:string;name:string;xp:number;levelBefore:number;levelAfter:number;leveled:boolean;xpPercent:number}[]>({units:[],log:[],room:"battle",round:0,tick:0,ended:false,mode:"dungeon",wave:1,objectiveHp:100,phase:1,bossIntro:undefined,partyMemory:defaultPartyMemory});
   const [paused,setPaused]=useState(false);
   const [speed,setSpeed]=useState(1);
   const [decision,setDecision]=useState("상황 감지 → 행동 후보 생성 → 성향/장비 보정 → 확률 선택");
@@ -1143,6 +1143,18 @@ export default function App(){
         }
       }
     }
+    const resultRewardRange=dungeonLevelRange(save.floor,save.sealCount||0);
+    const resultChallengeTier=battle.mode==="defense"||battle.mode==="raid"
+      ?Math.max(1,Math.floor(((battle.units.find(u=>u.team==="enemy")?.level||save.floor*5))/10)):0;
+    const resultExpBase=30+Math.round(resultRewardRange.max*.65)+(battle.room==="elite"?20:0)+(battle.room==="boss"?80:0)+(battle.room==="evilCave"?120:0);
+    const resultExp=Math.max(8,Math.round(resultExpBase*(battle.repeatScenarioFloor!==undefined?.9:1)));
+    const resultChallengeExp=battle.mode==="defense"||battle.mode==="raid"?Math.round(resultExp*Math.max(0,resultChallengeTier-1)*.1):0;
+    const resultExperienceGain=battle.result==="victory"?resultExp+resultChallengeExp:Math.max(8,Math.round((resultExp+resultChallengeExp)*.7));
+    const resultGrowthReport=save.heroes.filter(h=>save.party.includes(h.id)).map(h=>{
+      const progressed=grantExperience(h,resultExperienceGain);
+      const need=xpRequiredForLevel(progressed.hero.level);
+      return {heroId:h.id,name:h.name,xp:resultExperienceGain,levelBefore:h.level,levelAfter:progressed.hero.level,leveled:progressed.leveled,xpPercent:Math.min(100,Math.round((Number(progressed.hero.experience)||0)/Math.max(1,need)*100))};
+    });
     setSave(s=>{
       const bonded=bondAfterBattle(s.heroes,s.party,deadIds).map(decayMemories);
       const statsById:Record<string,any>={};
@@ -1232,6 +1244,7 @@ export default function App(){
         heroes:nextHeroes
       };
     });
+    setBattle(b=>({...b,growthReport:resultGrowthReport}));
     if(battleGrowthReward?.heroId){
       const targetHero=save.heroes.find(h=>h.id===battleGrowthReward!.heroId);
       const capacity=battleGrowthReward.kind==="trait" ? (targetHero?.traits||[]).length<4 : (targetHero?.artifacts||[]).length<4;
@@ -1687,6 +1700,14 @@ export default function App(){
   </div>
   {battle.result==="victory"&&<div className="clear-cutin"><span>MISSION CLEAR</span><b>{battle.room==="evilCave"?"WORLD SEAL BREAKER":"BATTLEFIELD DOMINANCE"}</b><i>전투 기록 · 경험 · 각성 진행이 저장되었습니다.</i></div>}
   <div className="result-report">
+    {battle.growthReport&&<div className="growth-result-panel">
+      <div className="growth-result-head"><div><b>전투 후 성장</b><span>이번 원정에서 반영된 경험치와 레벨 진행</span></div><strong>+{battle.growthReport[0]?.xp||0} XP</strong></div>
+      <div className="growth-result-list">{battle.growthReport.map(g=><div className={"growth-result-row "+(g.leveled?"leveled":"")} key={g.heroId}>
+        <span><b>{g.name}</b><small>Lv.{g.levelBefore}{g.leveled?" → Lv."+g.levelAfter:" · Lv."+g.levelAfter}</small></span>
+        <i><em style={{width:g.xpPercent+"%"}}/></i>
+        <strong>{g.leveled?"LEVEL UP":"진행 "+g.xpPercent+"%"}</strong>
+      </div>)}</div>
+    </div>}
     <div className="battle-report">
       <div className="report-head"><b>AI 전투 리포트</b><span>전투 전체 요약 · 피해 · 회복 · 처치 · 생존 지표</span></div>
       <div className="result-kpi-row"><span>참전 <b>{battle.units.filter(u=>u.team==="player").length}명</b></span><span>생존 <b>{battle.units.filter(u=>u.team==="player"&&u.alive).length}명</b></span><span>최종 라운드 <b>{battle.round}</b></span><span>적 처치 <b>{battle.units.filter(u=>u.team==="enemy"&&!u.alive).length}</b></span></div>
