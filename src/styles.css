@@ -2586,3 +2586,12 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @media(prefers-reduced-motion:reduce){
   .boss-pattern-badge{animation:none!important}
 }
+
+/* Boss asset polish: species-specific silhouette readability */
+.monster-art-uruk .monster-aura{filter:drop-shadow(0 0 4px rgba(242,199,109,.24))}
+.monster-art-arachne .monster-aura{filter:drop-shadow(0 0 5px rgba(183,134,198,.28))}
+.monster-art-demon .monster-aura{filter:drop-shadow(0 0 5px rgba(209,123,131,.3))}
+.monster-art-arachne .monster-eye-cluster{filter:drop-shadow(0 0 3px rgba(255,231,160,.7))}
+.monster-art-uruk.monster-art-grade-boss .monster-aura{stroke-width:2.8}
+.monster-art-arachne.monster-art-grade-boss .monster-aura{stroke-width:2.6}
+.monster-art-demon.monster-art-grade-boss .monster-aura{stroke-width:2.7}
