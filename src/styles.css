@@ -1209,3 +1209,116 @@ body{
 .item-card .item-top span:first-child{
   text-shadow:0 0 10px currentColor;
 }
+
+
+/* 2026-09-21 character / equipment art direction */
+.hero-card,.character-equipment-sheet,.character-equipment-inventory,.character-selector-card{
+  position:relative;
+  overflow:hidden;
+}
+.hero-card:before,.character-equipment-sheet:before,.character-equipment-inventory:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,.035),transparent 22%,transparent 72%,rgba(101,127,180,.025));
+}
+.hero-card:after,.character-equipment-sheet:after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:0;
+  height:1px;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(214,227,255,.16),transparent);
+}
+.hero-card>*,.character-equipment-sheet>*{
+  position:relative;
+  z-index:1;
+}
+.hero-card-portrait,.status-modal-portrait,.skin-card-portrait{
+  background:
+    radial-gradient(circle at 35% 25%,rgba(135,157,213,.22),transparent 48%),
+    linear-gradient(145deg,#1b2a40,#0c131e);
+  border-color:#435575;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 18px rgba(0,0,0,.24);
+}
+.hero-card-portrait .skin-portrait,.status-modal-portrait .skin-portrait,.skin-card-portrait .skin-portrait{
+  filter:drop-shadow(0 7px 9px rgba(0,0,0,.42));
+}
+.character-equipment-sheet{
+  background:
+    radial-gradient(circle at 18% 8%,rgba(105,132,194,.13),transparent 35%),
+    linear-gradient(145deg,#141e2e,#0b121c);
+  border-color:#3a4c6b;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 14px 30px rgba(0,0,0,.20);
+}
+.character-equipment-identity .hero-avatar.large{
+  border:1px solid #667ca4;
+  box-shadow:0 0 0 3px rgba(105,128,180,.08),0 12px 24px rgba(0,0,0,.35);
+}
+.character-equipment-slot{
+  background:linear-gradient(145deg,#141e2d,#0b121c);
+  border-color:#354662;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+  transition:.15s ease;
+}
+.character-equipment-slot:hover{
+  border-color:#647ba6;
+  transform:translateY(-1px);
+}
+.character-selector-card{
+  background:linear-gradient(180deg,#131e2e,#0c141f);
+  border-color:#30415d;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.character-selector-card:hover{
+  border-color:#60769f;
+}
+.character-selector-card.selected{
+  border-color:#7389d9;
+  box-shadow:inset 0 0 0 1px #7389d9,0 0 20px rgba(94,119,213,.10);
+}
+.character-inventory-grid .inventory-icon-wrap{
+  border-radius:10px;
+  background:linear-gradient(145deg,#111b29,#0a1019);
+  border:1px solid #2b3a52;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  transition:.15s ease;
+}
+.character-inventory-grid .inventory-icon-wrap:hover{
+  border-color:#5b7199;
+  transform:translateY(-1px);
+}
+.skin-card{
+  background:linear-gradient(145deg,#121c2b,#0b121c);
+  border-color:#30415b;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.skin-card:hover:not(:disabled){
+  box-shadow:0 8px 20px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.04);
+}
+.item-card .stat-list span{
+  background:linear-gradient(180deg,#18263a,#111a29);
+  border:1px solid #263954;
+}
+.item-card .ai-mod{
+  padding-top:2px;
+}
+.unique-title{
+  letter-spacing:.08em;
+  text-shadow:0 0 14px rgba(211,183,110,.14);
+}
+
+/* Seven rarity tiers: restrained color coding rather than oversized effects. */
+.item-card[data-rarity="일반"]{border-color:#354052}
+.item-card[data-rarity="고급"]{border-color:#416174}
+.item-card[data-rarity="희귀"]{border-color:#536a9a}
+.item-card[data-rarity="영웅"]{border-color:#765b99}
+.item-card[data-rarity="전설"]{border-color:#9a7337}
+.item-card[data-rarity="고대"]{border-color:#a65a4c}
+.item-card[data-rarity="신화"]{
+  border-color:#b28a42;
+  box-shadow:0 0 22px rgba(191,148,63,.09),inset 0 1px 0 rgba(255,225,143,.10);
+}
