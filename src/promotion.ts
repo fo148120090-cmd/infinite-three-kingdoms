@@ -150,7 +150,9 @@ export function awakeningSummary(hero:Hero):string{
   return "최종 각성 미해금 · Lv.50부터 시작";
 }
 
-export function xpRequiredForLevel(level:number){ return Math.round(100+Math.max(0,Math.floor(Number(level)||1)-1)*2.5); }\n\nexport function grantExperience(hero:Hero,gain:number){
+export function xpRequiredForLevel(level:number){ return Math.round(100+Math.max(0,Math.floor(Number(level)||1)-1)*2.5); }
+
+export function grantExperience(hero:Hero,gain:number){
   const safeLevel=Math.max(1,Math.floor(Number(hero.level)||1));
   const rawExperience=Number(hero.experience);
   const safeExperience=Number.isFinite(rawExperience)?Math.max(0,rawExperience):0;
