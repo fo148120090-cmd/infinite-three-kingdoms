@@ -2074,3 +2074,25 @@ body{
 .dungeon-page .route-intel{position:relative;z-index:1}
 .dungeon-page .progress-strip{position:relative;padding:12px 8px;border:1px solid rgba(101,129,162,.2);border-radius:16px;background:linear-gradient(180deg,rgba(13,23,35,.92),rgba(6,12,19,.92));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 12px 28px rgba(0,0,0,.25)}
 @media(max-width:650px){.dungeon-page .route-card{min-height:102px}.dungeon-page .room-icon{width:50px;height:50px;font-size:21px}}
+
+/* 2026-09-21 AAA art direction pass IX: combat FX staging */
+.battle-scene{overflow:hidden}
+.battle-scene:before{content:"";position:absolute;inset:0;pointer-events:none;background:
+ radial-gradient(circle at 50% 55%,rgba(105,151,210,.08),transparent 30%),
+ linear-gradient(90deg,transparent 45%,rgba(255,255,255,.018) 50%,transparent 55%);z-index:0}
+.battle-scene .battle-unit{z-index:3}
+.battle-scene .combat-fx{position:absolute;left:50%;top:-8px;z-index:8;transform:translateX(-50%);font-size:12px;font-weight:900;letter-spacing:.04em;text-shadow:0 2px 7px rgba(0,0,0,.8);animation:combat-fx-rise .72s ease-out both;pointer-events:none}
+.battle-scene .fx-damage .combat-fx{color:#ffd2c5}
+.battle-scene .fx-heal .combat-fx{color:#a8ffd0}
+.battle-scene .fx-critical .combat-fx{color:#ffe28c;font-size:15px}
+.battle-scene .fx-buff .combat-fx{color:#bfe4ff}
+.battle-scene .fx-debuff .combat-fx{color:#d5b9ff}
+.battle-scene .battle-unit:has(.fx-critical) .unit-token{animation:unit-critical-flash .45s ease-out both}
+.battle-scene .battle-unit:has(.fx-damage) .unit-token{animation:unit-hit-shake .28s ease-out both}
+.battle-scene .battle-unit:has(.fx-heal) .unit-token{box-shadow:0 0 28px rgba(91,226,156,.28),0 14px 28px rgba(0,0,0,.48)}
+.battle-scene .battle-unit.active-unit .unit-token-frame:after{content:"";position:absolute;inset:-7px;border:1px solid rgba(255,214,122,.5);border-radius:22px;box-shadow:0 0 18px rgba(255,190,76,.13);animation:active-ring 1.25s ease-in-out infinite}
+@keyframes combat-fx-rise{from{opacity:0;transform:translate(-50%,8px) scale(.82)}25%{opacity:1}to{opacity:0;transform:translate(-50%,-25px) scale(1.08)}}
+@keyframes unit-hit-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+@keyframes unit-critical-flash{0%{filter:brightness(1)}25%{filter:brightness(1.8) saturate(1.3)}100%{filter:brightness(1)}}
+@keyframes active-ring{0%,100%{opacity:.25;transform:scale(.98)}50%{opacity:.9;transform:scale(1.02)}}
+@media(prefers-reduced-motion:reduce){.battle-scene .combat-fx,.battle-scene .unit-token,.battle-scene .active-unit .unit-token-frame:after{animation:none!important}}
