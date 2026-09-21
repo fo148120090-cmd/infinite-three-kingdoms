@@ -102,7 +102,20 @@ export const speciesDefaults: Record<string,{tendencies:Tendencies;behavior:stri
 
 const scale = (n:number,level:number,grade:Grade) => {
   const g = grade==="Normal"?1:grade==="Elite"?1.25:grade==="Named"?1.55:1.95;
-  return Math.round(n*(1+(level-1)*.075)*g);
+  // Keep the existing 5-level floor brackets intact while making stat growth
+  // predictable across world rounds. The linear curve avoids sudden jumps at
+  // Lv.31/Lv.61 and remains easy to tune later.
+  const normalizedLevel=Math.max(1,Math.floor(Number(level)||1));
+  const levelGrowth=1+(normalizedLevel-1)*.075;
+  return Math.round(n*levelGrowth*g);
+};
+
+const speedScale = (base:number,level:number,grade:Grade) => {
+  const gradeBonus=grade==="Boss"?.12:grade==="Named"?.07:grade==="Elite"?.04:0;
+  // Speed grows more gently than HP/attack/defense so higher world rounds
+  // feel stronger without turning every battle into a burst-speed check.
+  const levelBonus=Math.min(.24,Math.max(0,Math.floor(Number(level)||1)-1)*.0025);
+  return Math.max(.2,Math.round((base+gradeBonus)*(1+levelBonus)*100)/100);
 };
 
 const mutations:Record<string,{name:string;mods:Partial<Tendencies>;attack:number;defense:number;speed:number;behavior:string}> = {
@@ -137,7 +150,7 @@ export function createMonster(species:string, level:number, grade:Grade, index:n
     hp:Math.max(1,scale(95,level,grade)),maxHp:Math.max(1,scale(95,level,grade)),
     attack:Math.max(1,scale(b.attack+(mutation?.attack||0),level,grade)),
     defense:Math.max(1,scale(b.defense+(mutation?.defense||0),level,grade)),
-    speed:(grade==="Boss"?1.08:.9+Math.random()*.25)+(mutation?.speed||0),
+    speed:Math.max(.2,speedScale(grade==="Boss"?1.08:.9+Math.random()*.25,level,grade)+(mutation?.speed||0)),
     range:species==="Harpy"||species==="Siren"?4:species==="Darkworm"?2.2:1.5,
     tendencies,pos:7-index*0.65,behavior:mutation?[...b.behavior,mutation.behavior]:b.behavior,mutation:mutation?.name
   };
