@@ -40,7 +40,7 @@ const monsterVisual=(species?:string)=>{
   if(/uruk|orc|오크|우르크/.test(key)) return {icon:"♜",className:"orc"};
   if(/goblin|고블린/.test(key)) return {icon:"♞",className:"goblin"};
   if(/dragon|drake|용|드래곤/.test(key)) return {icon:"♢",className:"dragon"};
-  if(/wolf|늑대|wolf/.test(key)) return {icon:"◒",className:"beast"};
+  if(/wolf|늑대/.test(key)) return {icon:"◒",className:"beast"};
   if(/skeleton|undead|해골|언데드/.test(key)) return {icon:"☠",className:"undead"};
   return {icon:"◇",className:"generic"};
 };
