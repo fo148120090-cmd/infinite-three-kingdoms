@@ -1704,3 +1704,85 @@ body{
 @media(max-width:420px){
   .battle-report-grid{grid-template-columns:1fr}
 }
+
+/* 2026-09-21 dungeon route art pass */
+.dungeon-page .route-grid{
+  position:relative;
+  gap:10px;
+}
+.dungeon-page .route-card{
+  position:relative;
+  overflow:hidden;
+  min-height:112px;
+  border-color:#344762;
+  background:
+    radial-gradient(circle at 86% 12%,rgba(104,132,190,.13),transparent 32%),
+    linear-gradient(145deg,#142033,#0a111b);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 10px 24px rgba(0,0,0,.18);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.dungeon-page .route-card:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(115deg,transparent 18%,rgba(255,255,255,.025) 48%,transparent 76%);
+}
+.dungeon-page .route-card:hover{
+  transform:translateY(-2px);
+  border-color:#637ba5;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 14px 28px rgba(0,0,0,.24);
+}
+.dungeon-page .route-card .room-icon{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border:1px solid #425675;
+  border-radius:12px;
+  background:radial-gradient(circle,#263b5c,#111b2b 72%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 6px 14px rgba(0,0,0,.22);
+}
+.dungeon-page .route-card small{
+  color:#91a5c4;
+  letter-spacing:.08em;
+}
+.dungeon-page .route-card h3{
+  margin:3px 0 4px;
+  color:#edf3fc;
+  letter-spacing:.01em;
+}
+.dungeon-page .route-card p{
+  color:#8998ae;
+  line-height:1.5;
+}
+.dungeon-page .route-intel{
+  margin-top:7px;
+}
+.dungeon-page .route-intel span{
+  border:1px solid #2d3d56;
+  background:rgba(9,15,24,.62);
+  color:#aab8ca;
+  border-radius:6px;
+}
+.dungeon-page .route-memory-panel{
+  border-color:#3a4c68;
+  background:
+    radial-gradient(circle at 90% 10%,rgba(99,127,186,.09),transparent 28%),
+    linear-gradient(145deg,#111c2b,#0a111a);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.dungeon-page .route-memory-row{
+  border-color:#293a53;
+  background:rgba(7,12,20,.42);
+}
+.dungeon-page .dungeon-meta>div{
+  border-color:#334660;
+  background:linear-gradient(145deg,#121e2e,#0b131e);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+@media(max-width:760px){
+  .dungeon-page .route-card{min-height:96px}
+  .dungeon-page .route-card .room-icon{width:38px;height:38px}
+}
