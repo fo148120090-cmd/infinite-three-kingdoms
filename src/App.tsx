@@ -1362,7 +1362,7 @@ export default function App(){
   return <main className="game-shell">
     <header className="topbar"><div className="brand" onClick={()=>setScreen("home")}><div className="brand-mark"><Brain size={21}/></div><div><b>무한 던전 : AI Chronicle</b><small>자율 AI 던전 RPG / RTS 프로토타입</small></div></div>
       <div className="resources"><span><Coins size={15}/> {save.gold}G</span><span>심도 {save.floor}F</span></div></header>
-    <nav className="main-nav">{([["home","로비"],["strategy","삼국전략"],["party","캐릭터"],["dungeon","던전"],["inventory","장비"],["recruit","모집"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
+    <nav className="main-nav">{([["home","로비"],["strategy","삼국전략"],["party","캐릭터"],["dungeon","던전"]] as [Screen,string][]).map(x=><button key={x[0]} className={screen===x[0]?"nav-on":""} onClick={()=>setScreen(x[0])}>{x[1]}</button>)}</nav>
     {toast&&<div className="toast">{toast}</div>}
     {npcOpen&&<div className="npc-overlay" onClick={()=>setNpcOpen(false)}><div className="npc-dialog" onClick={e=>e.stopPropagation()}>
       <div className="npc-dialog-art"><img src={NPC_IMAGE} alt="세라피나"/></div>
