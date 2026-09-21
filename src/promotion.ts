@@ -125,6 +125,34 @@ export function choosePromotion(hero:Hero,name:string){
   if(!choice)return null;
   return queuePromotion(pushPromotion(hero,pending.tier,name,promotionMultiplier(pending.tier,name)));
 }
+export type PromotionPassiveBonus={name:string;detail:string;attack:number;defense:number;hpPct:number;speedPct:number;range:number;healPct:number};
+export function promotionPassive(hero:Hero):PromotionPassiveBonus|undefined{
+  const last=hero.promotionPath?.[hero.promotionPath.length-1];
+  if(!last)return undefined;
+  const build=promotionBuilds[last.replace(/\\s/g,"")];
+  if(!build)return undefined;
+  const tier=Math.max(1,hero.promotionTier||1);
+  const scale=1+Math.min(5,tier-1)*.08;
+  const out:PromotionPassiveBonus={name:last+" · 전용 패시브",detail:"",attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0};
+  switch(build.style){
+    case "폭딜": out.attack=Math.round(4*scale); out.detail="공격력 +"+out.attack+" · 공격 행동의 피해량을 강화"; break;
+    case "탱커": out.defense=Math.round(6*scale); out.hpPct=Math.round(3*scale); out.detail="방어력 +"+out.defense+" · 최대 HP +"+out.hpPct+"%"; break;
+    case "단일전투": out.attack=Math.round(3*scale); out.range=.15; out.detail="공격력 +"+out.attack+" · 사거리 +0.15"; break;
+    case "수호": out.defense=Math.round(4*scale); out.healPct=Math.round(3*scale); out.detail="방어력 +"+out.defense+" · 회복량 +"+out.healPct+"%"; break;
+    case "정밀사격": out.attack=Math.round(3*scale); out.range=.3; out.detail="공격력 +"+out.attack+" · 사거리 +0.30"; break;
+    case "추격": out.attack=Math.round(2*scale); out.speedPct=Math.round(5*scale); out.detail="공격력 +"+out.attack+" · 이동속도 +"+out.speedPct+"%"; break;
+    case "기동": out.speedPct=Math.round(7*scale); out.range=.2; out.detail="이동속도 +"+out.speedPct+"% · 사거리 +0.20"; break;
+    case "광역마법": out.attack=Math.round(4*scale); out.range=.25; out.detail="공격력 +"+out.attack+" · 사거리 +0.25"; break;
+    case "약화지원": out.speedPct=Math.round(3*scale); out.healPct=Math.round(4*scale); out.detail="이동속도 +"+out.speedPct+"% · 회복량 +"+out.healPct+"%"; break;
+    case "집중마법": out.attack=Math.round(5*scale); out.range=.2; out.detail="공격력 +"+out.attack+" · 사거리 +0.20"; break;
+    case "회복": out.healPct=Math.round(10*scale); out.hpPct=Math.round(2*scale); out.detail="회복량 +"+out.healPct+"% · 최대 HP +"+out.hpPct+"%"; break;
+    case "성전수호": out.defense=Math.round(4*scale); out.attack=Math.round(2*scale); out.detail="공격력 +"+out.attack+" · 방어력 +"+out.defense; break;
+    case "심판": out.attack=Math.round(4*scale); out.defense=Math.round(2*scale); out.detail="공격력 +"+out.attack+" · 방어력 +"+out.defense; break;
+    default: out.attack=Math.round(2*scale); out.defense=Math.round(2*scale); out.detail="공격력/방어력 균형 강화"; break;
+  }
+  return out;
+}
+
 function applyPromotion(h:Hero,_level:number){ return queuePromotion(h); }
 
 
