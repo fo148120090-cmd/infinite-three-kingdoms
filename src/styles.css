@@ -3113,3 +3113,17 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .challenge-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid #242b37;color:#9ba8ba}
 .challenge-modal-foot b{color:#e0c67c}
 @media(max-width:620px){.challenge-level-grid{grid-template-columns:repeat(3,1fr)}.challenge-modal{padding:15px}.challenge-modal-foot{align-items:stretch;flex-direction:column}.challenge-modal-foot button{width:100%}}
+
+/* Costume-specific combat aura: cosmetic feedback only. */
+.battle-unit[class*="costume-"] .unit-token-frame{transition:filter .2s,transform .2s;}
+.battle-unit.costume-beach .unit-token-frame{filter:drop-shadow(0 0 7px rgba(78,169,186,.65));}
+.battle-unit.costume-summer .unit-token-frame{filter:drop-shadow(0 0 7px rgba(103,168,110,.65));}
+.battle-unit.costume-fur-winter .unit-token-frame{filter:drop-shadow(0 0 8px rgba(158,193,220,.7));}
+.battle-unit.costume-barbarian .unit-token-frame{filter:drop-shadow(0 0 8px rgba(214,165,90,.72));}
+.battle-unit.costume-bodysuit .unit-token-frame{filter:drop-shadow(0 0 9px rgba(95,182,200,.78));}
+.battle-unit.costume-monster-disguise .unit-token-frame{filter:drop-shadow(0 0 8px rgba(207,155,108,.68));}
+.battle-unit.costume-light-hero .unit-token-frame{filter:drop-shadow(0 0 10px rgba(255,244,188,.9));}
+.battle-unit.costume-fallen-hero .unit-token-frame{filter:drop-shadow(0 0 10px rgba(178,106,158,.82));}
+.battle-unit.costume-light-hero.active-unit .unit-token-frame,.battle-unit.costume-fallen-hero.active-unit .unit-token-frame{animation:costume-aura-pulse 1.15s ease-in-out infinite;}
+@keyframes costume-aura-pulse{50%{transform:scale(1.06);filter:brightness(1.14) drop-shadow(0 0 14px currentColor)}}
+@media (prefers-reduced-motion:reduce){.battle-unit.costume-light-hero.active-unit .unit-token-frame,.battle-unit.costume-fallen-hero.active-unit .unit-token-frame{animation:none}}
