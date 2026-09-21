@@ -1093,9 +1093,11 @@ export default function App(){
       const rewardRange=dungeonLevelRange(s.floor,s.sealCount||0);
       const worldRewardMultiplier=1+Math.max(0,rewardRange.worldRound-1)*.35;
       const worldMaterialMultiplier=1+Math.max(0,rewardRange.worldRound-1)*.25;
+      const floorRewardMultiplier=1+Math.max(0,rewardRange.floor-1)*.04;
       const enemyCount=battle.units.filter(u=>u.team==="enemy").length;
-      const baseGold=Math.round((180+enemyCount*55+(isBoss?900:0)+(isFinal?1800:0))*worldRewardMultiplier);
-      const baseMaterials=Math.round((isFinal?100:isBoss?60:18)*worldMaterialMultiplier);
+      const rewardProgressMultiplier=worldRewardMultiplier*floorRewardMultiplier;
+      const baseGold=Math.round((180+enemyCount*55+(isBoss?900:0)+(isFinal?1800:0))*rewardProgressMultiplier);
+      const baseMaterials=Math.round((isFinal?100:isBoss?60:18)*worldMaterialMultiplier*floorRewardMultiplier);
       // 경험치도 현재 회차/층의 적 레벨을 기준으로 상승시켜, 2회차 이후에도 성장 속도가 자연스럽게 이어지도록 한다.
       // 기본 경험치는 레벨의 65%를 추가하고, 정예/보스 보너스는 기존 역할을 유지한다.
       const levelExpBonus=Math.round(rewardRange.max*.65);
