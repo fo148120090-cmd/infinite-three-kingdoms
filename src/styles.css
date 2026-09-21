@@ -649,7 +649,9 @@ footer{display:flex;justify-content:space-between;align-items:center;margin-top:
   .hero-card p,.hero-card small{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hero-card .tag-row{margin:4px 0}
   .hero-card .tag-row em{font-size:7px;padding:3px 4px}
-  .hero-status-btn{display:none}
+  .hero-status-btn{display:inline-flex!important;align-items:center;justify-content:center;margin-top:7px;padding:6px 10px;font-size:9px;min-height:28px;width:max-content;white-space:nowrap;opacity:1!important;visibility:visible!important}
+.hero-status-btn:hover{border-color:#b89955!important;color:#f1dfaa!important;background:linear-gradient(180deg,#202a3d,#151d2b)!important}
+
   .memory-panel{display:none}
   .party-command-strip{flex:0 0 auto;margin-top:7px;padding:8px 10px}
   .party-command-strip>div:first-child small{display:none}
