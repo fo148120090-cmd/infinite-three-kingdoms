@@ -1577,14 +1577,16 @@ function CharacterStatusModal({hero,heroes,onClose,onNavigate,onTranscend,onUpgr
   </div>;
 }
 function InventoryIcon({item,onEquip,onEnhance,onSell,warehouse=false,compare}:{item:Item;onEquip:()=>void;onEnhance?:()=>void;onSell?:()=>void;warehouse?:boolean;compare?:ReturnType<typeof equipmentPreview>}){
-  const icon=item.slot==="weapon"?"⚔":item.slot==="armor"?"🛡":item.slot==="ring"?"◈":"✦";
+  const iconMap={weapon:"⚔",armor:"🛡",ring:"◈",accessory:"✦"} as const;
+  const icon=iconMap[item.slot]||"✦";
+  const iconUrl="https://opengameart.org/sites/default/files/icons.png";
   const combat=itemCombatLabels(item);
   const enhanced=enhancementLevel(item);
   const enhanceLabels=enhancementCombatLabels(item);
   const deltaLabel=(label:string,value:number)=>label+" "+(value>0?"+":"")+Math.round(value*100)/100;
   return <div className="inventory-icon-wrap">
     <button className={"inventory-icon "+(warehouse?"warehouse-icon ":"")+(item.unique?"unique":"")} onClick={onEquip} aria-label={item.name+" 장착"}>
-      <span>{icon}</span><small>Lv.{item.level} · +{enhanced}</small>{item.unique&&<b>U</b>}
+      <span className="item-asset-icon"><img src={iconUrl} alt="" aria-hidden="true"/><b>{icon}</b></span><small>Lv.{item.level} · +{enhanced}</small>{item.unique&&<b>U</b>}
       <span className="item-tooltip-card" role="tooltip">
         <span className="item-tooltip-head"><b>{item.name}</b>{item.unique&&<em>UNIQUE</em>}</span>
         <span className="item-tooltip-sub">{item.rarity} · {item.slot} · Lv.{item.level} · 강화 +{enhanced}/{MAX_ENHANCEMENT}</span>
