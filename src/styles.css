@@ -2204,3 +2204,24 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
     gap:5px;
   }
 }
+
+/* Monster asset slots: each species gets a distinct visual identity until painted assets are installed. */
+.monster-asset{overflow:hidden}
+.monster-asset span{position:relative;z-index:2}
+.monster-asset i{position:absolute;right:7px;top:5px;font-style:normal;font-size:11px;color:#d7deea;opacity:.75}
+.monster-species-spider{background:radial-gradient(circle at 50% 42%,rgba(118,71,139,.35),transparent 48%),linear-gradient(145deg,#24172d,#0b0b12)}
+.monster-species-spider span{transform:scale(1.12);color:#d5a6e7}
+.monster-species-demon{background:radial-gradient(circle at 50% 35%,rgba(181,52,43,.34),transparent 50%),linear-gradient(145deg,#35151a,#0d080b)}
+.monster-species-demon span{color:#ff9a79;text-shadow:0 0 12px rgba(255,87,54,.35)}
+.monster-species-orc{background:radial-gradient(circle at 50% 35%,rgba(91,128,68,.28),transparent 52%),linear-gradient(145deg,#202b20,#0b100d)}
+.monster-species-orc span{color:#b7d68f}
+.monster-species-goblin{background:radial-gradient(circle at 50% 35%,rgba(81,151,93,.3),transparent 52%),linear-gradient(145deg,#18291d,#090f0b)}
+.monster-species-goblin span{color:#9fe3a5}
+.monster-species-dragon{background:radial-gradient(circle at 50% 35%,rgba(201,83,45,.35),transparent 52%),linear-gradient(145deg,#321a14,#0d0908)}
+.monster-species-dragon span{color:#ffbf83;text-shadow:0 0 13px rgba(255,119,53,.35)}
+.monster-species-beast{background:radial-gradient(circle at 50% 35%,rgba(104,133,166,.3),transparent 52%),linear-gradient(145deg,#1b2530,#090e14)}
+.monster-species-beast span{color:#b9d6f1}
+.monster-species-undead{background:radial-gradient(circle at 50% 35%,rgba(177,184,194,.22),transparent 52%),linear-gradient(145deg,#25272b,#090a0d)}
+.monster-species-undead span{color:#dfe4e8}
+.monster-species-generic{background:radial-gradient(circle at 50% 35%,rgba(147,94,72,.25),transparent 52%),linear-gradient(145deg,#29201d,#0b0b0d)}
+.monster-asset:has(.monster-species-dragon) i,.monster-asset-boss i{color:#ffd982}
