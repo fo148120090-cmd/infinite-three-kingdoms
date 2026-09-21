@@ -2610,3 +2610,11 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .monster-art-harpy .monster-aura{filter:drop-shadow(0 0 4px rgba(195,168,220,.24))}
 .monster-art-ogre .monster-aura{filter:drop-shadow(0 0 5px rgba(200,166,121,.22))}
 .monster-art-siren .monster-aura{filter:drop-shadow(0 0 5px rgba(157,208,220,.25))}
+
+/* Advanced monster species asset pass */
+.monster-art-darkworm .monster-aura{filter:drop-shadow(0 0 5px rgba(170,161,197,.3))}
+.monster-art-dragon .monster-aura{filter:drop-shadow(0 0 7px rgba(212,155,114,.3))}
+.monster-art-wolf .monster-aura{filter:drop-shadow(0 0 4px rgba(170,181,199,.25))}
+.monster-art-skeleton .monster-aura{filter:drop-shadow(0 0 5px rgba(217,211,189,.28))}
+.monster-art-dragon .monster-eye-glow{filter:drop-shadow(0 0 5px rgba(255,225,107,.75))}
+.monster-art-skeleton .monster-eye-glow{filter:drop-shadow(0 0 5px rgba(143,240,255,.75))}
