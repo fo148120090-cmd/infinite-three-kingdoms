@@ -56,7 +56,17 @@ const costumeBonusByKey:Record<string,CostumeCombatBonus>={
 };
 export function costumeCombatBonus(id?:string):CostumeCombatBonus{
   const key=id? id.split("-").slice(1).join("-"):"base";
-  return costumeBonusByKey[key]||costumeBonusByKey.base;
+  const base=costumeBonusByKey[key]||costumeBonusByKey.base;
+  // 코스튬 고유 전투 능력치는 기존 수치의 5배로 적용한다.
+  return {
+    attack:base.attack*5,
+    defense:base.defense*5,
+    hpPct:base.hpPct*5,
+    speedPct:base.speedPct*5,
+    range:base.range*5,
+    healPct:base.healPct*5,
+    critPct:base.critPct*5
+  };
 }
 export function ownedCostumeCombatBonus(ids:string[]=[]):CostumeCombatBonus{
   const total:CostumeCombatBonus={attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0,critPct:0};
