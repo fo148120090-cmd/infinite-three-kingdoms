@@ -2650,3 +2650,57 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .battle-scene.battle-active-species-orc .monster-style-badge{border-color:rgba(255,188,93,.3)}
 @media(max-width:720px){.monster-style-badge{max-width:145px;font-size:6.5px;padding:2px 5px}}
 @media(prefers-reduced-motion:reduce){.monster-style-badge{animation:none!important}}
+
+
+/* 2026-09-21 monster-specific combat telegraph pass */
+.battle-scene.battle-active-enemy .battle-unit.enemy.active-unit .monster-style-badge::after{
+  content:" · 행동 예고";
+  opacity:.58;
+}
+.battle-scene.battle-active-enemy.battle-active-species-dragon .battle-unit.enemy.active-unit .monster-style-badge{
+  animation:monster-style-breath .72s ease-in-out infinite alternate;
+}
+.battle-scene.battle-active-enemy.battle-active-species-spider .battle-unit.enemy.active-unit .monster-style-badge{
+  animation:monster-style-web .9s ease-in-out infinite;
+}
+.battle-scene.battle-active-enemy.battle-active-species-demon .battle-unit.enemy.active-unit .monster-style-badge{
+  animation:monster-style-dark 1s ease-in-out infinite alternate;
+}
+.battle-scene.battle-active-enemy.battle-active-species-beast .battle-unit.enemy.active-unit .monster-style-badge{
+  animation:monster-style-lunge .58s ease-in-out infinite alternate;
+}
+.battle-scene.battle-active-enemy.battle-active-species-undead .battle-unit.enemy.active-unit .monster-style-badge{
+  animation:monster-style-soul 1.15s linear infinite;
+}
+.battle-scene.battle-active-enemy.battle-active-species-orc .battle-unit.enemy.active-unit .monster-style-badge{
+  animation:monster-style-impact .62s ease-in-out infinite alternate;
+}
+@keyframes monster-style-breath{
+  from{box-shadow:0 0 7px rgba(255,137,91,.08);transform:scale(1)}
+  to{box-shadow:0 0 13px rgba(255,137,91,.25);transform:scale(1.025)}
+}
+@keyframes monster-style-web{
+  0%,100%{box-shadow:0 0 7px rgba(214,168,235,.08)}
+  50%{box-shadow:0 0 13px rgba(214,168,235,.24)}
+}
+@keyframes monster-style-dark{
+  from{box-shadow:0 0 7px rgba(255,111,111,.08);filter:brightness(1)}
+  to{box-shadow:0 0 14px rgba(255,111,111,.25);filter:brightness(1.12)}
+}
+@keyframes monster-style-lunge{
+  from{transform:translateX(0)}
+  to{transform:translateX(2px)}
+}
+@keyframes monster-style-soul{
+  from{transform:rotate(0deg);box-shadow:0 0 6px rgba(145,226,255,.06)}
+  to{transform:rotate(1deg);box-shadow:0 0 13px rgba(145,226,255,.22)}
+}
+@keyframes monster-style-impact{
+  from{transform:scale(1)}
+  to{transform:scale(1.035)}
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene.battle-active-enemy .battle-unit.enemy.active-unit .monster-style-badge{
+    animation:none!important;
+  }
+}
