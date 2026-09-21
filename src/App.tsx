@@ -459,15 +459,21 @@ function spawn(heroes:Hero[],party:string[],room:RoomKind,floor:number,lineages:
       speed:s.speed,range:s.range,pos:formationPosition(h,i,ordered.length,mode),alive:true,passiveHealPct:passiveCombatBonus(h).healPct,tendencies:aiT(h.tendencies,equippedItemsOf(h),h.artifacts||[],h),equipment:equippedItemsOf(h),item:equippedItemsOf(h)[0],skinId:h.equippedSkinId||h.costumeId,
       personality:h.personality,relationships:h.relationships,memories:h.memories,promotionPath:h.promotionPath,actionText:"대기",cooldown:0,guard:0,xp:0,behaviorCounts:{}};
   });
-  const pool=floor<3?["Goblin","Kobold","Slime"]:floor<5?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
+  const pool=floor<=2?["Goblin","Kobold","Slime"]:floor<=4?["Gnoll","Lizardman","Arachne"]:["Orc","Uruk","Ogre"];
+  // 일반 던전 몬스터는 층당 5레벨 구간을 사용한다.
+  // 1F=Lv.1~5, 2F=Lv.6~10 ... 6F=Lv.26~30.
+  const floorTier=Math.max(0,Math.min(5,Math.floor((Math.max(1,floor)-1)/1)));
+  const floorMin=floorTier*5+1;
+  const floorMax=floorMin+4;
+  const monsterLevelFor=(index:number)=>Math.min(floorMax,floorMin+((Math.max(0,index)+Math.max(0,floor-1))%5));
   const count=room==="boss"||room==="evilCave"?3:room==="elite"?4:3;
   let es=Array.from({length:count},(_,i)=>{
     const grade=room==="boss"||room==="evilCave"?(i===0?"Named":"Elite"):room==="elite"?"Elite":"Normal";
-    return createLinedMonster(pool[(i+floor)%pool.length],floor+2,grade,i,lineages);
+    return createLinedMonster(pool[(i+floor)%pool.length],monsterLevelFor(i),grade,i,lineages);
   });
   if(room==="boss"||room==="evilCave"){
     const bossSpecies=room==="evilCave"?"Demon":raidBossForFloor(floor);
-    const base=createMonster(bossSpecies,Math.max(8,floor+5),"Boss",0);
+    const base=createMonster(bossSpecies,Math.min(30,Math.max(1,floorMin+4)),"Boss",0);
     const bossName=room==="evilCave"?"악의 동굴 수문장":bossSpecies==="Uruk"?"우르크 전쟁대장":bossSpecies==="Arachne"?"둥지의 여왕":"지옥의 대공";
     es[0]={...base,name:bossName,pos:8.8};
   }
