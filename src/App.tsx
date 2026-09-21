@@ -646,7 +646,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     a.pos+=(target.pos>a.pos?step:-step); a.pos=Math.max(.3,Math.min(9.7,a.pos));
   };
   let line="";
-  const fx=(target:BattleUnit,kind:"damage"|"heal"|"critical"|"status",text:string)=>{target.fx=text;target.fxKind=kind;};
+  const fx=(target:BattleUnit,kind:"damage"|"heal"|"critical"|"status",text:string)=>{target.fx=text;target.fxKind=kind;if(a.team==="player"&&target.id!==a.id&&(kind==="damage"||kind==="heal"||kind==="critical")){a.fx="COSTUME";a.fxKind=kind;}};
   if(d.action==="폭딜"||d.action==="탱커"||d.action==="단일전투"||d.action==="수호"||d.action==="정밀사격"||d.action==="추격"||d.action==="기동"||d.action==="광역마법"||d.action==="약화지원"||d.action==="집중마법"||d.action==="회복"||d.action==="성전수호"||d.action==="심판"){
     const t=by(d.target)||nearest||weak;
     if(d.action==="회복"&&allies.length){
