@@ -3001,3 +3001,51 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .battle-scene.boss-pattern-active .battle-action-overlay,
   .battle-scene.boss-pattern-active::after{animation:none!important}
 }
+
+
+/* 2026-09-21 boss pattern floor telegraph pass
+   Adds directional battlefield feedback without changing target selection or damage. */
+.battle-scene.boss-pattern-active .cave-floor::after{
+  content:"";
+  position:absolute;
+  inset:-12px -4%;
+  pointer-events:none;
+  opacity:0;
+  border-radius:50%;
+  animation:boss-floor-pulse .62s ease-out both;
+}
+.battle-scene.boss-pattern-active.battle-active-species-orc .cave-floor::after{
+  background:linear-gradient(90deg,transparent 0 12%,rgba(245,188,83,.22) 50%,transparent 88%);
+  animation-name:boss-floor-command;
+}
+.battle-scene.boss-pattern-active.battle-active-species-spider .cave-floor::after{
+  background:radial-gradient(circle,transparent 0 24%,rgba(214,168,235,.2) 25% 26%,transparent 27% 42%,rgba(214,168,235,.14) 43% 44%,transparent 45%);
+  animation-name:boss-floor-web;
+}
+.battle-scene.boss-pattern-active.battle-active-species-demon .cave-floor::after{
+  background:radial-gradient(ellipse at 78% 50%,rgba(255,76,65,.3),transparent 58%);
+  animation-name:boss-floor-demon;
+}
+@keyframes boss-floor-pulse{
+  0%{opacity:0;transform:scale(.85)}
+  35%{opacity:1;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.12)}
+}
+@keyframes boss-floor-command{
+  0%{opacity:0;transform:translateX(-18%)}
+  32%{opacity:1;transform:translateX(0)}
+  100%{opacity:0;transform:translateX(18%)}
+}
+@keyframes boss-floor-web{
+  0%{opacity:0;transform:scale(.65) rotate(0)}
+  38%{opacity:1;transform:scale(1) rotate(6deg)}
+  100%{opacity:0;transform:scale(1.18) rotate(-4deg)}
+}
+@keyframes boss-floor-demon{
+  0%{opacity:0;transform:scale(1.16);filter:brightness(1)}
+  35%{opacity:1;transform:scale(1);filter:brightness(.72)}
+  100%{opacity:0;transform:scale(.9);filter:brightness(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene.boss-pattern-active .cave-floor::after{animation:none!important}
+}
