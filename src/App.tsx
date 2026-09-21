@@ -1628,14 +1628,22 @@ function SkinPortrait({job,skinId,compact=false}:{job:Job;skinId?:string;compact
   const skinKey=skinId?skinId.split("-").slice(1).join("-"):"base";
   const icon=skinVisual(skinId);
   const uid="skin-"+job.toLowerCase()+"-"+(skinKey||"base").replace(/[^a-z0-9]/gi,"-");
+  const portraitIndex:Record<Job,number>={Warrior:0,Guardian:1,Archer:2,Mage:3,Cleric:4};
+  const portraitCol=portraitIndex[job]%3;
+  const portraitRow=Math.floor(portraitIndex[job]/3);
+  const portraitUrl="https://opengameart.org/sites/default/files/rpgportraits.png";
   return <svg className={"skin-portrait "+(compact?"compact":"")} width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
-    <defs><linearGradient id={uid+"-bg"} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={theme.primary}/><stop offset="1" stopColor={theme.secondary}/></linearGradient></defs>
-    <circle cx="50" cy="48" r="40" fill={theme.background} opacity=".9"/>
-    <path d="M30 84 Q50 68 70 84 L76 96 L24 96 Z" fill={"url(#"+uid+"-bg)"} />
-    <circle cx="50" cy="39" r="18" fill={theme.primary}/>
-    <path d="M31 37 Q50 10 69 37 Q60 24 50 27 Q40 24 31 37" fill={theme.secondary}/>
-    <circle cx="43" cy="40" r="2.5" fill={theme.background}/><circle cx="57" cy="40" r="2.5" fill={theme.background}/>
-    <path d="M44 50 Q50 54 56 50" fill="none" stroke={theme.secondary} strokeWidth="3" strokeLinecap="round"/>
+    <defs>
+      <linearGradient id={uid+"-bg"} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={theme.primary}/><stop offset="1" stopColor={theme.secondary}/></linearGradient>
+      <clipPath id={uid+"-clip"}><circle cx="50" cy="45" r="35"/></clipPath>
+    </defs>
+    <circle cx="50" cy="48" r="40" fill={theme.background} opacity=".92"/>
+    <g clipPath={"url(#"+uid+"-clip)"} opacity=".94">
+      <rect x="15" y="10" width="70" height="70" fill={"url(#"+uid+"-bg)"}/>
+      <image href={portraitUrl} x={-portraitCol*100+15} y={-portraitRow*100+10} width="300" height="300" preserveAspectRatio="none"/>
+    </g>
+    <circle cx="50" cy="45" r="35" fill="none" stroke={theme.accent} strokeOpacity=".42" strokeWidth="2"/>
+    <path d="M30 84 Q50 68 70 84 L76 96 L24 96 Z" fill={"url(#"+uid+"-bg)"} opacity=".9"/>
     {job==="Warrior"&&<><path d="M27 70 L18 58 L23 54 L35 67" fill="none" stroke={theme.accent} strokeWidth="6" strokeLinecap="round"/><path d="M73 70 L82 58 L77 54 L65 67" fill="none" stroke={theme.accent} strokeWidth="6" strokeLinecap="round"/></>}
     {job==="Guardian"&&<path d="M25 66 Q50 51 75 66 L70 88 Q50 98 30 88 Z" fill="none" stroke={theme.accent} strokeWidth="5"/>}
     {job==="Archer"&&<><path d="M23 67 Q50 90 77 67" fill="none" stroke={theme.accent} strokeWidth="4"/><path d="M50 63 L50 89" stroke={theme.accent} strokeWidth="3"/></>}
@@ -1651,7 +1659,6 @@ function SkinPortrait({job,skinId,compact=false}:{job:Job;skinId?:string;compact
     <text x="50" y="98" textAnchor="middle" fontSize="12" fill={theme.accent} fontWeight="700">{icon}</text>
   </svg>;
 }
-
 function starLabel(star:number){
   const n=Math.max(1,Math.min(6,Math.floor(star||1)));
   return "★".repeat(n)+"☆".repeat(6-n);
