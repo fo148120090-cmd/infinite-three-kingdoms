@@ -375,9 +375,9 @@ function formationLabel(heroes:Hero[],mode:BattleMode){
   const ordered=autoFormation(heroes,mode);
   const front=ordered.filter(h=>h.job==="Guardian"||h.job==="Warrior").length;
   const rear=ordered.filter(h=>h.job==="Archer"||h.job==="Mage"||h.job==="Cleric").length;
-  if(!front)return "원거리 집중";
+  if(!front)return rear?"후방 지원 진형":"원거리 집중";
   if(!rear)return "전면 압박";
-  return mode==="defense"?"자동 방어 진형":"자동 전열·후열 진형";
+  return mode==="defense"?"자동 방어 진형 · 마법사/힐러 후열":"자동 전열·후열 진형 · 마법사/힐러 후열";
 }
 function battlePlanFor(heroes:Hero[],mode:BattleMode):BattlePlan{
   const avg=(k:keyof Tendencies)=>heroes.length?heroes.reduce((n,h)=>n+h.tendencies[k],0)/heroes.length:50;
