@@ -2595,3 +2595,11 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .monster-art-uruk.monster-art-grade-boss .monster-aura{stroke-width:2.8}
 .monster-art-arachne.monster-art-grade-boss .monster-aura{stroke-width:2.6}
 .monster-art-demon.monster-art-grade-boss .monster-aura{stroke-width:2.7}
+
+/* Early dungeon species asset pass */
+.monster-art-goblin .monster-aura{filter:drop-shadow(0 0 3px rgba(155,181,107,.2))}
+.monster-art-kobold .monster-aura{filter:drop-shadow(0 0 3px rgba(184,135,98,.22))}
+.monster-art-slime .monster-aura{filter:drop-shadow(0 0 5px rgba(139,224,213,.24))}
+.monster-art-gnoll .monster-aura{filter:drop-shadow(0 0 3px rgba(197,154,111,.2))}
+.monster-art-lizardman .monster-aura{filter:drop-shadow(0 0 4px rgba(156,201,142,.2))}
+.monster-art-slime .monster-eye-glow{filter:drop-shadow(0 0 4px rgba(223,252,255,.7))}
