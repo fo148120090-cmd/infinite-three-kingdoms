@@ -1718,6 +1718,7 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
   const growth=promotionForecast(hero);
   const slots=equipmentSlotsOf(hero);
   const [equipSlot,setEquipSlot]=useState(0);
+  const [showBreakdown,setShowBreakdown]=useState(false);
   const star=heroStar(hero);
   const traitMultiplier=traitStrengthMultiplier(hero);
   const transcendReq=transcendenceRequirement(hero);
@@ -1732,6 +1733,34 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
   const chronicles=(hero.chronicle||[]).slice().sort((a,b)=>a.earnedAt-b.earnedAt);
   const tendencies=(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>[k,tendencyKo[k],Math.round(clamp(hero.tendencies[k]))] as [keyof Tendencies,string,number]);
   const warehouse=warehouseItems.slice().reverse().slice(0,12);
+  const breakdown={
+    attack:{base:Math.round(hero.attack*starCombatMultiplier(hero)),gear:Object.values(combinedCombatMods(equippedItemsOf(hero))).reduce((n,v)=>n+(v||0),0)},
+    defense:{base:Math.round(hero.defense*starCombatMultiplier(hero)),gear:Object.values(combinedCombatMods(equippedItemsOf(hero))).reduce((n,v)=>n+(v||0),0)},
+    speed:{base:Math.round(hero.speed*100)/100,gear:Math.round((stats.speed/Math.max(.01,hero.speed)-1)*10000)/100},
+    range:{base:Math.round(hero.range*100)/100,gear:Math.round((stats.range-hero.range)*100)/100},
+    hp:{base:Math.round((Number(hero.maxHp)||Number(hero.hp)||1)*starCombatMultiplier(hero)),gear:Math.round((stats.maxHp-(Number(hero.maxHp)||Number(hero.hp)||1)*starCombatMultiplier(hero)))}
+  };
+  const statSources=(key:"attack"|"defense"|"speed"|"range"|"hp")=>{
+    const rows:{label:string;value:string}[]=[];
+    if(key==="attack"||key==="defense")rows.push({label:"장비",value:"+"+Math.round(Object.values(combinedCombatMods(equippedItemsOf(hero))).reduce((n,v)=>n+(v||0),0))});
+    rows.push({label:"연대기",value:key==="attack"?(bonus.attack?"+": "")+String(bonus.attack||0):key==="defense"?(bonus.defense?"+":"")+String(bonus.defense||0):key==="hp"?(bonus.hpPct?"+":"")+String(bonus.hpPct||0)+"%":key==="speed"?(bonus.speedPct?"+":"")+String(bonus.speedPct||0)+"%":"—"});
+    const passive=passiveCombatBonus(hero), promotion=promotionPassive(hero)||{attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0};
+    if(key==="attack")rows.push({label:"패시브/전직",value:"+"+Math.round(passive.attack+promotion.attack)});
+    if(key==="defense")rows.push({label:"패시브/전직",value:"+"+Math.round(passive.defense+promotion.defense)});
+    if(key==="hp")rows.push({label:"HP 보정",value:"+"+Math.round(passive.hpPct+promotion.hpPct)+"%"});
+    if(key==="speed")rows.push({label:"속도 보정",value:"+"+Math.round(passive.speedPct+promotion.speedPct)+"%"});
+    if(key==="range")rows.push({label:"사거리 보정",value:"+"+Math.round((passive.range+promotion.range)*100)/100});
+    const artifactCount=(hero.artifacts||[]).length;
+    if(artifactCount)rows.push({label:"기재",value:artifactCount+"종"});
+    const costumeCount=(hero.skinIds||[]).length;
+    if(costumeCount)rows.push({label:"코스튬",value:costumeCount+"종 보유"});
+    return rows;
+  };
+  useEffect(()=>{
+    const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")onClose();};
+    window.addEventListener("keydown",onKey);
+    return ()=>window.removeEventListener("keydown",onKey);
+  },[onClose]);
   return <div className="status-modal-backdrop" onClick={onClose}>
     <section className="status-modal" role="dialog" aria-modal="true" aria-label={hero.name+" 캐릭터 상태"} onClick={e=>e.stopPropagation()}>
       <div className="status-modal-head">
@@ -1760,6 +1789,8 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
           </div>
           <div className="modal-hp-bar"><i><em style={{width:hpPct+"%"}}/></i><span>HP {currentHp} / {maxHp} · {hpPct}%</span></div>
           <div className="modal-note">연대기 가산 · 공격 +{bonus.attack||0} · 방어 +{bonus.defense||0} · HP +{bonus.hpPct||0}% · 속도 +{bonus.speedPct||0}%</div>
+          <button className="status-breakdown-toggle" onClick={()=>setShowBreakdown(v=>!v)}>{showBreakdown?"▲ 능력치 구성 닫기":"▼ 능력치 구성 보기"}</button>
+          {showBreakdown&&<div className="status-breakdown-panel">{(["hp","attack","defense","speed","range"] as const).map(key=><div key={key}><b>{key==="hp"?"HP":key==="attack"?"공격":key==="defense"?"방어":key==="speed"?"속도":"사거리"}</b><span>{statSources(key).map((x,i)=><em key={x.label+"-"+i}>{x.label} {x.value}</em>)}</span></div>)}</div>}
         </div>
 
         <div className="status-modal-card">
@@ -1808,7 +1839,7 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
         <div className="status-modal-card" style={{gridColumn:"1 / -1"}}>
           <div className="modal-card-title"><b>장비 · 특성 · 기재</b><span>{Object.values(slots).filter(Boolean).length}/3 장착 · 창고 {warehouseItems.length}개</span></div>
           <div className="status-equipment-slots">{[0,1,2].map(slot=><div key={slot} className={equipSlot===slot?"active":""} onClick={()=>setEquipSlot(slot)}><span>SLOT {slot+1}</span><b>{slots[slot]?.name||"장비 없음"}</b><small>{slots[slot]?slots[slot]!.rarity+" · Lv."+slots[slot]!.level:"비어 있음"}</small><div><button className="ghost-btn compact" onClick={e=>{e.stopPropagation();setEquipSlot(slot)}}>{equipSlot===slot?"창고 선택 중":"이 슬롯 선택"}</button>{slots[slot]&&<button className="ghost-btn danger-btn compact" onClick={e=>{e.stopPropagation();onUnequip(hero.id,slot)}}>해제</button>}</div></div>)}</div>
-          <div className="status-equip-picker"><div className="modal-card-title"><b>SLOT {equipSlot+1} 장착 선택</b><span>모든 직업 장비 사용 가능 · 최근 획득 12개</span></div><div className="status-warehouse-mini">{warehouse.map((item,idx)=><div key={item.id+"-"+idx}><div><b>{item.name}</b><small>{item.rarity} · {item.slot} · Lv.{item.level} · +{enhancementLevel(item)}</small></div><button className="primary-btn compact" onClick={()=>onEquip(hero.id,item,equipSlot)}>장착</button></div>)}{warehouse.length===0&&<small>창고에 장착 가능한 장비가 없습니다.</small>}</div></div>
+          <div className="status-equip-picker"><div className="modal-card-title"><b>SLOT {equipSlot+1} 장착 선택</b><span>모든 직업 장비 사용 가능 · 최근 획득 12개</span></div><div className="status-warehouse-mini">{warehouse.map((item,idx)=>{const delta=equipmentPreview(hero,item,equipSlot);const deltaParts=[delta.attack!==0?"공격 "+(delta.attack>0?"+":"")+Math.round(delta.attack):"",delta.defense!==0?"방어 "+(delta.defense>0?"+":"")+Math.round(delta.defense):"",delta.hp!==0?"HP "+(delta.hp>0?"+":"")+Math.round(delta.hp):"",delta.speed!==0?"속도 "+(delta.speed>0?"+":"")+Math.round(delta.speed*100)/100:"",delta.range!==0?"사거리 "+(delta.range>0?"+":"")+Math.round(delta.range*100)/100:""].filter(Boolean).slice(0,3);return <div key={item.id+"-"+idx}><div><b>{item.name}</b><small>{item.rarity} · {item.slot} · Lv.{item.level} · +{enhancementLevel(item)}</small><span className="status-equip-delta">{deltaParts.length?deltaParts.join(" · "):"현재 슬롯과 동일 수준"}</span></div><button className="primary-btn compact" onClick={()=>onEquip(hero.id,item,equipSlot)}>장착</button></div>})}{warehouse.length===0&&<small>창고에 장착 가능한 장비가 없습니다.</small>}</div></div>
           <div className="modal-collection"><div><small>특성</small><b>{(hero.traits||[]).join(" · ")||"없음"}</b></div><div><small>기재</small>{(hero.artifacts||[]).length===0?<b>없음</b>:<div className="modal-artifact-list">{(hero.artifacts||[]).map(name=>{const effect=eventArtifactEffects[name]||growthArtifactCatalog[name];const ai=Object.entries(effect?.aiMods||{}).map(([k,v])=>tendencyKo[k as keyof Tendencies]+" +"+v).join(" · ");const combat=Object.entries(effect?.combatMods||{}).map(([k,v])=>(k==="attack"?"공격 +"+v:k==="defense"?"방어 +"+v:k==="hpPct"?"HP +"+v+"%":k==="speedPct"?"속도 +"+v+"%":k==="range"?"사거리 +"+v:k==="healPct"?"치유 +"+v+"%":k==="critPct"?"치명타 +"+v+"%":k+" +"+v)).join(" · ");return <div key={name}><b>{name}</b><small>{effect?.detail||"던전 이벤트에서 얻은 고유 기재입니다."}</small>{ai&&<em>AI · {ai}</em>}{combat&&<em>전투 · {combat}</em>}</div>})}</div>}</div></div>
         </div>
 
