@@ -106,8 +106,11 @@ function promotionMultiplier(tier:number,name:string){
   return {hp:base.hp*(1+m.hp/100),attack:base.attack*(1+m.attack/100),defense:base.defense*(1+m.defense/100)};
 }
 function pushPromotion(next:Hero,tier:number,name:string,mults:{hp:number;attack:number;defense:number}){
+  const oldMaxHp=Math.max(1,Math.round(Number(next.maxHp)||Number(next.hp)||1));
+  const hpRatio=Math.max(0,Math.min(1,(Number(next.hp)||0)/oldMaxHp));
+  const maxHp=Math.max(1,Math.round(oldMaxHp*mults.hp));
   return {...next,promotionTier:tier,promotionPath:[...(next.promotionPath||[]),name],promotionPending:undefined,
-    hp:Math.round(next.hp*mults.hp),attack:Math.round(next.attack*mults.attack),defense:Math.round(next.defense*mults.defense)};
+    maxHp,hp:Math.max(0,Math.min(maxHp,Math.round(maxHp*hpRatio))),attack:Math.round(next.attack*mults.attack),defense:Math.round(next.defense*mults.defense)};
 }
 export function promotionOptions(hero:Hero){
   const pending=hero.promotionPending;
@@ -173,6 +176,12 @@ const genericFinalAwakening:Record<Job,{id:string;name:string;detail:string;skil
 const finalAwakeningFor=(hero:Hero)=>finalAwakeningData[hero.id]||genericFinalAwakening[hero.job];
 
 const endgameAwakening=(hero:Hero,level:number):Hero=>{
+  const growHp=(source:Hero,mult:number):Hero=>{
+    const oldMaxHp=Math.max(1,Math.round(Number(source.maxHp)||Number(source.hp)||1));
+    const hpRatio=Math.max(0,Math.min(1,(Number(source.hp)||0)/oldMaxHp));
+    const maxHp=Math.max(1,Math.round(oldMaxHp*mult));
+    return {...source,maxHp,hp:Math.max(0,Math.min(maxHp,Math.round(maxHp*hpRatio)))};
+  };
   const definitions:{level:50|70|100;name:string;detail:string;hp:number;attack:number;defense:number;speed:number;range:number}[]=[
     {level:50,name:"초월 각성 · 개화",detail:"50레벨에 도달해 영웅의 잠재력이 개화합니다.",hp:1.08,attack:3,defense:2,speed:.04,range:.03},
     {level:70,name:"초월 각성 · 극점",detail:"70레벨에 도달해 전투 특성이 극점에 도달합니다.",hp:1.12,attack:5,defense:3,speed:.05,range:.04},
@@ -182,15 +191,15 @@ const endgameAwakening=(hero:Hero,level:number):Hero=>{
   let next=hero; const entries=[...(hero.awakenings||[])];
   for(const d of definitions){
     if(level<d.level||unlocked.has(d.level))continue;
-    next={...next,hp:Math.round(next.hp*d.hp),attack:next.attack+d.attack,defense:next.defense+d.defense,speed:next.speed+d.speed,range:next.range+d.range};
+    next=growHp(next,d.hp);
+    next={...next,attack:next.attack+d.attack,defense:next.defense+d.defense,speed:next.speed+d.speed,range:next.range+d.range};
     entries.push({level:d.level,name:d.name,detail:d.detail,earnedAt:Date.now()});
     next.history=[d.name+" 해금",...(next.history||[])].slice(0,6);
   }
   if(level>=100 && !next.finalAwakening){
     const f=finalAwakeningFor(next);
     next={
-      ...next,
-      hp:Math.round(next.hp*(1+f.hpPct/100)),
+      ...growHp(next,1+f.hpPct/100),
       attack:next.attack+f.attack,
       defense:next.defense+f.defense,
       speed:next.speed*(1+f.speedPct/100),
@@ -223,7 +232,11 @@ export function grantExperience(hero:Hero,gain:number){
     next.experience-=xpRequiredForLevel(next.level);
     next.level+=1;
     next.skillPoints=(next.skillPoints||0)+1;
-    next.hp=Math.round(next.hp*1.04);
+    const oldMaxHp=Math.max(1,Math.round(Number(next.maxHp)||Number(next.hp)||1));
+    const wasFull=Number(next.hp)>=oldMaxHp-1;
+    const newMaxHp=Math.max(1,Math.round(oldMaxHp*1.04));
+    next.maxHp=newMaxHp;
+    next.hp=wasFull?newMaxHp:Math.max(0,Math.min(newMaxHp,Math.round(Number(next.hp)||0)));
     next.attack=Math.max(next.attack+1,Math.round(next.attack*1.025));
     next.defense=Math.max(next.defense+1,Math.round(next.defense*1.02));
     leveled=true;
