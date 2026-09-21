@@ -242,7 +242,7 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
     aiMods[key]=Math.round((base>=70?3:base>=55?1:-1)+(Math.random()*9-4));
   }
   const roll=Math.random();
-  const rarity=roll<.06?"전설":roll<.24?"영웅":roll<.58?"희귀":"고급";
+  const rarity=roll<.002?"신화":roll<.01?"고대":roll<.06?"전설":roll<.18?"영웅":roll<.48?"희귀":roll<.78?"고급":"일반";
   return {
     id:`roll-${Date.now()}-${Math.random()}`,name,slot,level,rarity,stats,aiMods,combatMods,
     description:"각 옵션과 AI 성향 보정이 독립적으로 굴러가는 무작위 일반 장비."
