@@ -10,7 +10,7 @@ import { monsterActions } from "./monsterAbilities";
 import { dungeonChoiceEvent, resolveDungeonChoice, resolveDungeonEvent, resolveHiddenRoom, eventTraitEffects, eventArtifactEffects, eventRewardPreview, type DungeonChoiceEvent } from "./dungeonEvents";
 import { applyBehaviorHistory, behaviorSummary, buildProfile, habitBias, partyHabitBias, partyMemorySummary, partyPreference, partyTacticalLinks, profileInsight, type PartyMemory } from "./progression";
 import { awardChronicle, chronicleBonuses, chronicleLabel, systemEvaluation, systemMood, systemStatus } from "./chronicle";
-import { costumesForJob, ownedCostumeCombatBonus, costumeCombatBonus, skinCost, skinLabel, skinUnlockText, skinVisual, skinTheme, costumeStatLabels } from "./costumes";
+import { costumesForJob, ownedCostumeCombatBonus, skinCost, skinLabel, skinUnlockText, skinVisual, skinTheme, costumeStatLabels } from "./costumes";
 import { environmentDecisionBonus, environmentFor, environmentInfo, environmentTick, type EnvironmentKind } from "./dungeonEnvironment";
 import { bossClearReward, eliteClearReward, hiddenRoomReward, milestoneReward, repeatClearReward, treasureArtifactReward, growthArtifactCatalog, growthTraitCatalog, type GrowthReward } from "./growthRewards";
 import { buildPersonality, personalityActionBonus, personalityBattleLine, personalityEventReaction } from "./personality";
