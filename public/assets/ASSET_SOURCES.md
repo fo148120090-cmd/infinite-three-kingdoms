@@ -24,3 +24,9 @@ The portrait asset above is CC0 according to its OpenGameArt listing. Kenney's G
 
 ## Asset integration note
 - Current enemy presentation remains gameplay-first; CC0 monster art is being introduced as a visual layer rather than replacing combat data or level rules.
+
+
+## 2026-09-21 AAA art direction pass I
+- OpenGameArt RPG character sprites — GrafxKid — CC0. Reference: https://opengameart.org/content/rpg-character-sprites. Suitable as a future character/sprite layer; not embedded in this pass.
+- Kenney Game Icons — CC0. Reference: https://kenney.nl/assets/game-icons. Suitable for future equipment/UI icon replacement.
+- Kenney UI Pack (RPG Expansion) — CC0. Reference: https://kenney.nl/assets/ui-pack-rpg-expansion. Suitable for future panel/frame assets.
