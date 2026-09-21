@@ -2148,3 +2148,54 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .primary-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .result-popup{border-color:rgba(118,145,205,.42);background:linear-gradient(145deg,rgba(20,30,46,.99),rgba(7,11,18,.99));box-shadow:0 0 0 100vmax rgba(2,6,12,.74),0 30px 90px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,255,255,.06)}
 @media(max-width:650px){.hero-panel{box-shadow:0 16px 42px rgba(0,0,0,.28)}.hero-showcase-art:before{inset:4px -4px -5px}}
+
+
+/* Battle result readability: keep reward/report content horizontal and scannable */
+.result-popup .battle-report-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.result-popup .battle-report-grid > *{
+  min-width:0;
+}
+.result-popup .reward-list,
+.result-popup .result-reward-grid,
+.result-popup .reward-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.result-popup .result-reward-grid > *,
+.result-popup .reward-grid > *{
+  min-width:0;
+}
+.result-popup .result-summary,
+.result-popup .battle-report,
+.result-popup .reward-summary{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.result-popup .result-summary > *,
+.result-popup .battle-report > *,
+.result-popup .reward-summary > *{
+  min-width:0;
+}
+.result-popup h3,.result-popup h4{
+  margin:6px 0;
+}
+.result-popup .result-icon{
+  margin-bottom:8px;
+}
+@media(max-width:650px){
+  .result-popup .battle-report-grid,
+  .result-popup .reward-list,
+  .result-popup .result-reward-grid,
+  .result-popup .reward-grid,
+  .result-popup .result-summary,
+  .result-popup .battle-report,
+  .result-popup .reward-summary{
+    grid-template-columns:1fr 1fr;
+  }
+}
