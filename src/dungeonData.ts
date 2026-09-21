@@ -252,15 +252,21 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
 function uniqueLootCopy(item:Item,level:number):Item {
   const normalizedLevel=Math.max(1,Math.floor(Number(level)||1));
   // 고유 장비도 후반 회차에서 기본 레벨과 전투 수치가 자연스럽게 따라오도록 한다.
-  // 증가폭은 일반 장비와 동일하게 완만하게 제한한다.
+  // 증가폭은 일반 장비보다 조금 낮게 잡고, 표시 옵션과 실제 전투 수치를 함께 맞춘다.
   const powerScale=1+Math.max(0,normalizedLevel-item.level)*.02;
-  const combatMods=item.combatMods?Object.fromEntries(Object.entries(item.combatMods).map(([key,value])=>[key,Math.max(1,Math.round((value||0)*powerScale*100)/100)])):undefined;
+  const scaleValue=(value:number)=>Math.max(1,Math.round(value*powerScale*100)/100);
+  const combatMods=item.combatMods?Object.fromEntries(Object.entries(item.combatMods).map(([key,value])=>[key,scaleValue(value||0)])):undefined;
+  const stats=item.stats.map(stat=>stat.replace(/(\\d+(?:\\.\\d+)?)/,(match)=>{
+    const value=Number(match);
+    const scaled=scaleValue(value);
+    return Number.isInteger(scaled)?String(Math.round(scaled)):String(scaled);
+  }));
   return {
     ...item,
     id:item.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
     level:Math.max(item.level,normalizedLevel),
     combatMods,
-    stats:combatMods?item.stats.map(stat=>stat):item.stats
+    stats
   };
 }
 
