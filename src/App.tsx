@@ -1267,7 +1267,6 @@ export default function App(){
     const nextStar=star+1;
     setSave(s=>({...s,
       gold:s.gold-req.gold,
-      gems:s.gems-req.gems,
       heroes:s.heroes.map(h=>h.id!==heroId?h:{...h,star:nextStar,history:["초월 · "+nextStar+"성 도달",...(h.history||[])].slice(0,6),statusNote:nextStar+"성 초월 완료 · 특성 강화 ×"+traitStrengthMultiplier({...h,star:nextStar}).toFixed(1)})
     }));
     notify(target.name+" · "+nextStar+"성 초월 완료 · 특성 강화 ×"+traitStrengthMultiplier({...target,star:nextStar}).toFixed(1));
@@ -1385,11 +1384,8 @@ export default function App(){
 
     {screen==="strategy"&&<ThreeKingdoms
       gold={save.gold}
-      
       onSpendGold={strategySpendGold}
-      onSpendMaterials={strategySpendMaterials}
       onRewardGold={strategyRewardGold}
-      onRewardMaterials={strategyRewardMaterials}
       onDispatch={strategyDispatch}
       onToast={notify}
     />}
