@@ -2150,7 +2150,17 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @media(max-width:650px){.hero-panel{box-shadow:0 16px 42px rgba(0,0,0,.28)}.hero-showcase-art:before{inset:4px -4px -5px}}
 
 
-/* Battle result readability: keep reward/report content horizontal and scannable */
+/* Battle result readability: explicit two-column report/reward layout */
+.result-popup .battle-report{
+  display:block;
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid #28344c;
+}
+.result-popup .battle-report>b{
+  display:block;
+  margin-bottom:9px;
+}
 .result-popup .battle-report-grid{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -2159,28 +2169,25 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .result-popup .battle-report-grid > *{
   min-width:0;
 }
-.result-popup .reward-list,
-.result-popup .result-reward-grid,
-.result-popup .reward-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:8px;
-}
-.result-popup .result-reward-grid > *,
-.result-popup .reward-grid > *{
+.result-popup .report-card{
   min-width:0;
+  padding:10px;
+  border:1px solid rgba(93,116,151,.32);
+  border-radius:10px;
+  background:linear-gradient(145deg,rgba(24,36,53,.82),rgba(10,16,25,.88));
 }
-.result-popup .result-summary,
-.result-popup .battle-report,
-.result-popup .reward-summary{
+.result-popup .loot-summary{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:8px;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  gap:10px;
 }
-.result-popup .result-summary > *,
-.result-popup .battle-report > *,
-.result-popup .reward-summary > *{
+.result-popup .loot-summary b{
+  white-space:nowrap;
+}
+.result-popup .loot-summary span{
   min-width:0;
+  overflow-wrap:anywhere;
 }
 .result-popup h3,.result-popup h4{
   margin:6px 0;
@@ -2189,13 +2196,11 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   margin-bottom:8px;
 }
 @media(max-width:650px){
-  .result-popup .battle-report-grid,
-  .result-popup .reward-list,
-  .result-popup .result-reward-grid,
-  .result-popup .reward-grid,
-  .result-popup .result-summary,
-  .result-popup .battle-report,
-  .result-popup .reward-summary{
+  .result-popup .battle-report-grid{
     grid-template-columns:1fr 1fr;
+  }
+  .result-popup .loot-summary{
+    grid-template-columns:1fr;
+    gap:5px;
   }
 }
