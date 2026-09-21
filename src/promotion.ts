@@ -235,5 +235,25 @@ export function promotionActions(heroPath:string[]|undefined):{name:string;detai
   if(/아케인|아르카니스트|스펠블레이드|보이드|대현자|비전|공허|대현자/.test(text))out.push({name:"비전 해방",detail:"집중력을 끌어올려 강한 마법을 사용",bonus:33});
   if(/힐러|대사제|성인|오라클|성역 사제|대주교|성자/.test(text))out.push({name:"대회복",detail:"가장 위험한 동료에게 큰 회복을 시도",bonus:34});
   if(/저지|이단심문관|중재자|정화자|집행자|심판자/.test(text))out.push({name:"심판",detail:"위협적인 대상을 우선 제압",bonus:29});
+  const last=path[path.length-1];
+  const build=last?promotionBuilds[last.replace(/\\s/g,"")]:undefined;
+  if(build&&!out.some(x=>x.name===build.style)){
+    const details:Record<string,string>={
+      "폭딜":"선택한 공격 특성을 전투 행동에 반영",
+      "탱커":"방어 특성을 전투 행동에 반영",
+      "단일전투":"단일 대상 집중 특성을 전투 행동에 반영",
+      "수호":"동료 보호 특성을 전투 행동에 반영",
+      "정밀사격":"정밀 공격 특성을 전투 행동에 반영",
+      "추격":"약화 대상 추적 특성을 전투 행동에 반영",
+      "기동":"거리 조절과 생존 특성을 전투 행동에 반영",
+      "광역마법":"다수 대상 공격 특성을 전투 행동에 반영",
+      "약화지원":"적 약화와 지원 특성을 전투 행동에 반영",
+      "집중마법":"강한 단일 마법 특성을 전투 행동에 반영",
+      "회복":"회복 우선순위 특성을 전투 행동에 반영",
+      "성전수호":"공격과 수호를 함께 수행하는 특성을 반영",
+      "심판":"위협 대상 제압 특성을 전투 행동에 반영"
+    };
+    out.push({name:build.style,detail:details[build.style]||"선택한 전직 특성을 전투 행동에 반영",bonus:24});
+  }
   return out;
 }
