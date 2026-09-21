@@ -1733,28 +1733,55 @@ function CharacterStatusModal({hero,heroes,warehouseItems,onClose,onNavigate,onT
   const chronicles=(hero.chronicle||[]).slice().sort((a,b)=>a.earnedAt-b.earnedAt);
   const tendencies=(Object.keys(tendencyKo) as (keyof Tendencies)[]).map(k=>[k,tendencyKo[k],Math.round(clamp(hero.tendencies[k]))] as [keyof Tendencies,string,number]);
   const warehouse=warehouseItems.slice().reverse().slice(0,12);
-  const breakdown={
-    attack:{base:Math.round(hero.attack*starCombatMultiplier(hero)),gear:Object.values(combinedCombatMods(equippedItemsOf(hero))).reduce((n,v)=>n+(v||0),0)},
-    defense:{base:Math.round(hero.defense*starCombatMultiplier(hero)),gear:Object.values(combinedCombatMods(equippedItemsOf(hero))).reduce((n,v)=>n+(v||0),0)},
-    speed:{base:Math.round(hero.speed*100)/100,gear:Math.round((stats.speed/Math.max(.01,hero.speed)-1)*10000)/100},
-    range:{base:Math.round(hero.range*100)/100,gear:Math.round((stats.range-hero.range)*100)/100},
-    hp:{base:Math.round((Number(hero.maxHp)||Number(hero.hp)||1)*starCombatMultiplier(hero)),gear:Math.round((stats.maxHp-(Number(hero.maxHp)||Number(hero.hp)||1)*starCombatMultiplier(hero)))}
-  };
+  const items=equippedItemsOf(hero);
+  const gearMods=combinedCombatMods(items);
+  const artifactMods:Record<string,number>={};
+  (hero.artifacts||[]).forEach(name=>Object.entries((eventArtifactEffects[name]||growthArtifactCatalog[name])?.combatMods||{}).forEach(([k,v])=>artifactMods[k]=(artifactMods[k]||0)+(v||0)));
+  const passive=passiveCombatBonus(hero);
+  const promotion=promotionPassive(hero)||{attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0};
+  const costumeBonus=ownedCostumeCombatBonus(hero.skinIds||[]);
+  const costumePassive=ownedCostumePassive(hero.skinIds||[]);
+  const starMult=starCombatMultiplier(hero);
+  const baseMaxHp=Math.max(1,Math.round(Number(hero.maxHp)||Number(hero.hp)||1));
+  const percent=(value:number)=> (value>0?"+":"")+Math.round(value*100)/100+"%";
+  const flat=(value:number)=> (value>0?"+":"")+Math.round(value*100)/100;
   const statSources=(key:"attack"|"defense"|"speed"|"range"|"hp")=>{
     const rows:{label:string;value:string}[]=[];
-    if(key==="attack"||key==="defense")rows.push({label:"장비",value:"+"+Math.round(Object.values(combinedCombatMods(equippedItemsOf(hero))).reduce((n,v)=>n+(v||0),0))});
-    rows.push({label:"연대기",value:key==="attack"?(bonus.attack?"+": "")+String(bonus.attack||0):key==="defense"?(bonus.defense?"+":"")+String(bonus.defense||0):key==="hp"?(bonus.hpPct?"+":"")+String(bonus.hpPct||0)+"%":key==="speed"?(bonus.speedPct?"+":"")+String(bonus.speedPct||0)+"%":"—"});
-    const passive=passiveCombatBonus(hero), promotion=promotionPassive(hero)||{attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0};
-    if(key==="attack")rows.push({label:"패시브/전직",value:"+"+Math.round(passive.attack+promotion.attack)});
-    if(key==="defense")rows.push({label:"패시브/전직",value:"+"+Math.round(passive.defense+promotion.defense)});
-    if(key==="hp")rows.push({label:"HP 보정",value:"+"+Math.round(passive.hpPct+promotion.hpPct)+"%"});
-    if(key==="speed")rows.push({label:"속도 보정",value:"+"+Math.round(passive.speedPct+promotion.speedPct)+"%"});
-    if(key==="range")rows.push({label:"사거리 보정",value:"+"+Math.round((passive.range+promotion.range)*100)/100});
-    const artifactCount=(hero.artifacts||[]).length;
-    if(artifactCount)rows.push({label:"기재",value:artifactCount+"종"});
-    const costumeCount=(hero.skinIds||[]).length;
-    if(costumeCount)rows.push({label:"코스튬",value:costumeCount+"종 보유"});
-    return rows;
+    if(key==="attack")rows.push(
+      {label:"성급",value:starMult===1?"기본":flat((starMult-1)*100)+"%"},
+      {label:"장비",value:flat(gearMods.attack||0)},
+      {label:"기재",value:flat(artifactMods.attack||0)},
+      {label:"패시브·전직",value:flat((passive.attack||0)+(promotion.attack||0))},
+      {label:"연대기",value:flat(bonus.attack||0)},
+      {label:"코스튬",value:flat((costumeBonus.attack||0)+(costumePassive.attack||0))}
+    );
+    if(key==="defense")rows.push(
+      {label:"성급",value:starMult===1?"기본":flat((starMult-1)*100)+"%"},
+      {label:"장비",value:flat(gearMods.defense||0)},
+      {label:"기재",value:flat(artifactMods.defense||0)},
+      {label:"패시브·전직",value:flat((passive.defense||0)+(promotion.defense||0))},
+      {label:"연대기",value:flat(bonus.defense||0)},
+      {label:"코스튬",value:flat((costumeBonus.defense||0)+(costumePassive.defense||0))}
+    );
+    if(key==="hp")rows.push(
+      {label:"성급",value:starMult===1?"기본":percent((starMult-1)*100)},
+      {label:"장비·기재",value:percent((gearMods.hpPct||0)+(artifactMods.hpPct||0))},
+      {label:"패시브·전직",value:percent((passive.hpPct||0)+(promotion.hpPct||0))},
+      {label:"연대기",value:percent(bonus.hpPct||0)},
+      {label:"코스튬",value:percent((costumeBonus.hpPct||0)+(costumePassive.hpPct||0))}
+    );
+    if(key==="speed")rows.push(
+      {label:"장비·기재",value:percent((gearMods.speedPct||0)+(artifactMods.speedPct||0))},
+      {label:"패시브·전직",value:percent((passive.speedPct||0)+(promotion.speedPct||0))},
+      {label:"연대기",value:percent(bonus.speedPct||0)},
+      {label:"코스튬",value:percent((costumeBonus.speedPct||0)+(costumePassive.speedPct||0))}
+    );
+    if(key==="range")rows.push(
+      {label:"장비·기재",value:flat((gearMods.range||0)+(artifactMods.range||0))},
+      {label:"패시브·전직",value:flat((passive.range||0)+(promotion.range||0))},
+      {label:"코스튬",value:flat((costumeBonus.range||0)+(costumePassive.range||0))}
+    );
+    return rows.filter(x=>x.value!=="0" && x.value!=="0%" && x.value!=="+0" && x.value!=="+0%");
   };
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")onClose();};
