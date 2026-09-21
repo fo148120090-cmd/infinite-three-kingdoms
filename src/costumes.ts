@@ -44,28 +44,30 @@ export function skinCost(skin:Costume){
 }
 
 const costumeBonusByKey:Record<string,CostumeCombatBonus>={
-  base:{attack:0,defense:0,hpPct:1,speedPct:0,range:0,healPct:0,critPct:0},
-  beach:{attack:0,defense:0,hpPct:1,speedPct:1,range:0,healPct:0,critPct:0},
-  summer:{attack:1,defense:0,hpPct:1,speedPct:1,range:0,healPct:1,critPct:0},
-  "fur-winter":{attack:0,defense:2,hpPct:2,speedPct:0,range:0,healPct:0,critPct:0},
-  barbarian:{attack:3,defense:1,hpPct:2,speedPct:1,range:0,healPct:0,critPct:1},
-  bodysuit:{attack:1,defense:1,hpPct:1,speedPct:3,range:.1,healPct:0,critPct:2},
-  "monster-disguise":{attack:2,defense:2,hpPct:2,speedPct:1,range:0,healPct:1,critPct:1},
-  "light-hero":{attack:5,defense:3,hpPct:4,speedPct:2,range:.2,healPct:2,critPct:2},
-  "fallen-hero":{attack:6,defense:2,hpPct:3,speedPct:3,range:0,healPct:0,critPct:3}
+  // 코스튬은 밸런스 제한 없이 고성능 성장 요소로 사용한다.
+  // 전투 적용 단계에서도 동일하게 5배가 적용되므로, 데이터 자체도 5배 수치로 관리한다.
+  base:{attack:0,defense:0,hpPct:5,speedPct:0,range:0,healPct:0,critPct:0},
+  beach:{attack:0,defense:0,hpPct:5,speedPct:5,range:0,healPct:0,critPct:0},
+  summer:{attack:5,defense:0,hpPct:5,speedPct:5,range:0,healPct:5,critPct:0},
+  "fur-winter":{attack:0,defense:10,hpPct:10,speedPct:0,range:0,healPct:0,critPct:0},
+  barbarian:{attack:15,defense:5,hpPct:10,speedPct:5,range:0,healPct:0,critPct:5},
+  bodysuit:{attack:5,defense:5,hpPct:5,speedPct:15,range:.5,healPct:0,critPct:10},
+  "monster-disguise":{attack:10,defense:10,hpPct:10,speedPct:5,range:0,healPct:5,critPct:5},
+  "light-hero":{attack:25,defense:15,hpPct:20,speedPct:10,range:1,healPct:10,critPct:10},
+  "fallen-hero":{attack:30,defense:10,hpPct:15,speedPct:15,range:0,healPct:0,critPct:15}
 };
 export function costumeCombatBonus(id?:string):CostumeCombatBonus{
   const key=id? id.split("-").slice(1).join("-"):"base";
   const base=costumeBonusByKey[key]||costumeBonusByKey.base;
   // 코스튬 고유 전투 능력치는 기존 수치의 5배로 적용한다.
   return {
-    attack:base.attack*5,
-    defense:base.defense*5,
-    hpPct:base.hpPct*5,
-    speedPct:base.speedPct*5,
-    range:base.range*5,
-    healPct:base.healPct*5,
-    critPct:base.critPct*5
+    attack:base.attack,
+    defense:base.defense,
+    hpPct:base.hpPct,
+    speedPct:base.speedPct,
+    range:base.range,
+    healPct:base.healPct,
+    critPct:base.critPct
   };
 }
 export function ownedCostumeCombatBonus(ids:string[]=[]):CostumeCombatBonus{
