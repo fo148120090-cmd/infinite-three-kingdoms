@@ -1,7 +1,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Brain, ChevronRight, CirclePause, CirclePlay, Coins, Gem, Heart, Map as MapIcon, Package, RotateCcw, Shield, Sparkles, Swords, Trophy, UserPlus, UserRound, Zap } from "lucide-react";
-import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, type StatusEffect, type StatusEffectKind, uniqueItems } from "./dungeonData";
+import { cloneTendencies, createMonster, defaultTendencies, heroesSeed, randomGeneralItem, uniqueLootCopy, createRecruitHero, rollBattleLoot, type BattleUnit, type Hero, type Item, type Job, type RoomKind, type Tendencies, type StatusEffect, type StatusEffectKind, uniqueItems } from "./dungeonData";
 import { grantExperience, promotionActions, promotionForecast, promotionLabel, xpRequiredForLevel } from "./promotion";
 import { bondAfterBattle, decayMemories, relationshipFromMap, strongestBond } from "./relationships";
 import { applyLineage, applyMonsterPromotion, emptyLineage, evolutionActionBonus, evolutionHint, monsterEvolutionTrees, recordLineage } from "./monsterEvolution";
@@ -880,9 +880,11 @@ export default function App(){
       return;
     }
     if(kind==="treasure"){
+      const treasureRange=dungeonLevelRange(save.floor,save.sealCount||0);
+      const treasureLevel=treasureRange.max;
       const uniqueBase=uniqueItems[Math.floor(Math.random()*uniqueItems.length)];
-      const uniqueDrop=Math.random()<.12 ? {...uniqueBase,id:uniqueBase.id+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)} : undefined;
-      const item=uniqueDrop||randomGeneralItem(save.floor+2,partyPref);
+      const uniqueDrop=Math.random()<.12 ? uniqueLootCopy(uniqueBase,treasureLevel) : undefined;
+      const item=uniqueDrop||randomGeneralItem(treasureLevel,partyPref);
       const canStoreTreasure=save.items.length<MAX_WAREHOUSE_ITEMS;
       setSave(s=>({...s,items:canStoreTreasure?addWarehouseItems(s.items,[item]):s.items,gold:s.gold+180,routeMemory:recordRouteMemory(s.routeMemory,"treasure",true,180),stage:s.stage+1}));
       const recipient=save.heroes.filter(h=>save.party.includes(h.id)&&((h.artifacts||[]).length<4)).sort((a,b)=>b.tendencies.greed-a.tendencies.greed)[0];
