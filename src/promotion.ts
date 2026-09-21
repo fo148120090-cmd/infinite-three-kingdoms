@@ -79,7 +79,19 @@ function queuePromotion(next:Hero){
   const choices=choicesForTier(next,tier);
   return choices.length?{...next,promotionPending:{tier,choices:choices.map(x=>x.name)}}:next;
 }
-function promotionMultiplier(tier:number){return tier===1?{hp:1.12,attack:1.06,defense:1.06}:tier===2?{hp:1.10,attack:1.08,defense:1.08}:tier===3?{hp:1.15,attack:1.12,defense:1.12}:tier===4?{hp:1.18,attack:1.15,defense:1.15}:tier===5?{hp:1.22,attack:1.19,defense:1.19}:{hp:1.30,attack:1.25,defense:1.25};}
+function promotionMultiplier(tier:number,name:string){
+  const base=tier===1?{hp:1.12,attack:1.06,defense:1.06}:tier===2?{hp:1.10,attack:1.08,defense:1.08}:tier===3?{hp:1.15,attack:1.12,defense:1.12}:tier===4?{hp:1.18,attack:1.15,defense:1.15}:tier===5?{hp:1.22,attack:1.19,defense:1.19}:{hp:1.30,attack:1.25,defense:1.25};
+  const mods:Record<string,{hp:number;attack:number;defense:number}> = {
+    광전사:{hp:1,attack:1.05,defense:.98},기사:{hp:1.05,attack:1.01,defense:1.05},검투사:{hp:1,attack:1.03,defense:1.01},
+    철벽수호자:{hp:1.08,attack:.98,defense:1.08},가디언나이트:{hp:1.05,attack:1,defense:1.06},방패전사:{hp:1.03,attack:1.03,defense:1.02},
+    저격수:{hp:.99,attack:1.06,defense:.99},헌터:{hp:1,attack:1.04,defense:1},레인저:{hp:1.02,attack:1.01,defense:1.02},
+    엘리멘탈리스트:{hp:.98,attack:1.08,defense:.98},주술사:{hp:1.01,attack:1.02,defense:1.01},아케인메이지:{hp:.99,attack:1.06,defense:1},
+    힐러:{hp:1.05,attack:.98,defense:1.04},팔라딘:{hp:1.06,attack:1,defense:1.06},저지:{hp:1,attack:1.04,defense:1.01}
+  };
+  const compact=name.replace(/\s/g,"");
+  const m=mods[compact]||{hp:1,attack:1,defense:1};
+  return {hp:base.hp*m.hp,attack:base.attack*m.attack,defense:base.defense*m.defense};
+}
 function pushPromotion(next:Hero,tier:number,name:string,mults:{hp:number;attack:number;defense:number}){
   return {...next,promotionTier:tier,promotionPath:[...(next.promotionPath||[]),name],promotionPending:undefined,
     hp:Math.round(next.hp*mults.hp),attack:Math.round(next.attack*mults.attack),defense:Math.round(next.defense*mults.defense)};
@@ -87,14 +99,17 @@ function pushPromotion(next:Hero,tier:number,name:string,mults:{hp:number;attack
 export function promotionOptions(hero:Hero){
   const pending=hero.promotionPending;
   if(!pending)return [];
-  return choicesForTier(hero,pending.tier).filter(x=>pending.choices.includes(x.name)).map(x=>({name:x.name,detail:"성향 · "+x.keys.join(" · "),tier:pending.tier}));
+  return choicesForTier(hero,pending.tier).filter(x=>pending.choices.includes(x.name)).map(x=>{
+    const role=/기사|수호|방패|팔라딘|성기사|성전사|요새|바스티온|방벽|성벽/.test(x.name)?"생존 · 방어":/저격|사수|검투|결투|처형|전쟁|광전|학살|원소|대마도|대현자|심판|집행/.test(x.name)?"화력 · 공격":"기동 · 지원";
+    return {name:x.name,detail:role+" · 성향 "+x.keys.join(" · "),tier:pending.tier};
+  });
 }
 export function choosePromotion(hero:Hero,name:string){
   const pending=hero.promotionPending;
   if(!pending||!pending.choices.includes(name))return null;
   const choice=choicesForTier(hero,pending.tier).find(x=>x.name===name);
   if(!choice)return null;
-  return queuePromotion(pushPromotion(hero,pending.tier,name,promotionMultiplier(pending.tier)));
+  return queuePromotion(pushPromotion(hero,pending.tier,name,promotionMultiplier(pending.tier,name)));
 }
 function applyPromotion(h:Hero,_level:number){ return queuePromotion(h); }
 
