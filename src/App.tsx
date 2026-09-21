@@ -29,6 +29,7 @@ type BattlePlan = { key:"aggressive"|"defensive"|"focused"|"balanced"; label:str
 type BattleContext = { mode:BattleMode; objectiveKind?:DefenseObjective; objectiveHp:number; phase:number };
 
 const KEY = "autonomous-dungeon-demo-v1";
+const MAX_PARTY_SIZE = 5;
 const jobKo: Record<Job,string> = {Warrior:"전사",Guardian:"수호자",Archer:"궁수",Mage:"마법사",Cleric:"성직자"};
 const jobIcon: Record<Job,string> = {Warrior:"⚔️",Guardian:"🛡️",Archer:"🏹",Mage:"🔮",Cleric:"✚"};
 const roomIcon: Record<RoomKind,string> = {battle:"⚔",elite:"☠",treasure:"◆",rest:"🔥",event:"?",hidden:"◇",boss:"👑",evilCave:"🕳"};
@@ -220,7 +221,7 @@ function load(): Save {
       };
     }
   } catch {}
-  return {heroes:heroesSeed.map(({item,...h})=>({...h,maxHp:Math.max(1,Math.round(h.hp)),tendencies:cloneTendencies(h.tendencies),equipment:[],personality:buildPersonality(h),skinIds:[h.job.toLowerCase()+"-base"],equippedSkinId:h.job.toLowerCase()+"-base"})),party:heroesSeed.slice(0,4).map(h=>h.id),gold:2500,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false,sealCount:0};
+  return {heroes:heroesSeed.map(({item,...h})=>({...h,maxHp:Math.max(1,Math.round(h.hp)),tendencies:cloneTendencies(h.tendencies),equipment:[],personality:buildPersonality(h),skinIds:[h.job.toLowerCase()+"-base"],equippedSkinId:h.job.toLowerCase()+"-base"})),party:heroesSeed.slice(0,MAX_PARTY_SIZE).map(h=>h.id),gold:2500,floor:1,stage:0,items:[],monsterLineages:[],scenarioClears:{},partyMemory:defaultPartyMemory,routeMemory:{},worldSealed:false,sealCount:0};
 }
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
 const pct=(u:{hp:number;maxHp:number})=>u.maxHp?u.hp/u.maxHp:0;
@@ -1265,8 +1266,8 @@ export default function App(){
 
   const toggleParty=(id:string)=>{
     if(save.party.includes(id)){if(save.party.length===1)return;setSave(s=>({...s,party:s.party.filter(x=>x!==id)}));}
-    else if(save.party.length<4)setSave(s=>({...s,party:s.party.concat(id)}));
-    else notify("데모 파티 최대 4명");
+    else if(save.party.length<MAX_PARTY_SIZE)setSave(s=>({...s,party:s.party.concat(id)}));
+    else notify("데모 파티 최대 "+MAX_PARTY_SIZE+"명");
   };
   const recommendEquip=()=>{
     const picks=recommendedLoadout(hero,save.items);
@@ -1574,7 +1575,7 @@ export default function App(){
 
           <button className="fortress-zone zone-barracks" onClick={()=>setScreen("party")}>
             <span className="zone-icon"><UserRound size={21}/></span>
-            <span><small>BARRACKS</small><b>원정대 막사</b><em>{save.party.length}/4명 · 현재 전력 관리</em></span>
+            <span><small>BARRACKS</small><b>원정대 막사</b><em>{save.party.length}/{MAX_PARTY_SIZE}명 · 현재 전력 관리</em></span>
           </button>
           <button className="fortress-zone zone-forge" onClick={()=>setScreen("inventory")}>
             <span className="zone-icon"><Package size={21}/></span>
@@ -1638,7 +1639,7 @@ export default function App(){
       <div className="fortress-doctrine"><span className="eyebrow">FORTRESS DOCTRINE</span><b>준비는 요새에서, 판단은 전장에서.</b><small>파티와 장비를 준비한 뒤 출격하면 전투 행동은 AI가 수행합니다.</small></div>
     </section>}
 
-    {screen==="party"&&<section className="page management-page party-page"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>원정대 구성</h2><p className="muted">전투 전에만 편성과 장비를 변경할 수 있습니다.</p></div><span className="counter">{save.party.length}/4</span></div>
+    {screen==="party"&&<section className="page management-page party-page"><div className="section-head"><div><span className="eyebrow">CHARACTERS</span><h2>원정대 구성</h2><p className="muted">전투 전에만 편성과 장비를 변경할 수 있습니다.</p></div><span className="counter">{save.party.length}/{MAX_PARTY_SIZE}</span></div>
       <div className="party-grid">{save.heroes.map(h=><HeroCard key={h.id} hero={h} active={save.party.includes(h.id)} onClick={()=>{setSelectedHero(h.id);toggleParty(h.id)}} onStatus={()=>{setSelectedHero(h.id);setStatusHeroId(h.id)}}/>)}</div>
       <div className="subpanel party-command-strip"><div><b>현재 편성</b><span>{party.map(h=>jobIcon[h.job]+" "+h.name).join(" · ")||"편성된 파티 없음"}</span><small>출격 후 전투 행동은 AI가 자동으로 결정됩니다.</small></div><div className="party-command-actions"><button className="ghost-btn compact" onClick={()=>setScreen("inventory")}><Package size={15}/> 장비실</button><button className="primary-btn compact" onClick={()=>setScreen("dungeon")}><Swords size={16}/> 출격 준비</button></div></div><div className="character-equipment-panel">
         <div className="character-equipment-head">
