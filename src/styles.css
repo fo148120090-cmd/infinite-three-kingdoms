@@ -3444,3 +3444,22 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .battle-scene .battle-unit.enemy.boss-unit .unit-nameplate{max-width:106px;min-width:78px}
   .battle-scene .battle-unit.enemy.boss-unit .unit-nameplate b{font-size:10px}
 }
+
+
+/* 2026-09-21 monster grade hierarchy pass */
+.battle-scene .battle-unit.enemy .monster-asset-elite{
+  border-color:rgba(111,190,224,.62);
+  box-shadow:0 0 0 1px rgba(111,190,224,.12),0 0 18px rgba(70,150,205,.12),inset 0 1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.42);
+}
+.battle-scene .battle-unit.enemy .monster-asset-named{
+  border-color:rgba(190,151,231,.66);
+  box-shadow:0 0 0 1px rgba(190,151,231,.12),0 0 20px rgba(151,103,199,.14),inset 0 1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.42);
+}
+.battle-scene .battle-unit.enemy .monster-asset-elite>i{color:#9bdcf2;text-shadow:0 0 7px rgba(111,190,224,.48)}
+.battle-scene .battle-unit.enemy .monster-asset-named>i{color:#d8b9f4;text-shadow:0 0 8px rgba(190,151,231,.5)}
+.battle-scene .battle-unit.enemy .monster-asset-elite .monster-art-svg{filter:saturate(1.05) drop-shadow(0 0 5px rgba(111,190,224,.18))}
+.battle-scene .battle-unit.enemy .monster-asset-named .monster-art-svg{filter:saturate(1.08) drop-shadow(0 0 6px rgba(190,151,231,.2))}
+@media(max-width:650px){
+  .battle-scene .battle-unit.enemy .monster-asset-elite,
+  .battle-scene .battle-unit.enemy .monster-asset-named{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 16px rgba(0,0,0,.38)}
+}
