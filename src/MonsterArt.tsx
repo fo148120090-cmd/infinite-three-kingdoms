@@ -21,6 +21,7 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
   const silhouette=key==="Dragon"?"dragon":key==="Wolf"?"wolf":key==="Skeleton"?"undead":key==="Arachne"||key==="Darkworm"?"arachnid":key==="Demon"?"demon":key==="Orc"||key==="Uruk"?"brute":"humanoid";
   const isUruk=key==="Uruk", isArachne=key==="Arachne", isDemon=key==="Demon";
   const isGoblin=key==="Goblin", isKobold=key==="Kobold", isSlime=key==="Slime", isGnoll=key==="Gnoll", isLizardman=key==="Lizardman";
+  const isOrc=key==="Orc", isNaga=key==="Naga", isHarpy=key==="Harpy", isOgre=key==="Ogre", isSiren=key==="Siren";
   const boss=grade==="Boss", elite=grade==="Elite", named=grade==="Named";
   const frameColor=boss?"#f2c76d":elite?"#d6b86a":named?"#b9c8ff":"#64748b";
 
@@ -45,6 +46,12 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
 
     {isUruk ? <g fill={p.accent} stroke="#1b2230" strokeWidth="1.2"><path d="M18 27L11 8L25 17L32 10L39 17L53 8L46 27Z"/><path d="M21 24L26 15L32 23L38 15L43 24Z" fill={p.body}/></g> : isDemon ? <path d="M18 26L24 10L30 21L34 10L42 26" fill={p.accent} stroke="#1b2230" strokeWidth="1.4"/> : key==="Orc" ? <path d="M19 26L25 13L31 22L39 13L45 26" fill={p.accent} stroke="#1b2230" strokeWidth="1.2"/> : isGoblin ? <g fill={p.body} stroke="#1b2230" strokeWidth="1.3"><path d="M17 27L8 14L24 19L32 12L40 19L56 14L47 28Z"/><path d="M18 23L11 18L25 22M46 23L53 18L39 22" fill={p.accent}/></g> : isKobold ? <g fill={p.body} stroke="#1b2230" strokeWidth="1.3"><path d="M16 27L9 9L26 18L32 13L38 18L55 9L48 27Z"/><path d="M22 22L14 14M42 22L50 14" stroke={p.accent} strokeWidth="2"/></g> : isGnoll ? <g fill={p.body} stroke="#1b2230" strokeWidth="1.3"><path d="M14 27L12 15L22 19L32 11L42 19L52 15L50 28Z"/><path d="M20 25Q32 17 44 25" fill={p.accent}/></g> : isLizardman ? <g fill={p.body} stroke="#1b2230" strokeWidth="1.2"><path d="M14 29L18 12L28 18L32 9L36 18L46 12L50 29Z"/><path d="M19 24L45 24L40 29L24 29Z" fill={p.accent}/></g> : isSlime ? <g fill={p.body} stroke="#1b2230" strokeWidth="1.4"><path d="M12 49Q10 35 16 24Q23 13 32 17Q42 13 49 25Q55 36 52 49Q43 56 32 57Q21 56 12 49Z"/><path d="M20 25Q32 18 44 25Q38 31 32 30Q26 31 20 25Z" fill={p.accent} opacity=".7"/></g> : null}
     {isArachne&&<g fill="none" stroke={p.accent} strokeWidth="1.15" opacity=".9"><path d="M15 24Q32 11 49 24M11 34Q32 21 53 34M14 45Q32 32 50 45"/><path d="M32 18V50M20 20L44 48M44 20L20 48"/></g>}
+    {isOrc&&<g fill={p.accent} opacity=".85"><path d="M15 29L10 18L22 22L27 15L32 22L37 15L42 22L54 18L49 29Z"/></g>}
+    {isNaga&&<g fill="none" stroke={p.accent} strokeWidth="2"><path d="M17 43Q24 35 32 43T47 43"/><path d="M18 47Q25 40 32 47T46 47"/></g>}
+    {isHarpy&&<g fill={p.accent} stroke="#1b2230" strokeWidth="1"><path d="M19 31L5 20L12 36L22 38Z"/><path d="M45 31L59 20L52 36L42 38Z"/></g>}
+    {isOgre&&<g fill={p.accent} stroke="#1b2230" strokeWidth="1.2"><path d="M12 38Q18 31 25 34L27 44L17 47Z"/><path d="M52 38Q46 31 39 34L37 44L47 47Z"/></g>}
+    {isSiren&&<g fill="none" stroke={p.accent} strokeWidth="1.5" opacity=".9"><path d="M12 46Q22 37 32 46T52 46"/><path d="M16 51Q24 44 32 51T48 51"/></g>}
+
     <ellipse cx="24" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
     <ellipse cx="40" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
     {isArachne ? <g className="monster-eye-cluster" fill={p.eye}><circle cx="21" cy="31" r="1.4"/><circle cx="24" cy="29.5" r="1.4"/><circle cx="27" cy="31" r="1.4"/><circle cx="37" cy="31" r="1.4"/><circle cx="40" cy="29.5" r="1.4"/><circle cx="43" cy="31" r="1.4"/></g> : <><circle className="monster-eye-glow" cx="24" cy="33" r={boss?3:2.3} fill={p.eye}/><circle className="monster-eye-glow" cx="40" cy="33" r={boss?3:2.3} fill={p.eye}/></>}
