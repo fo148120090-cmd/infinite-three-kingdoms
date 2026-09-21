@@ -22,6 +22,7 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
   const isUruk=key==="Uruk", isArachne=key==="Arachne", isDemon=key==="Demon";
   const isGoblin=key==="Goblin", isKobold=key==="Kobold", isSlime=key==="Slime", isGnoll=key==="Gnoll", isLizardman=key==="Lizardman";
   const isOrc=key==="Orc", isNaga=key==="Naga", isHarpy=key==="Harpy", isOgre=key==="Ogre", isSiren=key==="Siren";
+  const isDarkworm=key==="Darkworm", isDragon=key==="Dragon", isWolf=key==="Wolf", isSkeleton=key==="Skeleton";
   const boss=grade==="Boss", elite=grade==="Elite", named=grade==="Named";
   const frameColor=boss?"#f2c76d":elite?"#d6b86a":named?"#b9c8ff":"#64748b";
 
@@ -51,6 +52,11 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
     {isHarpy&&<g fill={p.accent} stroke="#1b2230" strokeWidth="1"><path d="M19 31L5 20L12 36L22 38Z"/><path d="M45 31L59 20L52 36L42 38Z"/></g>}
     {isOgre&&<g fill={p.accent} stroke="#1b2230" strokeWidth="1.2"><path d="M12 38Q18 31 25 34L27 44L17 47Z"/><path d="M52 38Q46 31 39 34L37 44L47 47Z"/></g>}
     {isSiren&&<g fill="none" stroke={p.accent} strokeWidth="1.5" opacity=".9"><path d="M12 46Q22 37 32 46T52 46"/><path d="M16 51Q24 44 32 51T48 51"/></g>}
+    {isDarkworm&&<g fill="none" stroke={p.accent} strokeWidth="2"><path d="M11 39Q20 27 31 39T53 39"/><path d="M16 47Q25 35 36 47T52 42"/></g>}
+    {isDragon&&<g fill={p.accent} opacity=".8"><path d="M12 31L4 17L18 23L25 12L32 24L39 12L46 23L60 17L52 31Z"/></g>}
+    {isWolf&&<g fill={p.accent} opacity=".85"><path d="M12 43L7 31L19 35L25 28L32 35L39 28L45 35L57 31L52 43Z"/></g>}
+    {isSkeleton&&<g fill="none" stroke={p.accent} strokeWidth="1.4" opacity=".85"><path d="M20 38L44 38M19 43L45 43M22 48L42 48"/><path d="M24 37L23 50M32 37V51M40 37L41 50"/></g>}
+
 
     <ellipse cx="24" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
     <ellipse cx="40" cy="33" rx={isArachne?5.8:5} ry={isArachne?4.5:4} fill={key==="Skeleton"?"#d9d3bd":"#101522"}/>
