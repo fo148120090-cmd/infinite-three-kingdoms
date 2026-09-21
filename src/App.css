@@ -870,8 +870,8 @@ body{
     linear-gradient(180deg,rgba(9,10,16,.15),rgba(4,6,10,.65)),
     url("/backgrounds/battlefield.svg") center/cover no-repeat;
 }
-.battle-mode-raid .battle-sky-glow{background:radial-gradient(ellipse at 50% 20%,rgba(219,75,58,.18),transparent 44%)}
-.battle-mode-defense .battle-sky-glow{background:radial-gradient(ellipse at 50% 20%,rgba(84,130,201,.17),transparent 44%)}
+.battle-scene-raid .battle-sky-glow{background:radial-gradient(ellipse at 50% 20%,rgba(219,75,58,.18),transparent 44%)}
+.battle-scene-defense .battle-sky-glow{background:radial-gradient(ellipse at 50% 20%,rgba(84,130,201,.17),transparent 44%)}
 .battle-unit{z-index:4}
 .battle-unit .unit-token{
   position:relative;
