@@ -3412,3 +3412,35 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @media(prefers-reduced-motion:reduce){
   .battle-scene .battle-unit.enemy.boss-unit .monster-art-svg{animation:none!important}
 }
+
+
+/* 2026-09-21 battle nameplate readability pass */
+.battle-scene .battle-unit .unit-nameplate{
+  max-width:112px;
+  min-width:78px;
+  overflow:hidden;
+}
+.battle-scene .battle-unit .unit-nameplate b{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.battle-scene .battle-unit .unit-nameplate span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.battle-scene .battle-unit.enemy.boss-unit .unit-nameplate{
+  max-width:132px;
+  min-width:96px;
+}
+.battle-scene .battle-unit.enemy.boss-unit .unit-nameplate b{
+  font-size:12px;
+}
+@media(max-width:650px){
+  .battle-scene .battle-unit .unit-nameplate{max-width:88px;min-width:64px;padding:4px 6px}
+  .battle-scene .battle-unit .unit-nameplate b{font-size:10px}
+  .battle-scene .battle-unit .unit-nameplate span{font-size:8px}
+  .battle-scene .battle-unit.enemy.boss-unit .unit-nameplate{max-width:106px;min-width:78px}
+  .battle-scene .battle-unit.enemy.boss-unit .unit-nameplate b{font-size:10px}
+}
