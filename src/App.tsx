@@ -1548,7 +1548,7 @@ export default function App(){
         {challengeMode&&<div className="challenge-modal-backdrop" role="dialog" aria-modal="true">
           <div className="challenge-modal">
             <div className="challenge-modal-head"><div><span className="eyebrow">{challengeMode==="defense"?"DEFENSE FRONT":"BOSS RAID"}</span><h3>{challengeMode==="defense"?"방어전 도전 레벨":"보스 레이드 도전 레벨"}</h3><p>10레벨 단위로 도전 레벨을 직접 선택합니다.</p></div><button className="ghost-btn compact" onClick={()=>setChallengeMode(undefined)}>닫기</button></div>
-            <div className="challenge-level-grid">{challengeLevels().map(lv=><button key={lv} className={"challenge-level-btn "+(challengeLevel===lv?"selected":"")} onClick={()=>setChallengeLevel(lv)}><b>Lv.{lv}</b><small>{challengeMode==="defense"?"방어 웨이브":"보스 페이즈"} · 도전</small></button>)}</div>
+            <div className="challenge-level-grid">{challengeLevels().map(lv=><button key={lv} className={"challenge-level-btn "+(challengeLevel===lv?"selected":"")} onClick={()=>setChallengeLevel(lv)}><b>Lv.{lv}</b><small>적 Lv.{lv} · {challengeMode==="defense"?"방어 웨이브":"보스 페이즈"}</small></button>)}</div>
             <div className="challenge-modal-foot"><span>선택: <b>Lv.{challengeLevel}</b></span><button className="primary-btn" onClick={()=>startMode(challengeMode,challengeLevel)}>Lv.{challengeLevel} 도전 시작</button></div>
           </div>
         </div>}
