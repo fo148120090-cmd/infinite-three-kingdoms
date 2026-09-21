@@ -2,6 +2,7 @@ import type { Job } from "./dungeonData";
 
 export type CostumeTier="Normal"|"Rare"|"Unique";
 export type Costume={id:string;tier:CostumeTier;name:string;description:string;style:string;icon:string};
+export type CostumeCombatBonus={attack:number;defense:number;hpPct:number;speedPct:number;range:number;healPct:number;critPct:number};
 export type SkinTheme={background:string;primary:string;secondary:string;accent:string;motif:string};
 export type Skin=Costume;
 
@@ -37,9 +38,42 @@ export function costumeLabel(job:Job,id?:string):string{
 export const skinLabel=costumeLabel;
 
 export function skinCost(skin:Costume){
-  if(skin.id.endsWith("-base")||skin.tier==="Normal")return {gold:skin.id.endsWith("-base")?0:180,materials:skin.id.endsWith("-base")?0:0};
-  if(skin.tier==="Rare")return {gold:450,materials:35};
-  return {gold:1200,materials:110};
+  if(skin.id.endsWith("-base")||skin.tier==="Normal")return {gold:skin.id.endsWith("-base")?0:180};
+  if(skin.tier==="Rare")return {gold:800};
+  return {gold:2300};
+}
+
+const costumeBonusByKey:Record<string,CostumeCombatBonus>={
+  base:{attack:0,defense:0,hpPct:1,speedPct:0,range:0,healPct:0,critPct:0},
+  beach:{attack:0,defense:0,hpPct:1,speedPct:1,range:0,healPct:0,critPct:0},
+  summer:{attack:1,defense:0,hpPct:1,speedPct:1,range:0,healPct:1,critPct:0},
+  "fur-winter":{attack:0,defense:2,hpPct:2,speedPct:0,range:0,healPct:0,critPct:0},
+  barbarian:{attack:3,defense:1,hpPct:2,speedPct:1,range:0,healPct:0,critPct:1},
+  bodysuit:{attack:1,defense:1,hpPct:1,speedPct:3,range:.1,healPct:0,critPct:2},
+  "monster-disguise":{attack:2,defense:2,hpPct:2,speedPct:1,range:0,healPct:1,critPct:1},
+  "light-hero":{attack:5,defense:3,hpPct:4,speedPct:2,range:.2,healPct:2,critPct:2},
+  "fallen-hero":{attack:6,defense:2,hpPct:3,speedPct:3,range:0,healPct:0,critPct:3}
+};
+export function costumeCombatBonus(id?:string):CostumeCombatBonus{
+  const key=id? id.split("-").slice(1).join("-"):"base";
+  return costumeBonusByKey[key]||costumeBonusByKey.base;
+}
+export function ownedCostumeCombatBonus(ids:string[]=[]):CostumeCombatBonus{
+  const total:CostumeCombatBonus={attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0,critPct:0};
+  ids.forEach(id=>{const b=costumeCombatBonus(id);(Object.keys(total) as (keyof CostumeCombatBonus)[]).forEach(k=>total[k]+=b[k]);});
+  return total;
+}
+export function costumeStatLabels(ids:string[]=[]){
+  const b=ownedCostumeCombatBonus(ids);
+  return [
+    b.attack?"공격 +"+b.attack:undefined,
+    b.defense?"방어 +"+b.defense:undefined,
+    b.hpPct?"HP +"+b.hpPct+"%":undefined,
+    b.speedPct?"속도 +"+b.speedPct+"%":undefined,
+    b.range?"사거리 +"+b.range:undefined,
+    b.healPct?"치유 +"+b.healPct+"%":undefined,
+    b.critPct?"치명타 +"+b.critPct+"%":undefined
+  ].filter((x):x is string=>!!x);
 }
 export function skinVisual(id?:string){
   if(!id)return "♙";
@@ -63,5 +97,5 @@ export function skinTheme(id?:string):SkinTheme{
 }
 export function skinUnlockText(skin:Costume){
   const cost=skinCost(skin);
-  return cost.gold===0?"기본 지급":cost.gold+"G"+(cost.materials?" · "+cost.materials+" 자원":"");
+  return cost.gold===0?"기본 지급":cost.gold+"G";
 }
