@@ -2704,3 +2704,49 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
     animation:none!important;
   }
 }
+
+
+/* monster attack release: actual combat event */
+.battle-scene .battle-unit.enemy.fx-damage .monster-art-svg{
+  animation:monster-attack-release .34s ease-out both;
+  transform-origin:50% 72%;
+}
+.battle-scene .battle-unit.enemy.fx-critical .monster-art-svg{
+  animation:monster-attack-release-critical .44s ease-out both;
+  transform-origin:50% 72%;
+}
+.battle-scene .battle-unit.enemy.fx-damage .monster-asset,
+.battle-scene .battle-unit.enemy.fx-critical .monster-asset{
+  filter:brightness(1.12) drop-shadow(0 0 9px rgba(238,110,91,.34));
+}
+.battle-scene .battle-unit.enemy.fx-critical .monster-asset{
+  filter:brightness(1.2) drop-shadow(0 0 13px rgba(255,190,92,.5));
+}
+.battle-scene .battle-unit.enemy.fx-damage .monster-style-badge,
+.battle-scene .battle-unit.enemy.fx-critical .monster-style-badge{
+  animation:monster-release-badge .34s ease-out both;
+}
+@keyframes monster-attack-release{
+  0%{transform:translateY(0) scale(1)}
+  22%{transform:translateY(-5px) scale(1.08)}
+  48%{transform:translateY(2px) scale(.96)}
+  100%{transform:translateY(0) scale(1)}
+}
+@keyframes monster-attack-release-critical{
+  0%{transform:translateY(0) scale(1) rotate(0)}
+  20%{transform:translateY(-7px) scale(1.12) rotate(-1deg)}
+  45%{transform:translateY(2px) scale(.94) rotate(1deg)}
+  72%{transform:translateY(-1px) scale(1.03)}
+  100%{transform:translateY(0) scale(1) rotate(0)}
+}
+@keyframes monster-release-badge{
+  0%,100%{transform:translateY(0);opacity:.78}
+  35%{transform:translateY(-2px);opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+  .battle-scene .battle-unit.enemy.fx-damage .monster-art-svg,
+  .battle-scene .battle-unit.enemy.fx-critical .monster-art-svg,
+  .battle-scene .battle-unit.enemy.fx-damage .monster-style-badge,
+  .battle-scene .battle-unit.enemy.fx-critical .monster-style-badge{animation:none}
+}
+
