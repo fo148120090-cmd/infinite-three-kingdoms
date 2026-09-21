@@ -1168,14 +1168,17 @@ export default function App(){
       const floorRewardMultiplier=1+Math.max(0,rewardRange.floor-1)*.04;
       const enemyCount=battle.units.filter(u=>u.team==="enemy").length;
       const rewardProgressMultiplier=worldRewardMultiplier*floorRewardMultiplier;
-      const baseGold=Math.round((180+enemyCount*55+(isBoss?900:0)+(isFinal?1800:0))*rewardProgressMultiplier);
-      const baseMaterials=Math.round((isFinal?100:isBoss?60:18)*worldMaterialMultiplier*floorRewardMultiplier);
+      const challengeTier=battle.mode==="defense"||battle.mode==="raid"?Math.max(1,Math.floor(((battle.units.find(u=>u.team==="enemy")?.level||save.floor*5))/10)):0;
+      const challengeRewardMultiplier=challengeTier?1+Math.max(0,challengeTier-1)*.12:1;
+      const baseGold=Math.round((180+enemyCount*55+(isBoss?900:0)+(isFinal?1800:0))*rewardProgressMultiplier*challengeRewardMultiplier);
+      const baseMaterials=Math.round((isFinal?100:isBoss?60:18)*worldMaterialMultiplier*floorRewardMultiplier*challengeRewardMultiplier);
       // 경험치도 현재 회차/층의 적 레벨을 기준으로 상승시켜, 2회차 이후에도 성장 속도가 자연스럽게 이어지도록 한다.
       // 기본 경험치는 레벨의 65%를 추가하고, 정예/보스 보너스는 기존 역할을 유지한다.
       const levelExpBonus=Math.round(rewardRange.max*.65);
       const expBase=30+levelExpBonus+(isElite?20:0)+(isBoss?80:0)+(isFinal?120:0);
       const exp=Math.max(8,Math.round(expBase*(isRepeat?.9:1)));
-      const experienceGain=victory?exp:Math.max(8,Math.round(exp*.7));
+      const challengeExpBonus=battle.mode==="defense"||battle.mode==="raid"?Math.round(exp*Math.max(0,challengeTier-1)*.1):0;
+      const experienceGain=victory?exp+challengeExpBonus:Math.max(8,Math.round((exp+challengeExpBonus)*.7));
       const rewardItemLevel=rewardRange.max+(isBoss?2:0);
       const loot=victory?rollBattleLoot(Math.max(1,rewardItemLevel),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
       const storedLoot=victory?loot.slice(0,Math.max(0,MAX_WAREHOUSE_ITEMS-s.items.length)):[];
