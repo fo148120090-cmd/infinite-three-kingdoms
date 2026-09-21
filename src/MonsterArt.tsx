@@ -25,10 +25,13 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
   const isDarkworm=key==="Darkworm", isDragon=key==="Dragon", isWolf=key==="Wolf", isSkeleton=key==="Skeleton";
   const boss=grade==="Boss", elite=grade==="Elite", named=grade==="Named";
   const frameColor=boss?"#f2c76d":elite?"#d6b86a":named?"#b9c8ff":"#64748b";
+  const gradeLabel=boss?"BOSS":elite?"ELITE":named?"NAMED":"";
+  const gradeFill=boss?"#8b2735":elite?"#73561f":"#31466f";
 
   return <svg className={"monster-art-svg monster-art-"+key.toLowerCase()+" monster-art-grade-"+String(grade).toLowerCase()} width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={species+" monster"}>
     <defs><linearGradient id="monsterGlow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={p.accent}/><stop offset="1" stopColor={p.body}/></linearGradient></defs>
     <circle cx="32" cy="32" r={boss?30:elite?29:named?28:27} fill="none" stroke={frameColor} strokeWidth={boss?2.2:elite?1.8:named?1.5:1} opacity={boss?.95:elite?.85:named?.72:.42}/>
+    <circle cx="32" cy="32" r={boss?27.5:elite?26.5:named?25.5:24.5} fill="none" stroke={p.accent} strokeWidth=".45" opacity={boss?.28:elite?.22:named?.18:.12}/>
     {boss&&<circle cx="32" cy="32" r="25" fill="none" stroke="#fff0b0" strokeWidth=".7" strokeDasharray="2 3" opacity=".8"/>}
     {elite&&<path d="M9 32h6M49 32h6M32 9v6M32 49v6" stroke="#e8c978" strokeWidth="1.8" strokeLinecap="round"/>}
     {named&&<path d="M13 13l5 5M51 13l-5 5M13 51l5-5M51 51l-5-5" stroke="#c9d5ff" strokeWidth="1.5" strokeLinecap="round"/>}
@@ -75,5 +78,12 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
     {boss&&!(isUruk||isArachne||isDemon)&&<path d="M16 17L21 5L29 14L35 4L43 14L49 5L50 22" fill="none" stroke="#e5c46d" strokeWidth="2.4" strokeLinejoin="round"/>}
     {boss&&<path d="M18 57 Q32 61 46 57" fill="none" stroke="#f2c76d" strokeWidth="1.8" opacity=".8"/>}
     <path d="M17 52 Q32 47 47 52" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="2"/>
+    {gradeLabel&&<g aria-hidden="true">
+      <rect x="21" y="54" width="22" height="7" rx="2" fill={gradeFill} stroke={frameColor} strokeWidth=".55" opacity=".96"/>
+      <text x="32" y="59.2" textAnchor="middle" fontSize="4.2" fontWeight="700" letterSpacing=".55" fill="#fff7dc">{gradeLabel}</text>
+    </g>}
+    {boss&&<g aria-hidden="true" fill="none" stroke="#fff0b0" strokeWidth=".65" opacity=".65">
+      <path d="M8 23L11 20M56 23L53 20M8 41L11 44M56 41L53 44"/>
+    </g>}
   </svg>;
 }
