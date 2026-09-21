@@ -2273,3 +2273,13 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 @keyframes monster-buff-react{0%,100%{transform:translateY(1px)}50%{transform:translateY(-2px) scale(1.03)}}
 @keyframes monster-debuff-react{0%,100%{opacity:1}50%{opacity:.58;filter:saturate(.65) brightness(.8)}}
 @media(prefers-reduced-motion:reduce){.monster-art-svg,.monster-aura-ring,.monster-eye-glow{animation:none!important}}
+
+
+/* 2026-09-21 monster silhouette polish */
+.monster-silhouette-dragon{filter:drop-shadow(0 0 7px rgba(255,116,62,.2))}
+.monster-silhouette-arachnid{filter:drop-shadow(0 0 7px rgba(190,112,220,.18))}
+.monster-silhouette-undead{filter:drop-shadow(0 0 6px rgba(137,220,255,.16))}
+.monster-art-dragon .monster-aura-ring{animation-duration:1.15s}
+.monster-art-arachne .monster-aura-ring{animation-duration:1.45s}
+.monster-art-skeleton .monster-aura-ring{stroke-dasharray:3 4;animation-duration:2.1s}
+.monster-art-wolf .monster-eye-glow{filter:drop-shadow(0 0 4px currentColor)}
