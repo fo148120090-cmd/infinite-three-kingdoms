@@ -2618,3 +2618,35 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .monster-art-skeleton .monster-aura{filter:drop-shadow(0 0 5px rgba(217,211,189,.28))}
 .monster-art-dragon .monster-eye-glow{filter:drop-shadow(0 0 5px rgba(255,225,107,.75))}
 .monster-art-skeleton .monster-eye-glow{filter:drop-shadow(0 0 5px rgba(143,240,255,.75))}
+
+
+/* 2026-09-21 monster combat identity pass */
+.monster-style-badge{
+  display:block;
+  width:max-content;
+  max-width:170px;
+  margin:2px auto 0;
+  padding:2px 6px;
+  border:1px solid rgba(154,176,205,.2);
+  border-radius:999px;
+  background:rgba(9,12,20,.62);
+  color:rgba(194,207,225,.72);
+  font-size:7px;
+  line-height:1.25;
+  letter-spacing:.015em;
+  white-space:nowrap;
+}
+.monster-style-badge i{font-style:normal;color:rgba(235,190,105,.72)}
+.battle-scene.battle-active-enemy .battle-unit.active-unit.enemy .monster-style-badge{
+  border-color:rgba(235,190,105,.38);
+  color:rgba(245,220,166,.94);
+  box-shadow:0 0 9px rgba(235,190,105,.08);
+}
+.battle-scene.battle-active-species-dragon .monster-style-badge{border-color:rgba(255,137,91,.3)}
+.battle-scene.battle-active-species-spider .monster-style-badge{border-color:rgba(214,168,235,.3)}
+.battle-scene.battle-active-species-demon .monster-style-badge{border-color:rgba(255,111,111,.32)}
+.battle-scene.battle-active-species-beast .monster-style-badge{border-color:rgba(190,215,245,.28)}
+.battle-scene.battle-active-species-undead .monster-style-badge{border-color:rgba(145,226,255,.28)}
+.battle-scene.battle-active-species-orc .monster-style-badge{border-color:rgba(255,188,93,.3)}
+@media(max-width:720px){.monster-style-badge{max-width:145px;font-size:6.5px;padding:2px 5px}}
+@media(prefers-reduced-motion:reduce){.monster-style-badge{animation:none!important}}
