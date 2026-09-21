@@ -183,10 +183,41 @@ const extraUniqueItems: Item[] = [
   {id:"dead-mans-ring",name:"망자의 반지",slot:"ring",level:10,rarity:"신화",stats:["방어력 +12","최대 HP +14%","치유량 +12%"],aiMods:{survival:20,caution:22,protect:12},combatMods:{defense:12,hpPct:14,healPct:12},unique:true,description:"치명적인 상황에서 생존과 회복 행동을 크게 중시한다."}
 ];
 
+const massUniqueItems: Item[] = [
+{id:"crimson-fang",name:"홍련의 송곳니",slot:"weapon",level:12,rarity:"전설",stats:["공격력 +26","치명타 +8%","공격 속도 +5%"],aiMods:{aggression:24,pursuit:20,bravery:12},combatMods:{attack:26,critPct:8,speedPct:5},unique:true,description:"공격과 추격을 이어가는 전사의 무기."},
+{id:"frost-edge",name:"서리의 칼날",slot:"weapon",level:16,rarity:"전설",stats:["공격력 +29","사거리 +0.3","공격 속도 +6%"],aiMods:{focus:18,caution:12,pursuit:16},combatMods:{attack:29,range:.3,speedPct:6},unique:true,description:"거리를 유지하며 정확한 공격을 반복한다."},
+{id:"thunder-maul",name:"천둥의 철퇴",slot:"weapon",level:18,rarity:"고대",stats:["공격력 +38","방어력 +8","최대 HP +9%"],aiMods:{aggression:28,bravery:22,cooperation:8},combatMods:{attack:38,defense:8,hpPct:9},unique:true,description:"강한 일격으로 전열을 무너뜨리는 중병기."},
+{id:"moonbow",name:"월광의 장궁",slot:"weapon",level:15,rarity:"전설",stats:["공격력 +27","사거리 +1.0","치명타 +10%"],aiMods:{focus:30,caution:16,pursuit:18},combatMods:{attack:27,range:1,critPct:10},unique:true,description:"먼 거리에서 약점을 찾아 마무리한다."},
+{id:"starfall-grimoire",name:"성운의 마도서",slot:"weapon",level:20,rarity:"고대",stats:["공격력 +42","사거리 +0.7","치유량 +6%"],aiMods:{focus:32,curiosity:30,cooperation:12},combatMods:{attack:42,range:.7,healPct:6},unique:true,description:"전장의 흐름을 읽고 강력한 마법을 선택한다."},
+{id:"dragonheart-blade",name:"용심의 검",slot:"weapon",level:25,rarity:"신화",stats:["공격력 +52","최대 HP +12%","공격 속도 +8%"],aiMods:{aggression:30,bravery:24,pursuit:24},combatMods:{attack:52,hpPct:12,speedPct:8},unique:true,description:"용의 심장처럼 맹렬한 힘을 내뿜는 궁극의 대검."},
+{id:"ironbark-armor",name:"철목의 갑주",slot:"armor",level:12,rarity:"전설",stats:["방어력 +30","최대 HP +18%"],aiMods:{survival:28,caution:22,protect:24},combatMods:{defense:30,hpPct:18},unique:true,description:"단단한 외피처럼 피해를 견딘다."},
+{id:"phantom-mail",name:"환영의 경갑",slot:"armor",level:16,rarity:"전설",stats:["방어력 +24","공격 속도 +7%","사거리 +0.2"],aiMods:{caution:24,survival:18,pursuit:14},combatMods:{defense:24,speedPct:7,range:.2},unique:true,description:"기동성을 잃지 않으면서 방어력을 확보한다."},
+{id:"bastion-plate",name:"철벽의 판금",slot:"armor",level:20,rarity:"고대",stats:["방어력 +44","최대 HP +24%"],aiMods:{protect:34,survival:30,bravery:10},combatMods:{defense:44,hpPct:24},unique:true,description:"아군의 방패가 되어 피해를 받아낸다."},
+{id:"windrunner-cloak",name:"질풍의 망토",slot:"armor",level:18,rarity:"고대",stats:["방어력 +22","공격 속도 +10%","사거리 +0.5"],aiMods:{pursuit:28,caution:18,focus:16},combatMods:{defense:22,speedPct:10,range:.5},unique:true,description:"빠른 이동과 공격을 중시한다."},
+{id:"abyssal-shell",name:"심연의 껍질",slot:"armor",level:25,rarity:"신화",stats:["방어력 +55","최대 HP +30%"],aiMods:{survival:38,caution:30,protect:20},combatMods:{defense:55,hpPct:30},unique:true,description:"심연의 압력을 견디는 최상위 방어구."},
+{id:"oracle-ring",name:"예언자의 반지",slot:"ring",level:13,rarity:"전설",stats:["사거리 +0.6","치명타 +8%","집중력 +24"],aiMods:{focus:34,curiosity:26,caution:12},combatMods:{range:.6,critPct:8},unique:true,description:"전개의 흐름을 읽어 정확한 행동을 선택한다."},
+{id:"berserker-band",name:"광전사의 팔찌",slot:"ring",level:15,rarity:"전설",stats:["공격력 +24","공격 속도 +9%"],aiMods:{aggression:34,bravery:24,survival:-10},combatMods:{attack:24,speedPct:9},unique:true,description:"방어보다 공격을 우선한다."},
+{id:"lifebloom-ring",name:"생명의 꽃반지",slot:"ring",level:17,rarity:"고대",stats:["방어력 +20","최대 HP +20%","치유량 +18%"],aiMods:{protect:32,cooperation:28,survival:24},combatMods:{defense:20,hpPct:20,healPct:18},unique:true,description:"회복과 동료 보호를 강화한다."},
+{id:"void-signet",name:"공허의 인장",slot:"ring",level:22,rarity:"고대",stats:["공격력 +30","사거리 +0.8","치명타 +12%"],aiMods:{focus:36,curiosity:24,pursuit:22},combatMods:{attack:30,range:.8,critPct:12},unique:true,description:"공허의 힘으로 약점을 꿰뚫는다."},
+{id:"phoenix-ring",name:"불사조의 반지",slot:"ring",level:25,rarity:"신화",stats:["방어력 +28","최대 HP +28%","치유량 +22%"],aiMods:{survival:34,bravery:20,protect:30},combatMods:{defense:28,hpPct:28,healPct:22},unique:true,description:"쓰러지지 않는 생명력을 상징한다."},
+{id:"tactician-lens",name:"전술가의 렌즈",slot:"accessory",level:11,rarity:"전설",stats:["공격력 +20","사거리 +0.7"],aiMods:{focus:30,curiosity:22,cooperation:20},combatMods:{attack:20,range:.7},unique:true,description:"전장의 위치와 목표를 정교하게 계산한다."},
+{id:"guardian-talisman",name:"수호신의 부적",slot:"accessory",level:14,rarity:"전설",stats:["방어력 +22","최대 HP +15%"],aiMods:{protect:40,cooperation:32,survival:20},combatMods:{defense:22,hpPct:15},unique:true,description:"위험한 동료를 즉시 보호한다."},
+{id:"mana-prism",name:"마력의 프리즘",slot:"accessory",level:19,rarity:"고대",stats:["공격력 +34","사거리 +0.9","치유량 +10%"],aiMods:{focus:34,curiosity:34,cooperation:10},combatMods:{attack:34,range:.9,healPct:10},unique:true,description:"마력을 증폭해 공격과 지원을 함께 강화한다."},
+{id:"fortune-charm",name:"행운의 부적",slot:"accessory",level:21,rarity:"고대",stats:["공격력 +25","치명타 +15%"],aiMods:{greed:38,curiosity:24,pursuit:18},combatMods:{attack:25,critPct:15},unique:true,description:"희귀한 기회를 놓치지 않는 탐험가의 부적."},
+{id:"worldtree-seed",name:"세계수의 씨앗",slot:"accessory",level:28,rarity:"신화",stats:["방어력 +36","최대 HP +35%","치유량 +20%"],aiMods:{survival:34,protect:34,cooperation:28},combatMods:{defense:36,hpPct:35,healPct:20},unique:true,description:"세계수의 생명력이 깃든 최상위 성장형 장비."},
+{id:"black-sun",name:"검은 태양의 핵",slot:"accessory",level:30,rarity:"신화",stats:["공격력 +58","사거리 +1.0","치명타 +16%"],aiMods:{aggression:30,focus:34,bravery:18},combatMods:{attack:58,range:1,critPct:16},unique:true,description:"전장의 모든 시선을 끌어들이는 초월적 핵."},
+{id:"ancient-crown",name:"태고의 왕관",slot:"accessory",level:32,rarity:"신화",stats:["공격력 +40","방어력 +32","최대 HP +20%"],aiMods:{bravery:26,cooperation:30,focus:28},combatMods:{attack:40,defense:32,hpPct:20},unique:true,description:"고대 왕들의 권능을 이어받은 왕관."},
+{id:"dawn-medallion",name:"여명의 메달",slot:"accessory",level:15,rarity:"고대",stats:["공격력 +23","방어력 +18","최대 HP +14%"],aiMods:{bravery:18,cooperation:24,survival:18},combatMods:{attack:23,defense:18,hpPct:14},unique:true,description:"새로운 전투를 시작하는 용사의 상징."},
+{id:"nightveil",name:"밤의 장막",slot:"armor",level:23,rarity:"고대",stats:["방어력 +26","사거리 +0.6","공격 속도 +8%"],aiMods:{caution:32,pursuit:20,focus:24},combatMods:{defense:26,range:.6,speedPct:8},unique:true,description:"어둠 속에서 적의 시선을 피하며 공격한다."},
+{id:"kingbreaker",name:"왕을 부수는 창",slot:"weapon",level:27,rarity:"신화",stats:["공격력 +60","치명타 +14%"],aiMods:{aggression:34,pursuit:32,bravery:18},combatMods:{attack:60,critPct:14},unique:true,description:"강대한 적을 추격하고 마무리하는 신화의 창."},
+{id:"seraph-wings",name:"세라프의 날개",slot:"armor",level:29,rarity:"신화",stats:["방어력 +34","공격 속도 +12%","치유량 +16%"],aiMods:{bravery:22,cooperation:30,protect:28},combatMods:{defense:34,speedPct:12,healPct:16},unique:true,description:"빛의 수호자가 남긴 초월적 전투 장비."}
+];
+
 export const uniqueItems: Item[] = [
   ...heroesSeed.map(h=>h.item).filter((x):x is Item=>!!x),
   ...extraUniqueItems,
-  ...expandedUniqueItems
+  ...expandedUniqueItems,
+  ...massUniqueItems
 ];
 
 export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies>): Item {
