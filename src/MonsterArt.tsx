@@ -53,6 +53,9 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
     {isOgre&&<g fill={p.accent} stroke="#1b2230" strokeWidth="1.2"><path d="M12 38Q7 29 15 25Q24 27 27 38L20 48Z"/><path d="M52 38Q57 29 49 25Q40 27 37 38L44 48Z"/><path d="M22 24Q32 16 42 24L38 31L26 31Z"/></g>}
     {isSiren&&<g fill="none" stroke={p.accent} strokeWidth="1.5" opacity=".9"><path d="M10 35Q20 25 30 35T54 34"/><path d="M12 42Q23 32 33 42T52 40"/><path d="M17 49Q27 40 36 49T49 46"/></g>}
     {isDarkworm&&<g fill="none" stroke={p.accent} strokeWidth="2"><path d="M7 32Q15 20 25 31T43 30T57 23"/><path d="M9 42Q19 30 29 41T47 38T56 32"/><circle cx="52" cy="27" r="3" fill={p.eye} stroke="none"/></g>}
+    {isSlime&&<g fill="none" stroke={p.accent} strokeWidth="1.4" opacity=".9"><circle cx="19" cy="38" r="4"/><circle cx="45" cy="41" r="5"/><circle cx="50" cy="27" r="2.5"/><path d="M22 49Q32 42 42 49"/></g>}
+    {isOrc&&<g fill="none" stroke={p.accent} strokeWidth="1.5"><path d="M18 31L22 47M46 31L42 47M22 38L42 38"/><path d="M24 44Q32 49 40 44"/></g>}
+    {isNaga&&<g fill={p.accent} opacity=".75"><path d="M20 28Q25 18 32 21Q39 18 44 28L40 34L24 34Z"/><path d="M23 37Q32 31 41 37L37 41L27 41Z"/></g>}
     {isDragon&&<g fill={p.accent} opacity=".8"><path d="M12 31L4 17L18 23L25 12L32 24L39 12L46 23L60 17L52 31Z"/></g>}
     {isWolf&&<g fill={p.accent} opacity=".85"><path d="M12 43L7 31L19 35L25 28L32 35L39 28L45 35L57 31L52 43Z"/></g>}
     {isSkeleton&&<g fill="none" stroke={p.accent} strokeWidth="1.4" opacity=".85"><path d="M20 38L44 38M19 43L45 43M22 48L42 48"/><path d="M24 37L23 50M32 37V51M40 37L41 50"/></g>}
