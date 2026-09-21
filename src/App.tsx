@@ -1107,10 +1107,14 @@ export default function App(){
       const rewardItemLevel=rewardRange.max+(isBoss?2:0);
       const loot=victory?rollBattleLoot(Math.max(1,rewardItemLevel),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
       const storedLoot=victory?loot.slice(0,Math.max(0,MAX_WAREHOUSE_ITEMS-s.items.length)):[];
+      const overflowLoot=victory?loot.slice(storedLoot.length):[];
+      // 창고가 가득 찬 경우 전리품을 완전히 버리지 않고 희귀도에 따라 골드로 전환한다.
+      // 기존 창고 한도와 드랍 수에는 영향을 주지 않아 경제 변동을 작게 유지한다.
+      const overflowGold=overflowLoot.reduce((sum,item)=>sum+({고급:75,희귀:120,영웅:200,전설:350,신화:500}[item.rarity]||60),0);
       const routeLearning=battle.mode==="dungeon"&&!isRepeat&&(battle.room==="battle"||battle.room==="elite"||battle.room==="boss"||battle.room==="evilCave");
       if(victory) setLastLoot(storedLoot);
       if(victory&&storedLoot.length) window.setTimeout(()=>notify("전리품 획득 · "+storedLoot.map(x=>x.name).join(" · ")),0);
-      if(victory&&loot.length>storedLoot.length) window.setTimeout(()=>notify("창고가 가득 차 "+(loot.length-storedLoot.length)+"개 전리품은 보관하지 못했습니다."),0);
+      if(victory&&overflowLoot.length) window.setTimeout(()=>notify("창고가 가득 차 "+overflowLoot.length+"개 전리품을 골드로 전환했습니다. +"+overflowGold+"G"),0);
       let nextHeroes=s.heroes.map(h=>{
         if(!s.party.includes(h.id))return h;
         return buildHero(bonded.find(x=>x.id===h.id)||h,battle.units.find(u=>u.id===h.id),victory,statsById[h.id],experienceGain);
@@ -1119,7 +1123,7 @@ export default function App(){
         progressionNotices.push("성장 후보 · "+battleGrowthReward.name);
       }
       return {...s,
-        gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier):0),
+        gold:s.gold+(victory?Math.round(baseGold*rewardMultiplier)+overflowGold:0),
         materials:s.materials+(victory?Math.max(5,Math.round(baseMaterials*rewardMultiplier)):0),
         items:victory?addWarehouseItems(s.items,storedLoot):s.items,
         scenarioClears,
