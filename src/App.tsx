@@ -1088,11 +1088,18 @@ export default function App(){
       if(victory&&battle.room==="boss")scenarioClears[String(s.floor)]=(scenarioClears[String(s.floor)]||0)+1;
       if(victory&&isRepeat)scenarioClears[String(battle.repeatScenarioFloor)]=(scenarioClears[String(battle.repeatScenarioFloor)]||1)+1;
       const rewardMultiplier=isRepeat?(battle.rewardMultiplier||.6):1;
-      const baseGold=180+battle.units.filter(u=>u.team==="enemy").length*55+(isBoss?900:0)+(isFinal?1800:0);
-      const baseMaterials=isFinal?100:isBoss?60:18;
+      // 세계 회차가 올라가도 전리품과 기본 보상이 이전 회차 기준으로 되돌아가지 않도록
+      // 현재 던전 적 레벨 구간을 보상 기준으로 함께 사용한다.
+      const rewardRange=dungeonLevelRange(s.floor,s.sealCount||0);
+      const worldRewardMultiplier=1+Math.max(0,rewardRange.worldRound-1)*.35;
+      const worldMaterialMultiplier=1+Math.max(0,rewardRange.worldRound-1)*.25;
+      const enemyCount=battle.units.filter(u=>u.team==="enemy").length;
+      const baseGold=Math.round((180+enemyCount*55+(isBoss?900:0)+(isFinal?1800:0))*worldRewardMultiplier);
+      const baseMaterials=Math.round((isFinal?100:isBoss?60:18)*worldMaterialMultiplier);
       const exp=Math.max(8,Math.round((30+(isElite?20:0)+(isBoss?80:0)+(isFinal?120:0))*(isRepeat?.9:1)));
       const experienceGain=victory?exp:Math.max(8,Math.round(exp*.7));
-      const loot=victory?rollBattleLoot(Math.max(1,s.floor+(isBoss?2:0)),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
+      const rewardItemLevel=rewardRange.max+(isBoss?2:0);
+      const loot=victory?rollBattleLoot(Math.max(1,rewardItemLevel),battle.room,partyPreference(s.party.map(id=>s.heroes.find(h=>h.id===id)).filter((h):h is Hero=>!!h) as Hero[]),rewardMultiplier):[];
       const storedLoot=victory?loot.slice(0,Math.max(0,MAX_WAREHOUSE_ITEMS-s.items.length)):[];
       const routeLearning=battle.mode==="dungeon"&&!isRepeat&&(battle.room==="battle"||battle.room==="elite"||battle.room==="boss"||battle.room==="evilCave");
       if(victory) setLastLoot(storedLoot);
