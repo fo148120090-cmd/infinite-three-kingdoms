@@ -1804,3 +1804,9 @@ body{
 .dungeon-page .route-card{background:linear-gradient(145deg,rgba(19,29,44,.92),rgba(10,16,25,.94)),url("https://opengameart.org/sites/default/files/dungeon.png") center/cover; background-blend-mode:normal,soft-light;border-color:rgba(108,134,175,.3);box-shadow:0 14px 34px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.045)}
 .dungeon-page .room-icon{box-shadow:0 0 0 1px rgba(140,166,210,.12),0 8px 18px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.06)}
 .dungeon-page .route-card:hover{transform:translateY(-2px);border-color:rgba(133,160,205,.5);box-shadow:0 18px 38px rgba(0,0,0,.36),0 0 24px rgba(82,111,164,.08)}
+
+/* 2026-09-21 CC0 battle-stage asset pass */
+.battle-stage{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,rgba(8,13,21,.78),rgba(9,15,25,.94)),url("https://opengameart.org/sites/default/files/battleback1.png") center/cover;border-color:rgba(108,134,175,.34);box-shadow:0 22px 50px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05)}
+.battle-stage:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 76%,rgba(103,135,179,.18),transparent 48%),linear-gradient(90deg,rgba(3,7,12,.24),transparent 32%,transparent 68%,rgba(3,7,12,.3))}
+.battle-stage .battle-unit,.battle-stage .battle-token{filter:drop-shadow(0 10px 10px rgba(0,0,0,.38))}
+.battle-stage .battle-token{border-color:rgba(155,179,218,.3);box-shadow:0 0 0 1px rgba(0,0,0,.25),0 12px 20px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.07)}
