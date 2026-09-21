@@ -1593,3 +1593,114 @@ body{
   border-style:dashed;
   background:linear-gradient(145deg,#101925,#0b111a);
 }
+
+
+/* 2026-09-21 battle reward presentation pass */
+.result-panel{
+  position:relative;
+  overflow:hidden;
+  border-color:#394b67;
+  background:
+    radial-gradient(circle at 88% 8%,rgba(122,151,215,.12),transparent 28%),
+    linear-gradient(145deg,#121d2d,#0a111b);
+}
+.result-panel:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.025) 50%,transparent 80%);
+}
+.result-victory{
+  border-color:#5b6f91;
+}
+.result-defeat{
+  border-color:#60434a;
+}
+.result-icon{
+  position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.24);
+}
+.clear-cutin{
+  position:relative;
+  padding:12px 14px;
+  border:1px solid #465d83;
+  border-radius:12px;
+  background:
+    linear-gradient(90deg,rgba(61,84,126,.22),rgba(15,23,36,.68)),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.018) 0 2px,transparent 2px 8px);
+}
+.clear-cutin span{
+  letter-spacing:.18em;
+  font-size:9px;
+  color:#9eb5e7;
+}
+.clear-cutin b{
+  display:block;
+  margin-top:3px;
+  font-size:18px;
+  letter-spacing:.04em;
+  color:#edf3ff;
+}
+.clear-cutin i{
+  display:block;
+  margin-top:4px;
+  font-style:normal;
+  font-size:10px;
+  color:#8998ad;
+}
+.battle-report{
+  margin-top:12px;
+  padding:11px;
+  border:1px solid #2d3d55;
+  border-radius:12px;
+  background:rgba(7,12,20,.48);
+}
+.battle-report>b{
+  display:block;
+  margin-bottom:8px;
+  color:#c8d5e8;
+  font-size:11px;
+  letter-spacing:.04em;
+}
+.battle-report-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+  gap:7px;
+}
+.report-card{
+  display:grid;
+  gap:3px;
+  padding:9px;
+  border:1px solid #28374c;
+  border-radius:10px;
+  background:linear-gradient(145deg,#131f30,#0d1521);
+}
+.report-card strong{color:#e5edf8;font-size:11px}
+.report-card span{color:#91a0b5;font-size:10px}
+.report-card small{color:#718096;font-size:9px}
+.loot-summary{
+  margin-top:10px;
+  display:grid;
+  gap:5px;
+  padding:10px 11px;
+  border:1px solid #5a4d31;
+  border-radius:11px;
+  background:linear-gradient(90deg,rgba(82,65,31,.20),rgba(18,22,29,.65));
+}
+.loot-summary b{
+  color:#d7bd7d;
+  font-size:11px;
+}
+.loot-summary span{
+  color:#b9c5d5;
+  font-size:10px;
+  line-height:1.5;
+}
+@media(max-width:760px){
+  .battle-report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .clear-cutin b{font-size:15px}
+}
+@media(max-width:420px){
+  .battle-report-grid{grid-template-columns:1fr}
+}
