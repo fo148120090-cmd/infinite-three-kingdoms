@@ -634,7 +634,7 @@ function hit(a:BattleUnit,b:BattleUnit,m=1){
 }
 
 function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMemory,plan?:BattlePlan,context?:BattleContext):{units:BattleUnit[];decision:Decision;line:string}{
-  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},statusEffects:(x.statusEffects||[]).map(s=>({...s})),fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const statusTurn=tickStatus(a); if(statusTurn.stunned){ a.behaviorCounts!["기절"]=(a.behaviorCounts!["기절"]||0)+1; a.battleStats!.actions+=1; a.actionText="기절 · 행동 취소"; return {units:n,decision:{action:"기절",detail:"상태이상으로 이번 행동이 취소됨",score:999},line:(statusTurn.line?statusTurn.line+" / ":"")+a.actionText}; } const d=weighted(decisions(a,n,env,partyMemory,plan,context));
+  const n=u.map(x=>({...x,behaviorCounts:{...(x.behaviorCounts||{})},statusEffects:(x.statusEffects||[]).map(s=>({...s})),fx:undefined,fxKind:undefined,battleStats:{...(x.battleStats||{damage:0,healing:0,actions:0,critical:0,costumeFx:0})}})); const a=n.find(x=>x.id===id)!; const hpBefore=new globalThis.Map(n.map(x=>[x.id,x.hp])); const statusTurn=tickStatus(a); if(statusTurn.stunned){ a.behaviorCounts!["기절"]=(a.behaviorCounts!["기절"]||0)+1; a.battleStats!.actions+=1; a.actionText="기절 · 행동 취소"; return {units:n,decision:{action:"기절",detail:"상태이상으로 이번 행동이 취소됨",score:999},line:(statusTurn.line?statusTurn.line+" / ":"")+a.actionText}; } const d=weighted(decisions(a,n,env,partyMemory,plan,context));
   const enemies=live(n,a.team==="player"?"enemy":"player"), allies=live(n,a.team);
   const nearest=enemies.slice().sort((x,y)=>dist(a,x)-dist(a,y))[0];
   const weak=enemies.slice().sort((x,y)=>pct(x)-pct(y))[0];
@@ -646,7 +646,7 @@ function doAI(u:BattleUnit[],id:string,env?:EnvironmentKind,partyMemory?:PartyMe
     a.pos+=(target.pos>a.pos?step:-step); a.pos=Math.max(.3,Math.min(9.7,a.pos));
   };
   let line="";
-  const fx=(target:BattleUnit,kind:"damage"|"heal"|"critical"|"status",text:string)=>{target.fx=text;target.fxKind=kind;if(a.team==="player"&&target.id!==a.id&&(kind==="damage"||kind==="heal"||kind==="critical")){a.fx="COSTUME";a.fxKind=kind;}};
+  const fx=(target:BattleUnit,kind:"damage"|"heal"|"critical"|"status",text:string)=>{target.fx=text;target.fxKind=kind;if(a.team==="player"&&target.id!==a.id&&(kind==="damage"||kind==="heal"||kind==="critical")){a.fx="COSTUME";a.fxKind=kind;a.battleStats!.costumeFx=(a.battleStats!.costumeFx||0)+1;if(kind==="critical")a.battleStats!.critical=(a.battleStats!.critical||0)+1;}};
   if(d.action==="폭딜"||d.action==="탱커"||d.action==="단일전투"||d.action==="수호"||d.action==="정밀사격"||d.action==="추격"||d.action==="기동"||d.action==="광역마법"||d.action==="약화지원"||d.action==="집중마법"||d.action==="회복"||d.action==="성전수호"||d.action==="심판"){
     const t=by(d.target)||nearest||weak;
     if(d.action==="회복"&&allies.length){
@@ -1639,7 +1639,7 @@ export default function App(){
       <div className="report-head"><b>AI 전투 리포트</b><span>이번 전투의 핵심 행동만 표시</span></div>
       <div className="battle-report-grid">{battle.units.filter(u=>u.team==="player").map(u=><div className="report-card" key={u.id}>
         <div className="report-card-head"><strong>{u.name}</strong><span>{jobKo[u.job as Job]||"전투원"}</span></div>
-        <div className="report-metrics"><span><b>{u.battleStats?.actions||0}</b><small>행동</small></span><span><b>{u.battleStats?.damage||0}</b><small>피해</small></span><span><b>{u.battleStats?.healing||0}</b><small>회복</small></span></div>
+        <div className="report-metrics"><span><b>{u.battleStats?.actions||0}</b><small>행동</small></span><span><b>{u.battleStats?.damage||0}</b><small>피해</small></span><span><b>{u.battleStats?.healing||0}</b><small>회복</small></span></div><small className="report-costume-fx">✦ 코스튬 효과 {(u.battleStats?.costumeFx||0)}회 · 치명타 {(u.battleStats?.critical||0)}회</small>
         <small className="report-actions">{Object.entries(u.behaviorCounts||{}).sort((x,y)=>y[1]-x[1]).slice(0,2).map(x=>x[0]+" "+x[1]+"회").join(" · ")||"주요 행동 기록 없음"}</small>
       </div>)}</div>
     </div>
