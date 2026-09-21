@@ -70,6 +70,27 @@ export function costumeCombatBonus(id?:string):CostumeCombatBonus{
     critPct:base.critPct
   };
 }
+export type CostumePassiveBonus={name:string;detail:string;attack:number;defense:number;hpPct:number;speedPct:number;range:number;healPct:number;critPct:number};
+const costumePassiveByKey:Record<string,CostumePassiveBonus>= {
+  base:{name:"기본 전투 감각",detail:"추가 효과 없음",attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0,critPct:0},
+  beach:{name:"파도 타기",detail:"이동 속도와 생존력을 강화한다.",attack:0,defense:2,hpPct:3,speedPct:4,range:0,healPct:0,critPct:0},
+  summer:{name:"청량한 집중",detail:"공격과 치유 행동의 효율을 높인다.",attack:3,defense:0,hpPct:0,speedPct:3,range:.1,healPct:4,critPct:1},
+  "fur-winter":{name:"혹한 적응",detail:"방어와 최대 HP를 크게 강화한다.",attack:0,defense:6,hpPct:6,speedPct:0,range:0,healPct:0,critPct:0},
+  barbarian:{name:"야전 광전",detail:"공격 압박과 치명타를 강화한다.",attack:7,defense:2,hpPct:3,speedPct:3,range:0,healPct:0,critPct:3},
+  bodysuit:{name:"전술 오버클럭",detail:"기동성과 사거리를 강화한다.",attack:3,defense:2,hpPct:2,speedPct:7,range:.25,healPct:0,critPct:4},
+  "monster-disguise":{name:"종족 위장술",detail:"방어와 약화 지원 효율을 강화한다.",attack:4,defense:5,hpPct:4,speedPct:2,range:0,healPct:5,critPct:2},
+  "light-hero":{name:"성휘의 가호",detail:"공격·방어·치유를 동시에 강화한다.",attack:8,defense:7,hpPct:6,speedPct:4,range:.2,healPct:8,critPct:4},
+  "fallen-hero":{name:"타락의 폭주",detail:"공격과 치명타를 크게 강화한다.",attack:10,defense:3,hpPct:4,speedPct:6,range:0,healPct:0,critPct:7}
+};
+export function costumePassive(id?:string):CostumePassiveBonus{
+  const key=id? id.split("-").slice(1).join("-"):"base";
+  return costumePassiveByKey[key]||costumePassiveByKey.base;
+}
+export function ownedCostumePassive(ids:string[]=[]):CostumePassiveBonus{
+  const total:CostumePassiveBonus={name:"코스튬 패시브",detail:"장착 코스튬 패시브 합산",attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0,critPct:0};
+  ids.forEach(id=>{const b=costumePassive(id);(Object.keys(total) as (keyof CostumePassiveBonus)[]).filter(k=>k!=="name"&&k!=="detail").forEach(k=>total[k]+=b[k] as number);});
+  return total;
+}
 export function ownedCostumeCombatBonus(ids:string[]=[]):CostumeCombatBonus{
   const total:CostumeCombatBonus={attack:0,defense:0,hpPct:0,speedPct:0,range:0,healPct:0,critPct:0};
   ids.forEach(id=>{const b=costumeCombatBonus(id);(Object.keys(total) as (keyof CostumeCombatBonus)[]).forEach(k=>total[k]+=b[k]);});
