@@ -3463,3 +3463,36 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
   .battle-scene .battle-unit.enemy .monster-asset-elite,
   .battle-scene .battle-unit.enemy .monster-asset-named{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 16px rgba(0,0,0,.38)}
 }
+
+
+/* 2026-09-21 equipment recommendation readability pass */
+.character-inventory-head .recommend-hint{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  margin-top:4px;
+  padding:3px 7px;
+  border:1px solid rgba(212,182,110,.28);
+  border-radius:999px;
+  background:rgba(212,182,110,.07);
+  color:#cdb77b;
+  font-size:9px;
+  font-weight:800;
+}
+.character-inventory-head .recommend-hint:before{content:"✦";margin-right:4px;color:#e1c878}
+.character-inventory-head .recommend-hint:not(:has(+ *)){box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+.warehouse-equipment-strip .equipment-head-actions .ghost-btn:first-child{
+  border-color:rgba(212,182,110,.36);
+  color:#ddc77f;
+  background:rgba(212,182,110,.06);
+}
+.warehouse-equipment-strip .equipment-head-actions .ghost-btn:first-child:hover{
+  border-color:rgba(212,182,110,.62);
+  background:rgba(212,182,110,.11);
+  box-shadow:0 0 16px rgba(212,182,110,.08);
+}
+@media(max-width:650px){
+  .character-inventory-head .recommend-hint{font-size:8px;padding:3px 6px}
+  .warehouse-equipment-strip .equipment-head-actions .ghost-btn:first-child{padding-inline:7px}
+}
