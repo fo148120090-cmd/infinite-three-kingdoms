@@ -2603,3 +2603,10 @@ body{background:radial-gradient(ellipse at 50% -12%,rgba(86,112,182,.20),transpa
 .monster-art-gnoll .monster-aura{filter:drop-shadow(0 0 3px rgba(197,154,111,.2))}
 .monster-art-lizardman .monster-aura{filter:drop-shadow(0 0 4px rgba(156,201,142,.2))}
 .monster-art-slime .monster-eye-glow{filter:drop-shadow(0 0 4px rgba(223,252,255,.7))}
+
+/* Mid dungeon species asset pass */
+.monster-art-orc .monster-aura{filter:drop-shadow(0 0 4px rgba(167,196,124,.24))}
+.monster-art-naga .monster-aura{filter:drop-shadow(0 0 4px rgba(169,185,228,.24))}
+.monster-art-harpy .monster-aura{filter:drop-shadow(0 0 4px rgba(195,168,220,.24))}
+.monster-art-ogre .monster-aura{filter:drop-shadow(0 0 5px rgba(200,166,121,.22))}
+.monster-art-siren .monster-aura{filter:drop-shadow(0 0 5px rgba(157,208,220,.25))}
