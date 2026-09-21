@@ -254,7 +254,7 @@ function uniqueLootCopy(item:Item,level:number):Item {
   // 고유 장비도 후반 회차에서 기본 레벨과 전투 수치가 자연스럽게 따라오도록 한다.
   // 증가폭은 일반 장비보다 조금 낮게 잡고, 표시 옵션과 실제 전투 수치를 함께 맞춘다.
   const powerScale=1+Math.max(0,normalizedLevel-item.level)*.02;
-  const scaleValue=(value:number)=>Math.max(1,Math.round(value*powerScale*100)/100);
+  const scaleValue=(value:number)=>Math.round(value*powerScale*100)/100;
   const combatMods=item.combatMods?Object.fromEntries(Object.entries(item.combatMods).map(([key,value])=>[key,scaleValue(value||0)])):undefined;
   const stats=item.stats.map(stat=>stat.replace(/(\\d+(?:\\.\\d+)?)/,(match)=>{
     const value=Number(match);
