@@ -33,7 +33,7 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
     {elite&&<path d="M9 32h6M49 32h6M32 9v6M32 49v6" stroke="#e8c978" strokeWidth="1.8" strokeLinecap="round"/>}
     {named&&<path d="M13 13l5 5M51 13l-5 5M13 51l5-5M51 51l-5-5" stroke="#c9d5ff" strokeWidth="1.5" strokeLinecap="round"/>}
 
-    <path className={"monster-aura monster-silhouette-"+silhouette} d={silhouette==="dragon"?"M9 50 Q10 30 19 22 Q25 18 29 21 L32 12 L35 21 Q42 18 48 23 Q55 31 55 50 Q44 58 32 58 Q20 58 9 50Z":silhouette==="arachnid"?"M7 49 Q8 29 18 24 Q25 18 32 22 Q39 18 46 24 Q56 29 57 49 Q47 57 32 58 Q17 57 7 49Z":silhouette==="undead"?"M13 51 Q12 27 20 22 Q32 17 44 22 Q52 28 51 51 Q42 56 32 57 Q22 56 13 51Z":"M10 51 Q12 27 23 20 Q32 13 41 20 Q53 28 54 51 Q45 57 32 57 Q19 57 10 51Z"}" fill="url(#monsterGlow)" stroke={boss?"#f0c96b":"#1b2230"} strokeWidth={boss?2.4:1.5}/>
+    <path className={"monster-aura monster-silhouette-"+silhouette} d={silhouette==="dragon" ? "M9 50 Q10 30 19 22 Q25 18 29 21 L32 12 L35 21 Q42 18 48 23 Q55 31 55 50 Q44 58 32 58 Q20 58 9 50Z" : silhouette==="arachnid" ? "M7 49 Q8 29 18 24 Q25 18 32 22 Q39 18 46 24 Q56 29 57 49 Q47 57 32 58 Q17 57 7 49Z" : silhouette==="undead" ? "M13 51 Q12 27 20 22 Q32 17 44 22 Q52 28 51 51 Q42 56 32 57 Q22 56 13 51Z" : "M10 51 Q12 27 23 20 Q32 13 41 20 Q53 28 54 51 Q45 57 32 57 Q19 57 10 51Z"} fill="url(#monsterGlow)" stroke={boss ? "#f0c96b" : "#1b2230"} strokeWidth={boss ? 2.4 : 1.5}/>
 
     {key==="Arachne"||key==="Darkworm"
       ? <g stroke={p.accent} strokeLinecap="round" strokeWidth="3"><path d="M14 35L4 27M14 41L3 40M17 27L8 15M50 35L60 27M50 41L61 40M47 27L56 15"/></g>
