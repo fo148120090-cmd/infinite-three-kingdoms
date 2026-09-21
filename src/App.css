@@ -950,3 +950,96 @@ body{
   .battle-banner-left,.battle-banner-right{display:none}
   .battle-scene .battle-layout{padding-top:6px}
 }
+
+
+/* ===== Visual Overhaul 3 · Character Presentation / Combat FX ===== */
+.battle-scene{position:relative;isolation:isolate;overflow:hidden}
+.battle-scene::before{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.055),transparent 36%),linear-gradient(180deg,rgba(4,8,16,.05),rgba(4,8,16,.34))}
+.battle-vignette{position:absolute;inset:0;z-index:2;pointer-events:none;box-shadow:inset 0 0 110px rgba(0,0,0,.58),inset 0 -90px 120px rgba(0,0,0,.34)}
+.battle-scene-raid.battle-phase-2::before{background:radial-gradient(circle at 50% 42%,rgba(255,190,80,.12),transparent 38%),linear-gradient(180deg,rgba(72,35,15,.08),rgba(15,6,5,.42))}
+.battle-scene-raid.battle-phase-3::before{background:radial-gradient(circle at 50% 42%,rgba(255,80,70,.17),transparent 42%),linear-gradient(180deg,rgba(90,15,18,.12),rgba(12,2,6,.5))}
+.battle-scene-raid.battle-phase-3 .battle-sky-glow{opacity:1;filter:saturate(1.45) brightness(1.2)}
+.battle-sky-glow{transition:opacity .35s,filter .35s}
+.raid-phase-hud{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:7;min-width:220px;padding:9px 18px;text-align:center;border:1px solid rgba(214,174,91,.55);background:linear-gradient(180deg,rgba(12,17,28,.94),rgba(7,11,19,.8));box-shadow:0 10px 28px rgba(0,0,0,.35),0 0 24px rgba(190,145,55,.1);clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%)}
+.raid-phase-hud span{display:block;font:800 9px/1.1 ui-monospace,monospace;letter-spacing:.24em;color:#d8b86c}
+.raid-phase-hud b{display:block;margin-top:3px;font-size:14px;color:#f4ead2}
+.raid-phase-hud small{display:block;margin-top:3px;color:#8492a9;font-size:9px}
+.raid-phase-2{border-color:rgba(230,174,75,.8);box-shadow:0 0 30px rgba(230,174,75,.16)}
+.raid-phase-3{border-color:rgba(234,78,78,.9);box-shadow:0 0 36px rgba(234,78,78,.25);animation:raidPulse 1.1s ease-in-out infinite alternate}
+@keyframes raidPulse{from{filter:brightness(1)}to{filter:brightness(1.18)}}
+
+.battle-layout{position:relative;z-index:3}
+.cave-panel{position:relative}
+.cave-lane{position:relative}
+.battle-unit{transition:left .24s ease,transform .18s ease,filter .18s ease;transform-origin:center bottom;z-index:3;min-width:86px}
+.battle-unit.active-unit{z-index:12;transform:translateY(-7px) scale(1.055);filter:brightness(1.12)}
+.battle-unit.active-unit .unit-token-frame{animation:unitReady .85s ease-in-out infinite alternate}
+@keyframes unitReady{from{filter:drop-shadow(0 0 4px rgba(255,255,255,.18))}to{filter:drop-shadow(0 0 16px rgba(220,184,96,.65))}}
+.battle-unit.dead{filter:grayscale(1) brightness(.45);opacity:.5}
+.unit-token-frame{position:relative;width:64px;height:64px;margin:0 auto 4px;border-radius:17px;padding:3px;background:linear-gradient(135deg,#27364e,#0b1220);border:1px solid rgba(255,255,255,.16);box-shadow:0 7px 18px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.035)}
+.unit-token{position:relative;width:100%;height:100%;display:grid;place-items:center;border-radius:13px;overflow:hidden;background:radial-gradient(circle at 50% 25%,rgba(255,255,255,.13),rgba(5,9,16,.82) 72%);font-size:28px}
+.unit-token::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.08) 48%,transparent 65%);transform:translateX(-120%);animation:tokenSheen 4.8s ease-in-out infinite}
+@keyframes tokenSheen{0%,65%{transform:translateX(-120%)}82%,100%{transform:translateX(120%)}}
+.unit-scanline{position:absolute;left:5px;right:5px;top:50%;height:1px;background:rgba(255,255,255,.16);box-shadow:0 0 7px rgba(255,255,255,.12);pointer-events:none}
+.unit-job-badge{position:absolute;right:-3px;bottom:-3px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:10px;background:#0b1220;border:1px solid #d2b36c;box-shadow:0 0 9px rgba(210,179,108,.28)}
+.unit-nameplate{display:flex;align-items:center;justify-content:center;gap:5px;max-width:126px;margin:auto;padding:3px 7px;border:1px solid rgba(129,148,178,.26);border-radius:6px;background:rgba(5,10,18,.82);box-shadow:0 4px 10px rgba(0,0,0,.24)}
+.unit-nameplate b{font-size:10px;color:#eef3fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit-nameplate span{font-size:8px;color:#8495ac;white-space:nowrap}
+.battle-unit.player .unit-token-frame{border-color:rgba(86,159,232,.48);background:linear-gradient(135deg,rgba(64,126,188,.55),#0b1220)}
+.battle-unit.enemy .unit-token-frame{border-color:rgba(203,76,76,.42);background:linear-gradient(135deg,rgba(133,39,45,.56),#0b1019)}
+.battle-unit.unit-grade-boss .unit-token-frame{width:78px;height:78px;border-color:rgba(218,176,83,.88);border-radius:21px;box-shadow:0 0 24px rgba(217,169,67,.28),0 10px 24px rgba(0,0,0,.45)}
+.battle-unit.unit-grade-boss .unit-token{border-radius:17px;font-size:38px}
+.battle-unit.unit-grade-elite .unit-token-frame{border-color:rgba(182,113,211,.62)}
+.battle-unit.unit-grade-named .unit-token-frame{border-color:rgba(218,176,83,.6)}
+.unit-job-warrior .unit-token-frame{box-shadow:0 0 15px rgba(213,91,82,.12),0 7px 18px rgba(0,0,0,.35)}
+.unit-job-guardian .unit-token-frame{box-shadow:0 0 15px rgba(83,140,221,.14),0 7px 18px rgba(0,0,0,.35)}
+.unit-job-archer .unit-token-frame{box-shadow:0 0 15px rgba(205,166,77,.13),0 7px 18px rgba(0,0,0,.35)}
+.unit-job-mage .unit-token-frame{box-shadow:0 0 15px rgba(145,111,213,.15),0 7px 18px rgba(0,0,0,.35)}
+.unit-job-cleric .unit-token-frame{box-shadow:0 0 15px rgba(87,190,171,.15),0 7px 18px rgba(0,0,0,.35)}
+.unit-hp-text{display:block;margin-top:3px;color:#9aa9be;font:700 8px/1 ui-monospace,monospace}
+.battle-unit.fx-damage .unit-token-frame{animation:impactHit .34s ease-out}
+.battle-unit.fx-critical .unit-token-frame{animation:criticalHit .55s ease-out}
+.battle-unit.fx-heal .unit-token-frame{animation:healPulse .65s ease-out}
+.battle-unit.fx-status .unit-token-frame{animation:statusPulse .55s ease-out}
+@keyframes impactHit{25%{transform:translateX(-4px) rotate(-2deg)}55%{transform:translateX(5px) rotate(2deg)}100%{transform:none}}
+@keyframes criticalHit{0%{filter:brightness(2.2);transform:scale(1.08)}55%{filter:drop-shadow(0 0 20px rgba(255,215,110,.9));transform:scale(.96)}100%{filter:none;transform:none}}
+@keyframes healPulse{0%{filter:drop-shadow(0 0 0 rgba(91,224,184,0));transform:scale(.98)}55%{filter:drop-shadow(0 0 22px rgba(91,224,184,.8));transform:scale(1.06)}100%{filter:none;transform:none}}
+@keyframes statusPulse{0%,100%{filter:none}45%{filter:drop-shadow(0 0 18px rgba(175,117,255,.8))}}
+.combat-fx{z-index:15;text-shadow:0 2px 7px #000,0 0 12px currentColor;font-weight:900;letter-spacing:.02em}
+.battle-action-overlay{position:absolute;left:50%;top:47%;z-index:20;transform:translate(-50%,-50%);pointer-events:none;min-width:min(680px,76vw);display:flex;align-items:center;justify-content:center;gap:16px;filter:drop-shadow(0 14px 26px rgba(0,0,0,.48));animation:actionIn .38s ease-out}
+.battle-action-overlay::before{content:"";position:absolute;inset:-40px -70px;background:radial-gradient(circle,rgba(255,255,255,.13),transparent 62%);opacity:.8}
+.action-burst-ring{position:absolute;width:210px;height:210px;border:1px solid rgba(223,188,102,.46);border-radius:50%;box-shadow:0 0 35px rgba(223,188,102,.2),inset 0 0 30px rgba(223,188,102,.08);animation:burstRing .65s ease-out forwards}
+.action-burst-core{position:relative;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;font-size:27px;color:#fff2bf;background:radial-gradient(circle,rgba(255,238,163,.6),rgba(122,80,24,.35) 42%,rgba(12,17,27,.9) 70%);border:1px solid rgba(244,213,133,.75);box-shadow:0 0 30px rgba(238,190,78,.55)}
+.action-burst-copy{position:relative;display:flex;flex-direction:column;gap:2px;min-width:260px;padding:11px 16px;border-left:2px solid rgba(224,188,100,.7);background:linear-gradient(90deg,rgba(5,9,16,.92),rgba(8,13,23,.74),transparent);backdrop-filter:blur(3px)}
+.action-burst-copy small{font:800 8px/1 ui-monospace,monospace;letter-spacing:.2em;color:#c7a964}
+.action-burst-copy b{font-size:18px;color:#f7f2e8;text-shadow:0 2px 12px #000}
+.action-burst-copy span{font-size:9px;color:#9aa8bd}
+.action-burst-sparks{position:absolute;width:260px;height:120px;background:radial-gradient(circle at 10% 50%,#fff 0 1px,transparent 2px),radial-gradient(circle at 45% 25%,#fff 0 1px,transparent 2px),radial-gradient(circle at 80% 65%,#fff 0 1px,transparent 2px),radial-gradient(circle at 92% 35%,#fff 0 1px,transparent 2px);animation:sparkScatter .55s ease-out forwards;opacity:.75}
+.action-critical .action-burst-ring{border-color:rgba(255,218,108,.85);box-shadow:0 0 55px rgba(255,190,70,.4),inset 0 0 40px rgba(255,190,70,.12)}
+.action-critical .action-burst-core{box-shadow:0 0 42px rgba(255,193,67,.85)}
+.action-heal .action-burst-ring{border-color:rgba(92,225,180,.7);box-shadow:0 0 45px rgba(92,225,180,.28)}
+.action-heal .action-burst-core{color:#c7ffe9;box-shadow:0 0 38px rgba(92,225,180,.65)}
+.action-status .action-burst-ring{border-color:rgba(168,112,242,.72);box-shadow:0 0 45px rgba(168,112,242,.3)}
+.action-status .action-burst-core{color:#ecd7ff;box-shadow:0 0 38px rgba(168,112,242,.65)}
+@keyframes actionIn{from{opacity:0;transform:translate(-50%,-45%) scale(.94)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes burstRing{from{transform:scale(.45);opacity:.9}to{transform:scale(1.35);opacity:0}}
+@keyframes sparkScatter{from{transform:scale(.5);opacity:0}45%{opacity:1}to{transform:scale(1.25);opacity:0}}
+.phase-banner{position:relative;z-index:22;margin:8px auto -2px;width:min(640px,90%);padding:9px 16px;text-align:center;border:1px solid rgba(218,176,83,.65);background:linear-gradient(90deg,transparent,rgba(122,84,26,.28),transparent);color:#f0d58f;font:900 12px/1 ui-monospace,monospace;letter-spacing:.12em;text-shadow:0 0 12px rgba(239,190,83,.35);animation:phaseFlash .7s ease-out}
+@keyframes phaseFlash{0%{opacity:0;transform:scale(.92);filter:brightness(2)}45%{opacity:1}100%{opacity:1;transform:scale(1);filter:none}}
+
+@media(max-width:800px){
+  .raid-phase-hud{top:9px;min-width:175px;padding:7px 12px}
+  .raid-phase-hud b{font-size:11px}
+  .battle-action-overlay{top:42%;min-width:0;width:92vw;gap:8px}
+  .action-burst-core{width:45px;height:45px;font-size:20px}
+  .action-burst-copy{min-width:0;flex:1;padding:8px 10px}
+  .action-burst-copy b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .action-burst-ring{width:150px;height:150px}
+  .battle-unit{min-width:66px}
+  .unit-token-frame{width:50px;height:50px;border-radius:14px}
+  .unit-token{border-radius:10px}
+  .unit-grade-boss .unit-token-frame{width:62px;height:62px}
+  .unit-nameplate{max-width:92px}
+  .unit-nameplate span{display:none}
+  .unit-nameplate b{font-size:8px}
+}
