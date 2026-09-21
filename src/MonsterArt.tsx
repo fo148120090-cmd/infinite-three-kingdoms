@@ -25,7 +25,14 @@ const palette:Record<string,{body:string;accent:string;eye:string}>={
 export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Props){
   const normalized=String(species||"Goblin");\n  const key=/dragon|drake|용|드래곤/i.test(normalized)?"Dragon":/wolf|늑대/i.test(normalized)?"Wolf":/skeleton|undead|해골|언데드/i.test(normalized)?"Skeleton":normalized;\n  const p=palette[key]||palette.Goblin;
   const boss=grade==="Boss", elite=grade==="Elite", named=grade==="Named";
+  const frameColor=boss?"#f2c76d":elite?"#d6b86a":named?"#b9c8ff":"#64748b";
+  const frameGlow=boss?"rgba(242,199,109,.42)":elite?"rgba(214,184,106,.28)":named?"rgba(185,200,255,.30)":"rgba(100,116,139,.16)";
   return <svg className="monster-art-svg" width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={species+" monster"}>
+    <defs><filter id="gradeGlow"><feGaussianBlur stdDeviation={boss?"2.4":elite?"1.7":named?"1.5":"0.8"} result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <circle cx="32" cy="32" r={boss?30:elite?29:named?28:27} fill="none" stroke={frameColor} strokeWidth={boss?2.2:elite?1.8:named?1.5:1} opacity={boss?.95:elite?.85:named?.72:.42} filter="url(#gradeGlow)"/>
+    {boss&&<circle cx="32" cy="32" r="25" fill="none" stroke="#fff0b0" strokeWidth=".7" strokeDasharray="2 3" opacity=".8"/>}
+    {elite&&<path d="M9 32h6M49 32h6M32 9v6M32 49v6" stroke="#e8c978" strokeWidth="1.8" strokeLinecap="round" opacity=".85"/>}
+    {named&&<path d="M13 13l5 5M51 13l-5 5M13 51l5-5M51 51l-5-5" stroke="#c9d5ff" strokeWidth="1.5" strokeLinecap="round" opacity=".8"/>
     <defs><linearGradient id="monsterGlow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={p.accent}/><stop offset="1" stopColor={p.body}/></linearGradient></defs>
     <path d="M10 51 Q12 27 23 20 Q32 13 41 20 Q53 28 54 51 Q45 57 32 57 Q19 57 10 51Z" fill="url(#monsterGlow)" stroke={boss?"#f0c96b":"#1b2230"} strokeWidth={boss?2.4:1.5}/>
     {species==="Arachne"||species==="Darkworm"
@@ -39,7 +46,8 @@ export default function MonsterArt({species="Goblin",grade="Normal",size=42}:Pro
     <path d={key==="Skeleton"?"M22 44L27 47L32 44L37 47L42 44":"M24 43 Q32 48 40 43"} fill="none" stroke={p.accent} strokeWidth="2" strokeLinecap="round"/>
     {elite&&<path d="M32 7L35 13L42 14L37 19L38 26L32 22L26 26L27 19L22 14L29 13Z" fill="#d6b86a" opacity=".9"/>}
     {named&&<circle cx="32" cy="8" r="4" fill="#b9c8ff" stroke="#eef3ff" strokeWidth="1"/>}
-    {boss&&<path d="M16 17L21 5L29 14L35 4L43 14L49 5L50 22" fill="none" stroke="#e5c46d" strokeWidth="2.4" strokeLinejoin="round"/>}
+    {boss&&<path d="M16 17L21 5L29 14L35 4L43 14L49 5L50 22" fill="none" stroke="#e5c46d" strokeWidth="2.4" strokeLinejoin="round"/>
+    {boss&&<path d="M18 57 Q32 61 46 57" fill="none" stroke="#f2c76d" strokeWidth="1.8" opacity=".8"/>}}
     <path d="M17 52 Q32 47 47 52" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="2"/>
   </svg>;
 }
