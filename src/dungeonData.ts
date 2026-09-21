@@ -198,17 +198,22 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
     ["주술 목걸이","accessory"],["마력 목걸이","accessory"],["수호 부적","accessory"],
     ["기민한 장화","armor"],["추적자의 장화","armor"],["마법사의 로브","armor"]
   ] as const;
+  // Higher-level drops keep the same option identity, but their numeric power rises gradually.
+  // This keeps Lv.31+ loot from being only a higher label while avoiding abrupt power spikes.
+  const normalizedLevel=Math.max(1,Math.floor(Number(level)||1));
+  const powerScale=1+Math.max(0,normalizedLevel-6)*.025;
+  const scaleRoll=(value:number)=>Math.max(1,Math.round(value*powerScale));
   const [name,slot]=names[Math.floor(Math.random()*names.length)];
   type Roll={text:string;mod:()=>Record<string,number>};
   const rolls:Roll[]=[
-    {text:"공격력 +",mod:()=>({attack:8+Math.floor(Math.random()*18)})},
-    {text:"방어력 +",mod:()=>({defense:6+Math.floor(Math.random()*14)})},
+    {text:"공격력 +",mod:()=>({attack:scaleRoll(8+Math.floor(Math.random()*18))})},
+    {text:"방어력 +",mod:()=>({defense:scaleRoll(6+Math.floor(Math.random()*14))})},
     {text:"치명타 +",mod:()=>({})},
-    {text:"최대 HP +",mod:()=>({hpPct:5+Math.floor(Math.random()*16)})},
-    {text:"공격 속도 +",mod:()=>({speedPct:2+Math.floor(Math.random()*9)})},
-    {text:"사거리 +",mod:()=>({range:Number((.2+Math.random()*.7).toFixed(1))})},
-    {text:"치유량 +",mod:()=>({healPct:5+Math.floor(Math.random()*15)})},
-    {text:"피해 감소 +",mod:()=>({defense:2+Math.floor(Math.random()*5)})}
+    {text:"최대 HP +",mod:()=>({hpPct:scaleRoll(5+Math.floor(Math.random()*16))})},
+    {text:"공격 속도 +",mod:()=>({speedPct:scaleRoll(2+Math.floor(Math.random()*9)})},
+    {text:"사거리 +",mod:()=>({range:Number((.2+Math.random()*.7).toFixed(1))*powerScale})},
+    {text:"치유량 +",mod:()=>({healPct:scaleRoll(5+Math.floor(Math.random()*15))})},
+    {text:"피해 감소 +",mod:()=>({defense:scaleRoll(2+Math.floor(Math.random()*5))})}
   ];
   const shuffled=rolls.slice().sort(()=>Math.random()-.5);
   const count=2+Math.floor(Math.random()*3);
@@ -219,7 +224,7 @@ export function randomGeneralItem(level:number=6, preference?:Partial<Tendencies
     const m=r.mod();
     for(const [key,value] of Object.entries(m)) combatMods[key as keyof typeof combatMods]=(combatMods[key as keyof typeof combatMods]||0)+value;
     if(r.text==="치명타 +"){
-      const crit=2+Math.floor(Math.random()*8);
+      const crit=scaleRoll(2+Math.floor(Math.random()*8));
       combatMods.critPct=crit;
       stats.push("치명타 +"+crit+"%");
     }
