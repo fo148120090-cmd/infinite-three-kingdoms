@@ -52,48 +52,51 @@ const lateTierChoices:Record<number,Record<Job,Choice[]>>={
   }
 };
 
-function score(h:Hero,c:Choice){
-  return c.keys.reduce((n,k)=>n+(h.tendencies[k]||0),0);
+function score(h:Hero,c:Choice){ return c.keys.reduce((n,k)=>n+(h.tendencies[k]||0),0); }
+
+const thirdTierChoices:Record<Job,Choice[]>={
+  Warrior:[{name:"전쟁의 화신",keys:["aggression","bravery"]},{name:"무쌍 검성",keys:["pursuit","focus"]},{name:"파멸 군왕",keys:["aggression","curiosity"]}],
+  Guardian:[{name:"수호의 화신",keys:["protect","survival"]},{name:"성벽의 기사",keys:["protect","bravery"]},{name:"철갑 수호자",keys:["survival","focus"]}],
+  Archer:[{name:"천공의 사수",keys:["focus","caution"]},{name:"심연 추적자",keys:["pursuit","curiosity"]},{name:"세계수 레인저",keys:["survival","cooperation"]}],
+  Mage:[{name:"대현자",keys:["focus","curiosity"]},{name:"원소 대마도사",keys:["aggression","focus"]},{name:"심연 주술왕",keys:["curiosity","cooperation"]}],
+  Cleric:[{name:"성역의 집행자",keys:["protect","cooperation"]},{name:"신성 수호왕",keys:["bravery","protect"]},{name:"천상의 심판자",keys:["focus","caution"]}]
+};
+
+function choicesForTier(h:Hero,tier:number):Choice[]{
+  const branch=h.promotionPath?.[0]||"";
+  if(tier===1)return firstTier[h.job]||[];
+  if(tier===2)return secondTier[branch]||[];
+  if(tier===3)return thirdTierChoices[h.job]||[];
+  if(tier===4)return lateTierChoices[4]?.[h.job]||[];
+  if(tier===5)return lateTierChoices[5]?.[h.job]||[];
+  return lateTierChoices[6]?.[h.job]||[];
 }
-function pick(h:Hero,choices:Choice[]){
-  return choices.slice().sort((a,b)=>score(h,b)-score(h,a))[0]?.name||"";
+function promotionThreshold(tier:number){return tier===1?10:tier===2?20:tier===3?30:tier===4?50:tier===5?70:100;}
+function queuePromotion(next:Hero){
+  if(next.promotionPending)return next;
+  const tier=(next.promotionTier||0)+1;
+  if(tier>6||next.level<promotionThreshold(tier))return next;
+  const choices=choicesForTier(next,tier);
+  return choices.length?{...next,promotionPending:{tier,choices:choices.map(x=>x.name)}}:next;
 }
+function promotionMultiplier(tier:number){return tier===1?{hp:1.12,attack:1.06,defense:1.06}:tier===2?{hp:1.10,attack:1.08,defense:1.08}:tier===3?{hp:1.15,attack:1.12,defense:1.12}:tier===4?{hp:1.18,attack:1.15,defense:1.15}:tier===5?{hp:1.22,attack:1.19,defense:1.19}:{hp:1.30,attack:1.25,defense:1.25};}
 function pushPromotion(next:Hero,tier:number,name:string,mults:{hp:number;attack:number;defense:number}){
-  return {...next,promotionTier:tier,promotionPath:[...(next.promotionPath||[]),name],
+  return {...next,promotionTier:tier,promotionPath:[...(next.promotionPath||[]),name],promotionPending:undefined,
     hp:Math.round(next.hp*mults.hp),attack:Math.round(next.attack*mults.attack),defense:Math.round(next.defense*mults.defense)};
 }
-
-function applyPromotion(h:Hero,level:number){
-  const tier=h.promotionTier||0;
-  const path=[...(h.promotionPath||[])];
-  let next={...h,promotionTier:tier,promotionPath:path};
-  if(level>=10 && (next.promotionTier||0)<1){
-    const name=pick(next,firstTier[next.job]);
-    if(name)next=pushPromotion(next,1,name,{hp:1.12,attack:1.06,defense:1.06});
-  }
-  const branch=next.promotionPath?.[0]||"";
-  if(level>=20 && (next.promotionTier||0)<2){
-    const name=pick(next,secondTier[branch]||[]);
-    if(name)next=pushPromotion(next,2,name,{hp:1.10,attack:1.08,defense:1.08});
-  }
-  if(level>=30 && (next.promotionTier||0)<3){
-    const final=next.job==="Warrior"?"전쟁의 화신":next.job==="Guardian"?"수호의 화신":next.job==="Archer"?"천공의 사수":next.job==="Mage"?"대현자":"성역의 집행자";
-    next=pushPromotion(next,3,final,{hp:1.15,attack:1.12,defense:1.12});
-  }
-  if(level>=50 && (next.promotionTier||0)<4){
-    const name=pick(next,lateTierChoices[4][next.job]);
-    if(name)next=pushPromotion(next,4,name,{hp:1.18,attack:1.15,defense:1.15});
-  }
-  if(level>=70 && (next.promotionTier||0)<5){
-    const name=pick(next,lateTierChoices[5][next.job]);
-    if(name)next=pushPromotion(next,5,name,{hp:1.22,attack:1.19,defense:1.19});
-  }
-  if(level>=100 && (next.promotionTier||0)<6){
-    const name=pick(next,lateTierChoices[6][next.job]);
-    if(name)next=pushPromotion(next,6,name,{hp:1.30,attack:1.25,defense:1.25});
-  }
-  return next;
+export function promotionOptions(hero:Hero){
+  const pending=hero.promotionPending;
+  if(!pending)return [];
+  return choicesForTier(hero,pending.tier).filter(x=>pending.choices.includes(x.name)).map(x=>({name:x.name,detail:"성향 · "+x.keys.join(" · "),tier:pending.tier}));
 }
+export function choosePromotion(hero:Hero,name:string){
+  const pending=hero.promotionPending;
+  if(!pending||!pending.choices.includes(name))return null;
+  const choice=choicesForTier(hero,pending.tier).find(x=>x.name===name);
+  if(!choice)return null;
+  return queuePromotion(pushPromotion(hero,pending.tier,name,promotionMultiplier(pending.tier)));
+}
+function applyPromotion(h:Hero,_level:number){ return queuePromotion(h); }
 
 
 const finalAwakeningData:Record<string,{id:string;name:string;detail:string;skillName:string;skillDetail:string;attack:number;defense:number;hpPct:number;speedPct:number;range:number}> = {
@@ -159,11 +162,8 @@ export function grantExperience(hero:Hero,gain:number){
   const safeGain=Number.isFinite(Number(gain))?Math.max(0,Number(gain)):0;
   let next={...hero,level:safeLevel,experience:safeExperience+safeGain};
   let leveled=false;
-  // 고레벨/다회차에서도 초반과 동일한 100 XP 고정 요구량을 사용하지 않고,
-  // 레벨이 올라갈수록 필요한 경험치가 조금씩 증가하도록 성장 곡선을 완만하게 적용한다.
-  const xpRequired=(level:number)=>xpRequiredForLevel(level);
-  while(next.experience>=xpRequired(next.level)){
-    next.experience-=xpRequired(next.level);
+  while(next.experience>=xpRequiredForLevel(next.level)){
+    next.experience-=xpRequiredForLevel(next.level);
     next.level+=1;
     next.skillPoints=(next.skillPoints||0)+1;
     next.hp=Math.round(next.hp*1.04);
@@ -184,22 +184,11 @@ export function promotionLabel(hero:Hero){
 
 export function promotionForecast(hero:Hero){
   const tier=hero.promotionTier||0;
-  const path=hero.promotionPath||[];
-  const forecast=(level:number,choices:Choice[],fallback:string)=>{
-    const best=pick(hero,choices);
-    const ranked=choices.slice().sort((a,b)=>score(hero,b)-score(hero,a));
-    return {next:"Lv."+level+" · "+(best||fallback),level,progress:Math.min(100,Math.round(hero.level/level*100)),reason:ranked.slice(0,2).map(x=>x.name).join(" / ")+" 후보 중 현재 성향이 높은 쪽으로 자동 결정됩니다."};
-  };
+  const pending=hero.promotionPending;
+  if(pending)return {next:"Lv."+promotionThreshold(pending.tier)+" · 전직 선택 대기",level:promotionThreshold(pending.tier),progress:Math.min(100,Math.round(hero.level/promotionThreshold(pending.tier)*100)),reason:"자동 결정하지 않습니다. 플레이어가 3개의 전직 경로 중 하나를 선택하면 해당 전직이 적용됩니다."};
   if(tier>=6)return {next:"Lv.100 · 최종 각성 완료",level:100,progress:100,reason:"100레벨 최종 각성까지 도달한 상태입니다."};
-  if(tier===0)return forecast(10,firstTier[hero.job]||[],"자동 전직");
-  if(tier===1){
-    const branch=path[0]||"";
-    return forecast(20,secondTier[branch]||[],"2차 전직");
-  }
-  if(tier===2)return forecast(30,[{name:hero.job==="Warrior"?"전쟁의 화신":hero.job==="Guardian"?"수호의 화신":hero.job==="Archer"?"천공의 사수":hero.job==="Mage"?"대현자":"성역의 집행자",keys:["focus","bravery"]}],"3차 전직");
-  if(tier===3)return forecast(50,lateTierChoices[4][hero.job]||[],"4차 전직");
-  if(tier===4)return forecast(70,lateTierChoices[5][hero.job]||[],"5차 전직");
-  return forecast(100,lateTierChoices[6][hero.job]||[],"최종 각성");
+  const nextTier=tier+1, choices=choicesForTier(hero,nextTier), level=promotionThreshold(nextTier);
+  return {next:"Lv."+level+" · 전직 선택",level,progress:Math.min(100,Math.round(hero.level/level*100)),reason:choices.map(x=>x.name).join(" / ")+" 중 하나를 플레이어가 선택합니다."};
 }
 
 export function promotionActions(heroPath:string[]|undefined):{name:string;detail:string;bonus:number}[]{
