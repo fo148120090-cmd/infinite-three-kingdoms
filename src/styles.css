@@ -1859,3 +1859,24 @@ body{
 .status-modal-portrait .skin-portrait{width:64px;height:64px}
 .battle-unit.player .unit-token{width:54px;height:54px}
 .battle-unit.player .unit-token .skin-portrait{width:48px;height:48px}
+
+/* 2026-09-21 character presentation pass: prioritize readable portrait area on mobile and desktop */
+.party-page .hero-card{align-items:center;min-height:96px;padding:13px 15px}
+.party-page .hero-card-main{min-width:0}
+.party-page .hero-card .hero-card-portrait{width:76px!important;height:76px!important;flex:0 0 76px}
+.party-page .hero-card .hero-card-portrait .skin-portrait{width:72px;height:72px}
+.party-page .character-equipment-identity{min-height:88px;padding:4px 0}
+.party-page .character-equipment-identity .hero-avatar.large{flex:0 0 82px;width:82px;height:82px}
+.party-page .character-equipment-identity .hero-avatar.large .skin-portrait{width:78px;height:78px}
+.party-page .skin-card{min-height:92px}
+.party-page .skin-card-portrait{flex:0 0 68px;width:68px;height:68px}
+.party-page .skin-card .skin-portrait,.party-page .skin-card-portrait .skin-portrait{width:64px;height:64px}
+@media(max-width:650px){
+ .party-page .hero-card{min-height:88px;padding:10px 11px}
+ .party-page .hero-card .hero-card-portrait{width:68px!important;height:68px!important;flex-basis:68px}
+ .party-page .hero-card .hero-card-portrait .skin-portrait{width:64px;height:64px}
+ .party-page .character-equipment-identity .hero-avatar.large{width:72px;height:72px;flex-basis:72px}
+ .party-page .character-equipment-identity .hero-avatar.large .skin-portrait{width:68px;height:68px}
+ .party-page .skin-card-portrait{width:58px;height:58px;flex-basis:58px}
+ .party-page .skin-card .skin-portrait,.party-page .skin-card-portrait .skin-portrait{width:54px;height:54px}
+}
