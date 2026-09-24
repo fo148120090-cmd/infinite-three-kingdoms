@@ -180,6 +180,12 @@ function castSkill(name,targetId){
   render();
 }
 function endHeroTurn(){
+  if(scenarios[state.scenarioId].goal){
+    const g=scenarios[state.scenarioId].goal;
+    if(alive("hero").some(u=>u.x===g.x&&u.y===g.y)){
+      state.gameOver=true;state.turn="end";log("승리! 거점을 확보했습니다.");render();return;
+    }
+  }
   state.turn="enemy";state.acted.clear();state.moved.clear();state.selected=null;state.skillMode=null;
   log("적군 턴");render();setTimeout(enemyTurn,250);
 }
