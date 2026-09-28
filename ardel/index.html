@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 메인 로비 v0.19.0</title>
+<title>ARDEL — 메인 로비 v0.20.0</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:1180px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -15,7 +15,7 @@
 header{padding:14px 16px;display:flex;justify-content:space-between;border-bottom:1px solid #344050}.title{font-weight:800}.sub{font-size:12px;color:#9ca9b8}
 .panel{margin:12px;border:1px solid #344050;background:#141b25;border-radius:14px;padding:12px}.stats{display:flex;gap:7px}.stat{flex:1;background:#0d131c;border-radius:10px;padding:7px;text-align:center;font-size:11px}.stat b{display:block;font-size:17px}
 #field{position:relative;height:540px;margin:12px;border:1px solid #3c4a5d;border-radius:16px;overflow:hidden;background:repeating-linear-gradient(to bottom,#1b2630 0,#1b2630 108px,#263442 109px,#263442 110px)}
-.lane{position:absolute;left:0;right:0;height:180px;border-bottom:1px solid #344555}.grid{position:absolute;top:0;bottom:0;width:1px;background:#ffffff08}
+.lane{position:absolute;left:0;right:0;height:180px;border-bottom:1px solid #344555}.grid{display:none}.cell{position:absolute;width:116px;height:180px;border:1px solid #ffffff10;background:#ffffff03;z-index:1;pointer-events:none}.cell.move{background:#5b9cff18;border-color:#6aa9ff88}.cell.range{background:#ffffff07;border-color:#ffffff18}.cell.target{background:#ff696918;border-color:#ff8c8c88}.cell.fire{background:#ff5b351c;border-color:#ff704d88}
 .unit{position:absolute;width:116px;height:92px;border-radius:12px;border:2px solid #617286;background:#202b38;padding:4px;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;transition:.15s;z-index:4}.unit.sel{border-color:#ffd166;box-shadow:0 0 0 2px #ffd16655}.unit.enemy{background:#392025;border-color:#9b5860}.unit .face{font-size:30px}.unit small{font-size:10px;white-space:nowrap}.hp{width:100px;height:6px;background:#111;border-radius:5px;margin-top:3px;overflow:hidden}.hp i{display:block;height:100%;background:#57d17a}.enemy .hp i{background:#e95b65}
 .tile{position:absolute;width:116px;height:92px;border:1px dashed #6e7f91;border-radius:10px;background:#ffffff08;z-index:2;cursor:pointer}.tile.move{background:#6aa9ff18;border-color:#6aa9ff}.tile.target{background:#ff696918;border-color:#ff8c8c}.tile.fire{background:#ff5b351c;border-color:#ff704d}
 #skills{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.skill{border:1px solid #445365;background:#202b38;color:#fff;border-radius:11px;padding:10px;text-align:left}.skill:disabled{opacity:.35}.skill b{display:block}.skill span{font-size:11px;color:#aeb9c6}
@@ -102,11 +102,23 @@ function setMode(m){mode=m;render();skills()}
 function canAct(c){return alive(c)&&!c.acted}
 function move(c,p){if(!canAct(c)||c.moved||p<0||p>4||p===c.pos||Math.abs(p-c.pos)>c.move)return false;let occupied=chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p);if(occupied)return false;c.pos=p;c.moved=true;log(c.name+'이 '+(c.lane+1)+'번 전선에서 이동했다.');return true}
 function render(){
-document.querySelectorAll('.unit,.tile').forEach(e=>e.remove());
-for(let p=0;p<5;p++)for(let l=0;l<3;l++){let g=document.createElement('div');g.className='grid';g.style.left=(X[p]+58)+'px';$('field').appendChild(g)}
-if(mode==='move'&&canAct(get(selected))&&!get(selected).moved){let c=get(selected);for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=c.move&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p))$('field').appendChild(tile(c.lane,p,'move'))}
-if((mode==='attack'||mode==='skill')&&canAct(get(selected))){let c=get(selected);enemyList().filter(e=>dist(c,e)<=((mode==='skill'&&window._skillRange)||c.range)).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>mode==='skill'?resolveSkillAttack(e.id):attack(e.id))))}
-if(mode==='fire'&&canAct(get(selected))){for(let p=0;p<5;p++)$('field').appendChild(tile(0,p,'fire',()=>fireAt(p)))}
+document.querySelectorAll('.unit,.tile,.cell').forEach(e=>e.remove());
+let c=get(selected);
+for(let l=0;l<3;l++)for(let p=0;p<5;p++){
+  let cell=document.createElement('div');cell.className='cell';cell.style.left=X[p]+'px';cell.style.top=Y[l]+'px';
+  if(c&&canAct(c)){
+    if(mode==='move'&&l===c.lane&&!c.moved&&p!==c.pos&&Math.abs(p-c.pos)<=c.move&&!chars.some(x=>alive(x)&&x.lane===l&&x.pos===p))cell.classList.add('move');
+    if(mode==='attack'||mode==='skill'){
+      let range=mode==='skill'?(window._skillRange||c.range):c.range;
+      if(l===c.lane&&Math.abs(p-c.pos)<=range&&p!==c.pos)cell.classList.add('range');
+    }
+    if(mode==='fire'&&l===0)cell.classList.add('fire');
+  }
+  $('field').appendChild(cell);
+}
+if(mode==='move'&&c&&canAct(c)&&!c.moved){for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=c.move&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p))$('field').appendChild(tile(c.lane,p,'move'))}
+if((mode==='attack'||mode==='skill')&&c&&canAct(c)){let range=mode==='skill'?(window._skillRange||c.range):c.range;enemyList().filter(e=>dist(c,e)<=range).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>mode==='skill'?resolveSkillAttack(e.id):attack(e.id))))}
+if(mode==='fire'&&c&&canAct(c)){for(let p=0;p<5;p++)$('field').appendChild(tile(0,p,'fire',()=>fireAt(p)))}
 chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'')+(c.acted?' acted':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="face">'+c.face+'</div><small>'+c.name+(c.acted?' · 행동완료':'')+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/effectiveMax(c)*100)+'%"></i></div>';e.onclick=()=>{if((mode==='attack'||mode==='skill')&&c.side==='enemy'){if(mode==='skill')resolveSkillAttack(c.id);else attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
 $('turn').textContent=turn+' / 15';$('ap').textContent=allyList().filter(c=>!c.acted).length;$('morale').textContent=get('commander')?.hp||0;$('time').textContent='진행';
 }
