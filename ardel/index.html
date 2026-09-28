@@ -98,7 +98,7 @@ function render(){
 document.querySelectorAll('.unit,.tile').forEach(e=>e.remove());
 for(let p=0;p<5;p++)for(let l=0;l<3;l++){let g=document.createElement('div');g.className='grid';g.style.left=(X[p]+41)+'px';$('field').appendChild(g)}
 if(mode==='move'&&canAct(get(selected))&&!get(selected).moved){let c=get(selected);for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=c.move&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p))$('field').appendChild(tile(c.lane,p,'move'))}
-if(mode==='attack'&&canAct(get(selected))){let c=get(selected);enemyList().filter(e=>dist(c,e)<=c.range).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>attack(e.id)))}
+if(mode==='attack'&&canAct(get(selected))){let c=get(selected);enemyList().filter(e=>dist(c,e)<=c.range).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>attack(e.id))))}
 if(mode==='fire'&&canAct(get(selected))){for(let p=0;p<5;p++)$('field').appendChild(tile(0,p,'fire',()=>fireAt(p)))}
 chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'')+(c.acted?' acted':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="face">'+c.face+'</div><small>'+c.name+(c.acted?' · 행동완료':'')+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/c.max*100)+'%"></i></div>';e.onclick=()=>{if(mode==='attack'&&c.side==='enemy'){attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
 $('turn').textContent=turn+' / 15';$('ap').textContent=allyList().filter(c=>!c.acted).length;$('morale').textContent=get('commander')?.hp||0;$('time').textContent='진행';
