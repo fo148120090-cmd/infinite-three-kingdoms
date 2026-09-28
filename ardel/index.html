@@ -107,7 +107,7 @@ if(c.id==='leon')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>se
 if(c.id==='sera')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['강타',0,()=>setMode('attack')]];
 if(c.id==='iris')arr=[['이동',0,()=>setMode('move')],['화염선',0,()=>setMode('fire')],['표식 폭발',0,()=>{if(marked&&alive(get(marked))){dmg(marked,50);marked=null;finishAction(c)}else log('아이리스: 폭발할 표식이 없습니다.')}],['전장 소각',0,()=>{enemyList().forEach(e=>dmg(e.id,30));fireTurns=2;log('아이리스: 전장 소각. 넓은 범위를 공격한다.');finishAction(c)}]];
 if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>setMode('attack')],['바람의 눈',0,()=>{log('엘리오스: 적의 위치와 이동 경로를 확인했다.');finishAction(c)}],['정령의 표식',0,()=>{let e=enemyList()[0];if(e){marked=e.id;log(e.name+'에게 정령의 표식. 다음 공격 강화.');finishAction(c)}}],['위험 감지',0,()=>{log('엘리오스: 다음 적 공격의 위험 지점을 포착했다.');finishAction(c)}]];
-$('skills').innerHTML=arr.map(x=>'<button class="skill" onclick="skillRun(\\''+x[0]+'\\')"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
+$('skills').innerHTML=arr.map(x=>'<button class="skill" onclick="skillRun(&quot;'+x[0]+'&quot;)"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
 window._actions=arr;
 $('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='fire'?'화염선을 놓을 위치를 선택하세요.':'장수를 선택하고 이동 → 공격/스킬 순서로 행동하세요.';
 }
