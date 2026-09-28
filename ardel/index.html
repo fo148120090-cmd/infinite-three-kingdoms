@@ -162,6 +162,13 @@ enemyList().forEach(e=>{
     const score=(x)=>{
       let s=0;
       const hpRatio=x.hp/effectiveMax(x);
+      const adv=advantage(e,x);
+      const reverse=advantage(x,e);
+      if(e.type==='기병'&&x.type==='궁병')s+=22;
+      if(e.type==='궁병'&&x.type==='보병')s+=22;
+      if(e.type==='보병'&&x.type==='기병')s+=22;
+      if(adv>1)s+=16;
+      if(reverse>1)s-=10;
       if(x.id==='iris'||x.id==='elios')s+=18;
       if(x.id==='ardel')s+=8;
       if(x.id==='leon')s-=8;
