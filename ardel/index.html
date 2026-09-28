@@ -157,7 +157,7 @@ function enemyTurn(){
 log('<b>— 적군 행동 —</b>');
 enemyList().forEach(e=>{
   if(!alive(e))return;
-  if(fireTurns&&e.fireSlow&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}
+  if(fireTurns&&e.fireSlow&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');continue}
   let targets=allyList().map(t=>({t,d:gridDist(e,t)})).sort((a,b)=>a.d-b.d);
   let t=targets[0]?.t;if(!t)return;
   const power=(e.id==='archer'?12:e.id==='commander'?16:18);
