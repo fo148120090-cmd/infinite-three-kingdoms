@@ -30,8 +30,8 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 <div class="panel progress"><div><b>아르델</b><div class="sub">지휘관 · Lv. 1</div></div><div class="gold">◆ 1,000</div></div>
 <div class="panel"><b>주요 메뉴</b><div class="menuGrid">
 <button class="menuBtn" onclick="startStory()"><b>⚔ 이야기</b><span>시나리오와 전투를 진행합니다.</span></button>
-<button class="menuBtn" onclick="showRoster()"><b>♟ 장수</b><span>장수 정보와 성장</span></button>
-<button class="menuBtn" onclick="showEquipment()"><b>◆ 장비</b><span>장비 장착과 관리</span></button>
+<button id="rosterBtn" class="menuBtn" type="button"><b>♟ 장수</b><span>장수 정보와 성장</span></button>
+<button id="equipmentBtn" class="menuBtn" type="button"><b>◆ 장비</b><span>장비 장착과 관리</span></button>
 <button class="menuBtn" onclick="lobbyNotice('도감 메뉴는 다음 단계에서 추가합니다.')"><b>📖 도감</b><span>장수와 세계의 기록</span></button>
 <button class="menuBtn" onclick="lobbyNotice('상점 메뉴는 다음 단계에서 추가합니다.')"><b>▣ 상점</b><span>아이템과 재화</span></button>
 <button class="menuBtn" onclick="lobbyNotice('설정 메뉴는 다음 단계에서 추가합니다.')"><b>⚙ 설정</b><span>게임 설정</span></button>
@@ -73,6 +73,8 @@ function renderEquipment(){const grid=$('equipRoster');grid.innerHTML=chars.filt
 function selectEquipment(id){selected=id;renderEquipment()}
 function renderEquipmentDetail(){const c=get(selected)||chars[0];$('equipDetail').innerHTML='<div style="font-size:24px"><b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+' · '+c.type+'</div><div class="equipGrid" style="margin-top:10px"><div class="equipCard"><div style="font-size:24px">⚔️</div><b>무기</b><div class="sub">초급 철검 · 공격 +5</div></div><div class="equipCard"><div style="font-size:24px">🛡️</div><b>방어구</b><div class="sub">초급 갑옷 · 방어 +5</div></div><div class="equipCard"><div style="font-size:24px">💠</div><b>보조</b><div class="sub">초급 부적 · HP +10</div></div></div><p style="font-size:11px;color:#9ca9b8;margin-bottom:0">현재는 장비 화면과 슬롯 구조를 먼저 구현합니다. 다음 단계에서 실제 장비 데이터와 전투 능력치 연동을 추가합니다.</p>}
 
+
+function bindLobbyButtons(){const rb=$('rosterBtn'),eb=$('equipmentBtn');if(rb)rb.addEventListener('click',showRoster);if(eb)eb.addEventListener('click',showEquipment)}
 function showRoster(){showScreen('roster');renderRoster()}
 function renderRoster(){const grid=$('rosterGrid');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectRoster(&quot;'+c.id+'&quot;)"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div><span class="tag">'+c.type+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">사거리 '+c.range+'</span><div class="bar"><i style="width:'+Math.round(c.hp/c.max*100)+'%"></i></div></div>').join('');renderRosterDetail()}
 function selectRoster(id){selected=id;renderRoster()}
@@ -130,5 +132,5 @@ function check(){if(!alive(get('ardel')))return end(false,'아르델이 쓰러�
 function end(win,text){$('resultTitle').textContent=win?'전투 성공':'전투 실패';$('resultText').textContent=text;$('overlay').style.display='flex'}
 $('end').onclick=()=>enemyTurn();
 
-showScreen('lobby');
+bindLobbyButtons();showScreen('lobby');
 </script></body></html>
