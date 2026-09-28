@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 메인 로비 v0.14.0</title>
+<title>ARDEL — 메인 로비 v0.15.0</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -24,7 +24,7 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 #hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
 .roster{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rosterCard{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:10px;cursor:pointer}.rosterCard.sel{border-color:#ffd166}.portrait{font-size:34px;float:right}.bar{height:6px;background:#111;border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:#57d17a}.detail{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:12px}.tag{display:inline-block;padding:3px 7px;border-radius:8px;background:#202b38;font-size:11px;margin:2px}
 </style></head><body><div id="app">
-<header><div><div class="title">ARDEL <span style="font-size:11px;color:#9ca9b8;font-weight:600">v0.14.0</span></div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
+<header><div><div class="title">ARDEL <span style="font-size:11px;color:#9ca9b8;font-weight:600">v0.15.0</span></div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
 <div id="lobby" class="screen active">
 <div class="lobbyHero"><div class="heroName">ARDEL</div><img class="referenceImg" src="https://origin.dzogame.vn/picture.dzogame.vn/aspicturewebsite/img/rotk-the-legend-of-caocao-tactics-3_pp_124.jpg" alt="전술 RPG 참고 이미지" onerror="this.style.display='none'"><div class="heroSub">결정하는 자가 아니라, 그 결과를 짊어지는 자.</div><div style="margin-top:130px"><b>제1장 · 불타는 협곡</b><div class="sub">서부군이 후퇴할 시간을 확보하라.</div></div></div>
 <div class="panel progress"><div><b>아르델</b><div class="sub">지휘관 · Lv. 1</div></div><div class="gold">◆ 1,000</div></div>
@@ -55,12 +55,12 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 <div class="overlay" id="overlay"><div class="card"><h2 id="resultTitle"></h2><p id="resultText"></p><button onclick="battleResult()">결과 확인</button></div></div>
 <script>
 const W=82, X=[18,112,206,300,394], Y=[18,128,238];
-const chars=[
-{id:'ardel',name:'아르델',role:'지휘관',type:'보병',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1,move:2},
-{id:'leon',name:'레온하르트',role:'전사 · 전선 유지',type:'보병',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1,move:2},
-{id:'sera',name:'세라',role:'전사 · 결투',type:'기병',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1,move:3},
-{id:'iris',name:'아이리스',role:'책사 · 전장 설계',type:'책사',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3,move:2},
-{id:'elios',name:'엘리오스',role:'정찰 · 정보',type:'궁병',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4,move:3},
+const growth={ardel:{hp:12,atk:3,def:2},leon:{hp:15,atk:3,def:3},sera:{hp:10,atk:4,def:1},iris:{hp:8,atk:3,def:1},elios:{hp:7,atk:3,def:1}}; const progress={ardel:{level:1,exp:0},leon:{level:1,exp:0},sera:{level:1,exp:0},iris:{level:1,exp:0},elios:{level:1,exp:0}}; function expNeed(lv){return 100+lv*25} function levelUp(c){const p=progress[c.id],g=growth[c.id];while(p.exp>=expNeed(p.level)){p.exp-=expNeed(p.level);p.level++;c.max+=g.hp;c.hp+=g.hp;c.baseAtk=(c.baseAtk||0)+g.atk;c.baseDef=(c.baseDef||0)+g.def;log(c.name+'이 Lv.'+p.level+'로 성장했다.')} } function heroLevel(c){return progress[c.id]?.level||1} const chars=[
+{id:'ardel',name:'아르델',role:'지휘관',baseAtk:24,baseDef:8,type:'보병',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1,move:2},
+{id:'leon',name:'레온하르트',role:'전사 · 전선 유지',baseAtk:32,baseDef:12,type:'보병',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1,move:2},
+{id:'sera',name:'세라',role:'전사 · 결투',baseAtk:38,baseDef:7,type:'기병',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1,move:3},
+{id:'iris',name:'아이리스',role:'책사 · 전장 설계',baseAtk:18,baseDef:5,type:'책사',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3,move:2},
+{id:'elios',name:'엘리오스',role:'정찰 · 정보',baseAtk:20,baseDef:6,type:'궁병',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4,move:3},
 {id:'archer',name:'적 궁병',role:'원거리',type:'궁병',face:'🏹',lane:0,pos:4,hp:75,max:75,side:'enemy',range:3,move:2},
 {id:'heavy',name:'적 중보병',role:'전선',type:'보병',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1,move:1},
 {id:'commander',name:'적 지휘관',role:'지휘관',type:'보병',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2,move:2}];
@@ -71,7 +71,7 @@ function renderInventory(){const g=$('inventoryGrid');if(!g)return;g.innerHTML='
 function equipFromInventory(itemId){const c=get(selected),x=inventory.find(i=>i.id===itemId);if(!c||!x)return;const old=equipment[c.id][x.slot];equipment[c.id][x.slot]={name:x.name,icon:x.icon,atk:x.atk||0,def:x.def||0,hp:x.hp||0};inventory.find(i=>i.id===itemId).qty--;if(old){let back=inventory.find(i=>i.name===old.name&&i.slot===x.slot);if(back)back.qty++;else inventory.push({id:'old_'+Date.now(),slot:x.slot,name:old.name,icon:old.icon,atk:old.atk||0,def:old.def||0,hp:old.hp||0,qty:1})}renderEquipmentDetail();renderInventory()}
 function unequipSlot(id,slot){const x=equipment[id][slot];if(!x)return;inventory.push({id:'old_'+Date.now(),slot,name:x.name,icon:x.icon,atk:x.atk||0,def:x.def||0,hp:x.hp||0,qty:1});equipment[id][slot]={name:'장비 없음',icon:'—'};renderEquipmentDetail();renderInventory()}
 function equipStat(c,key){return Object.values(equipment[c.id]||{}).reduce((v,x)=>v+(x[key]||0),0)}
-function stat(c,key){return (c[key]||0)+equipStat(c,key)}
+function stat(c,key){const base=key==='atk'?(c.baseAtk||0):key==='def'?(c.baseDef||0):(c[key]||0);return base+equipStat(c,key)}
 function effectiveMax(c){return c.max+equipStat(c,'hp')}
 let turn=1,ap=5,morale=100,west=0,selected='ardel',mode='normal',marked=null,fireTurns=0,guardTurns=0;
 function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');$('headerMode').textContent=id==='lobby'?'메인 로비':id==='story'?'시나리오':id==='roster'?'장수':id==='equipment'?'장비':'전술 전투'}
@@ -85,7 +85,7 @@ function bindLobbyButtons(){const rb=$('rosterBtn'),eb=$('equipmentBtn');if(rb)r
 function showRoster(){showScreen('roster');renderRoster()}
 function renderRoster(){const grid=$('rosterGrid');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectRoster(&quot;'+c.id+'&quot;)"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div><span class="tag">'+c.type+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">사거리 '+c.range+'</span><div class="bar"><i style="width:'+Math.round(c.hp/effectiveMax(c)*100)+'%"></i></div></div>').join('');renderRosterDetail()}
 function selectRoster(id){selected=id;renderRoster()}
-function renderRosterDetail(){const c=get(selected)||chars[0];$('rosterDetail').innerHTML='<div style="font-size:28px">'+c.face+' <b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+'</div><div style="margin-top:9px"><span class="tag">'+c.type+'</span><span class="tag">HP '+c.max+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">일반 사거리 '+c.range+'</span></div><p style="font-size:12px;line-height:1.5;margin-bottom:0">'+rosterLore(c.id)+'</p>'}
+function renderRosterDetail(){const c=get(selected)||chars[0],p=progress[c.id]||{level:1,exp:0};$('rosterDetail').innerHTML='<div style="font-size:28px">'+c.face+' <b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+'</div><div style="margin-top:9px"><span class="tag">Lv. '+p.level+'</span><span class="tag">EXP '+p.exp+' / '+expNeed(p.level)+'</span><span class="tag">HP '+effectiveMax(c)+'</span><span class="tag">공격 '+stat(c,'atk')+'</span><span class="tag">방어 '+stat(c,'def')+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">일반 사거리 '+c.range+'</span></div><p style="font-size:12px;line-height:1.5;margin-bottom:0">'+rosterLore(c.id)+'</p><button type="button" class="skill" style="width:100%;margin-top:8px" onclick="gainExp(selected,100)">경험치 +100</button><button type="button" class="skill" style="width:100%;margin-top:6px" onclick="gainExp(selected,500)">경험치 +500</button>')} function gainExp(id,n){const c=get(id);if(!c)return;progress[id].exp+=n;levelUp(c);renderRoster();renderEquipmentDetail()}
 function rosterLore(id){return ({ardel:'결정을 내리고 그 결과를 책임지는 지휘관. 전투에서는 진형 유지와 전진 명령으로 아군의 행동을 이끈다.',leon:'거대한 할버드와 방패를 사용하는 흑호 수인 전사. 전선을 버티며 돌파구를 만든다.',sera:'거대한 대검을 다루는 기병 전사. 빠르게 거리를 좁혀 단일 적을 강하게 압박한다.',iris:'화염으로 전장의 지형과 이동로를 바꾸는 책사. 넓은 범위 공격과 표식 연계가 핵심이다.',elios:'정찰과 정보 수집을 담당하는 하이엘프 궁병. 원거리 공격과 적 표식으로 아군의 판단을 돕는다.'})[id]||''}
 
 function startBattle(){showScreen('battle');resetBattle();render();skills();log('전투 준비 완료. 장수를 선택해 이동과 공격을 시작하세요.')}
