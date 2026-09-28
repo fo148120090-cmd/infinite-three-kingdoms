@@ -147,7 +147,7 @@ if(c.id==='ardel')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>s
 if(c.id==='leon')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['방패벽',0,()=>{allyList().forEach(x=>{if(gridDist(c,x)<=1)x.guard=2});log('레온하르트가 방패벽을 세운다. 인접 아군을 보호한다.');finishAction(c)}],['할버드 돌파',0,()=>leonBreakthrough()]];
 if(c.id==='sera')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['강타',0,()=>seraSmash()]];
 if(c.id==='iris')arr=[['이동',0,()=>setMode('move')],['화염선',0,()=>setMode('fire')],['표식 폭발',0,()=>{if(marked&&alive(get(marked))){let m=get(marked);enemyList().filter(e=>gridDist(m,e)<=1).forEach(e=>dmg(e.id,e.id===m.id?50:25));marked=null;log('아이리스: 표식이 폭발하며 주변 적까지 휩쓸었다.');finishAction(c)}else log('아이리스: 폭발할 표식이 없습니다.')}],['전장 소각',0,()=>skillAttackMode(1.0,3,1)]];
-if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>skillAttackMode(1.25,5)],['바람의 눈',0,()=>{allyList().forEach(x=>x.atkBuff=(x.atkBuff||0)+2);log('엘리오스: 적의 위치와 이동 경로를 읽어 아군의 공격을 보조한다.');finishAction(c)}],['정령의 표식',0,()=>{mode='mark';window._markRange=5;render();skills()}],['위험 감지',0,()=>{enemyList().forEach(e=>e.danger=1);log('엘리오스: 위험 지점을 포착했다. 다음 적 공격이 약화된다.');finishAction(c)}]];
+if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>skillAttackMode(1.25,5)],['바람의 눈',0,()=>{allyList().forEach(x=>x.atkBuff=(x.atkBuff||0)+2);log('엘리오스: 적의 위치와 이동 경로를 읽어 아군의 공격을 보조한다.');finishAction(c)}],['정령의 표식',0,()=>{mode='mark';window._markRange=5;render();skills()}],['위험 감지',0,()=>{enemyList().forEach(e=>e.danger=1);log('엘리오스: 위험 지점을 포착했다. 다음 적 공격 피해가 감소한다.');finishAction(c)}]];
 $('skills').innerHTML=arr.map(x=>'<button class="skill" onclick="skillRun(&quot;'+x[0]+'&quot;)"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
 window._actions=arr;
 $('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='skill'?(window._skillRadius?'범위 공격 중심이 될 적을 선택하세요.':'스킬 공격 범위의 적을 직접 선택하세요.'):mode==='fire'?'화염선을 놓을 위치를 선택하세요.':mode==='mark'?'표식을 부여할 적을 직접 선택하세요.':'장수를 선택하고 이동 → 공격/스킬 순서로 행동하세요.';
@@ -160,7 +160,7 @@ enemyList().forEach(e=>{
   if(fireTurns&&e.fireSlow&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}
   let targets=allyList().map(t=>({t,d:gridDist(e,t)})).sort((a,b)=>a.d-b.d);
   let t=targets[0]?.t;if(!t)return;
-  const power=(e.id==='archer'?12:e.id==='commander'?16:18)-(e.danger?4:0);
+  const power=(e.id==='archer'?12:e.id==='commander'?16:18);
   const attackTarget=allyList().filter(x=>gridDist(e,x)<=e.range).sort((a,b)=>{
     const score=(x)=>{
       let s=0;
@@ -183,7 +183,7 @@ enemyList().forEach(e=>{
     return score(b)-score(a)||gridDist(e,b)-gridDist(e,a);
   })[0];
   if(attackTarget){
-    let n=power;if(guardTurns)n=Math.max(4,n-7);
+    let n=power;if(guardTurns)n=Math.max(4,n-7);if(attackTarget.danger)n=Math.max(4,n-4);
     dmg(attackTarget.id,n);
     log(e.name+'이 '+attackTarget.name+'을 공격했다.');
     return;
@@ -200,7 +200,7 @@ enemyList().forEach(e=>{
     e.lane=candidates[0].lane;e.pos=candidates[0].pos;
     log(e.name+'이 '+t.name+'을 추적해 이동했다.');
     if(gridDist(e,t)<=e.range){
-      let n=power;if(guardTurns)n=Math.max(4,n-7);
+      let n=power;if(guardTurns)n=Math.max(4,n-7);if(t.danger)n=Math.max(4,n-4);
       dmg(t.id,n);log(e.name+'이 이동 후 '+t.name+'을 공격했다.');
     }
   }
