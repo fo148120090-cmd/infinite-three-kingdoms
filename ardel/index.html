@@ -152,7 +152,39 @@ $('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이�
 function skillRun(name){let a=window._actions.find(x=>x[0]===name);if(!a)return;a[2]();if(mode==='normal'){render();skills();check()}}
 function enemyTurn(){
 log('<b>— 적군 행동 —</b>');
-enemyList().forEach(e=>{if(fireTurns&&e.lane===0&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}let targets=allyList().sort((a,b)=>gridDist(e,a)-gridDist(e,b));let t=targets[0];if(!t)return;if(gridDist(e,t)<=e.range){let n=e.id==='archer'?12:e.id==='commander'?16:18;if(guardTurns)n=Math.max(4,n-7);dmg(t.id,n)}else{let candidates=[];if(e.lane>0)candidates.push({lane:e.lane-1,pos:e.pos});if(e.lane<2)candidates.push({lane:e.lane+1,pos:e.pos});if(e.pos>0)candidates.push({lane:e.lane,pos:e.pos-1});if(e.pos<4)candidates.push({lane:e.lane,pos:e.pos+1});candidates=candidates.filter(q=>!chars.some(x=>alive(x)&&x.lane===q.lane&&x.pos===q.pos)).sort((a,b)=>gridDist(a,t)-gridDist(b,t));if(candidates.length){e.lane=candidates[0].lane;e.pos=candidates[0].pos;log(e.name+'이 전술 격자를 따라 이동했다.');if(gridDist(e,t)<=e.range){let n=e.id==='archer'?12:e.id==='commander'?16:18;if(guardTurns)n=Math.max(4,n-7);dmg(t.id,n)}}}});
+enemyList().forEach(e=>{
+  if(!alive(e))return;
+  if(fireTurns&&e.lane===0&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}
+  let targets=allyList().map(t=>({t,d:gridDist(e,t)})).sort((a,b)=>a.d-b.d);
+  let t=targets[0]?.t;if(!t)return;
+  const power=e.id==='archer'?12:e.id==='commander'?16:18;
+  const attackTarget=allyList().filter(x=>gridDist(e,x)<=e.range).sort((a,b)=>{
+    const priority=(x)=>x.id==='ardel'?0:x.id==='leon'?1:2;
+    return priority(a)-priority(b)||gridDist(e,a)-gridDist(e,b);
+  })[0];
+  if(attackTarget){
+    let n=power;if(guardTurns)n=Math.max(4,n-7);
+    dmg(attackTarget.id,n);
+    log(e.name+'이 '+attackTarget.name+'을 공격했다.');
+    return;
+  }
+  let candidates=[];
+  if(e.lane>0)candidates.push({lane:e.lane-1,pos:e.pos});
+  if(e.lane<2)candidates.push({lane:e.lane+1,pos:e.pos});
+  if(e.pos>0)candidates.push({lane:e.lane,pos:e.pos-1});
+  if(e.pos<4)candidates.push({lane:e.lane,pos:e.pos+1});
+  candidates=candidates
+    .filter(q=>!chars.some(x=>alive(x)&&x.lane===q.lane&&x.pos===q.pos))
+    .sort((a,b)=>gridDist(a,t)-gridDist(b,t));
+  if(candidates.length){
+    e.lane=candidates[0].lane;e.pos=candidates[0].pos;
+    log(e.name+'이 '+t.name+'을 추적해 이동했다.');
+    if(gridDist(e,t)<=e.range){
+      let n=power;if(guardTurns)n=Math.max(4,n-7);
+      dmg(t.id,n);log(e.name+'이 이동 후 '+t.name+'을 공격했다.');
+    }
+  }
+});
 if(fireTurns)fireTurns--;guardTurns=0;
 chars.filter(c=>c.side==='ally').forEach(c=>{c.acted=false;c.moved=false});
 turn++;mode='normal';render();skills();check()
