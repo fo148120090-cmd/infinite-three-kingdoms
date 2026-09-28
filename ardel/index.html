@@ -1,9 +1,17 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 불타는 협곡 v0.7</title>
+<title>ARDEL — 메인 로비 v0.9</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
+.screen{display:none}.screen.active{display:block}
+.lobbyHero{margin:12px;border:1px solid #536276;border-radius:18px;min-height:250px;padding:22px;position:relative;overflow:hidden;background:radial-gradient(circle at 70% 35%,#33485f,#141b25 58%,#0d131c)}
+.lobbyHero:after{content:'⚔️';position:absolute;right:28px;bottom:18px;font-size:112px;opacity:.16}
+.heroName{font-size:28px;font-weight:900;letter-spacing:1px}.heroSub{margin-top:5px;color:#b9c5d3;font-size:12px}
+.menuGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:10px}
+.menuBtn{border:1px solid #445365;background:#202b38;color:#fff;border-radius:12px;padding:15px 10px;text-align:left;cursor:pointer}.menuBtn b{display:block;font-size:15px}.menuBtn span{font-size:11px;color:#aeb9c6}
+.progress{display:flex;justify-content:space-between;align-items:center}.gold{color:#e6c66d;font-weight:800}
+
 header{padding:14px 16px;display:flex;justify-content:space-between;border-bottom:1px solid #344050}.title{font-weight:800}.sub{font-size:12px;color:#9ca9b8}
 .panel{margin:12px;border:1px solid #344050;background:#141b25;border-radius:14px;padding:12px}.stats{display:flex;gap:7px}.stat{flex:1;background:#0d131c;border-radius:10px;padding:7px;text-align:center;font-size:11px}.stat b{display:block;font-size:17px}
 #field{position:relative;height:330px;margin:12px;border:1px solid #3c4a5d;border-radius:16px;overflow:hidden;background:repeating-linear-gradient(to bottom,#1b2630 0,#1b2630 108px,#263442 109px,#263442 110px)}
@@ -15,14 +23,33 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 .overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:24px;z-index:20}.card{max-width:430px;width:100%;background:#151d28;border:1px solid #526176;border-radius:18px;padding:22px;text-align:center}.card button{width:100%;padding:12px;margin-top:10px;border:0;border-radius:10px;background:#d6b36a;color:#17130b;font-weight:800}
 #hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
 </style></head><body><div id="app">
-<header><div><div class="title">ARDEL</div><div class="sub">제1장 · 불타는 협곡</div></div><div class="sub">전술 전투 v0.7</div></header>
+<header><div><div class="title">ARDEL</div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
+<div id="lobby" class="screen active">
+<div class="lobbyHero"><div class="heroName">ARDEL</div><div class="heroSub">결정하는 자가 아니라, 그 결과를 짊어지는 자.</div><div style="margin-top:130px"><b>제1장 · 불타는 협곡</b><div class="sub">서부군이 후퇴할 시간을 확보하라.</div></div></div>
+<div class="panel progress"><div><b>아르델</b><div class="sub">지휘관 · Lv. 1</div></div><div class="gold">◆ 1,000</div></div>
+<div class="panel"><b>주요 메뉴</b><div class="menuGrid">
+<button class="menuBtn" onclick="startStory()"><b>⚔ 이야기</b><span>시나리오와 전투를 진행합니다.</span></button>
+<button class="menuBtn" onclick="lobbyNotice('장수 메뉴는 다음 단계에서 추가합니다.')"><b>♟ 장수</b><span>장수 정보와 성장</span></button>
+<button class="menuBtn" onclick="lobbyNotice('장비 메뉴는 다음 단계에서 추가합니다.')"><b>◆ 장비</b><span>장비 장착과 관리</span></button>
+<button class="menuBtn" onclick="lobbyNotice('도감 메뉴는 다음 단계에서 추가합니다.')"><b>📖 도감</b><span>장수와 세계의 기록</span></button>
+<button class="menuBtn" onclick="lobbyNotice('상점 메뉴는 다음 단계에서 추가합니다.')"><b>▣ 상점</b><span>아이템과 재화</span></button>
+<button class="menuBtn" onclick="lobbyNotice('설정 메뉴는 다음 단계에서 추가합니다.')"><b>⚙ 설정</b><span>게임 설정</span></button>
+</div></div>
+<div class="panel"><b>다음 전투</b><div class="sub" style="margin-top:5px">제1장 · 불타는 협곡 — 적 지휘관을 격파하라.</div><button class="skill" style="width:100%;margin-top:9px;text-align:center" onclick="startStory()">전투 준비</button></div>
+</div>
+<div id="story" class="screen">
+<div class="panel"><b>제1장 · 불타는 협곡</b><div class="sub" style="margin-top:5px">서부군이 후퇴할 시간을 확보하기 위해 협곡을 지킨다.</div></div>
+<div class="panel"><b>작전 목표</b><p style="font-size:13px;line-height:1.5">적 지휘관을 격파하고 협곡을 돌파하라.</p><button class="skill" style="width:100%;text-align:center" onclick="startBattle()">전투 시작</button><button class="skill" style="width:100%;margin-top:8px;text-align:center" onclick="showScreen('lobby')">← 로비</button></div>
+</div>
+<div id="battle" class="screen">
 <div class="panel"><div><b>목표</b> · 적 지휘관을 격파하라</div><div class="sub" style="margin-top:5px">15턴 · 각 장수는 턴마다 1회 행동 · 이동 후 공격/스킬 선택</div></div>
 <div class="stats"><div class="stat">TURN<b id="turn">1 / 15</b></div><div class="stat">행동 가능<b id="ap">5</b></div><div class="stat">적 지휘관<b id="morale">105</b></div><div class="stat">전투<b id="time">진행</b></div></div>
 <div id="field"><div class="lane" style="top:0"></div><div class="lane" style="top:110px"></div><div class="lane" style="top:220px"></div></div>
 <div class="panel"><div><b id="selected">아르델</b> <span class="sub" id="role">지휘관</span></div><div id="hint">아군을 선택하고 이동 또는 행동을 선택하세요.</div><div id="skills" style="margin-top:8px"></div><button id="end" class="skill" style="width:100%;margin-top:8px;text-align:center">턴 종료 → 적 행동</button></div>
 <div class="panel"><b>전장 기록</b><div id="log" style="margin-top:8px"></div></div>
 </div>
-<div class="overlay" id="overlay"><div class="card"><h2 id="resultTitle"></h2><p id="resultText"></p><button onclick="location.reload()">다시 전투</button></div></div>
+</div>
+<div class="overlay" id="overlay"><div class="card"><h2 id="resultTitle"></h2><p id="resultText"></p><button onclick="battleResult()">결과 확인</button></div></div>
 <script>
 const W=82, X=[18,112,206,300,394], Y=[18,128,238];
 const chars=[
@@ -35,6 +62,12 @@ const chars=[
 {id:'heavy',name:'적 중보병',role:'전선',type:'보병',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1,move:1},
 {id:'commander',name:'적 지휘관',role:'지휘관',type:'보병',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2,move:2}];
 let turn=1,ap=5,morale=100,west=0,selected='ardel',mode='normal',marked=null,fireTurns=0,guardTurns=0;
+function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');$('headerMode').textContent=id==='lobby'?'메인 로비':id==='story'?'시나리오':'전술 전투'}
+function lobbyNotice(t){alert(t)}
+function startStory(){showScreen('story')}
+function startBattle(){showScreen('battle');resetBattle();render();skills();log('전투 준비 완료. 장수를 선택해 이동과 공격을 시작하세요.')}
+function resetBattle(){turn=1;selected='ardel';mode='normal';marked=null;fireTurns=0;guardTurns=0;chars.forEach(c=>{c.hp=c.max;c.acted=false;c.moved=false});chars.find(c=>c.id==='ardel').lane=1;chars.find(c=>c.id==='ardel').pos=0;chars.find(c=>c.id==='leon').lane=1;chars.find(c=>c.id==='leon').pos=1;chars.find(c=>c.id==='sera').lane=0;chars.find(c=>c.id==='sera').pos=0;chars.find(c=>c.id==='iris').lane=2;chars.find(c=>c.id==='iris').pos=0;chars.find(c=>c.id==='elios').lane=0;chars.find(c=>c.id==='elios').pos=1;chars.find(c=>c.id==='archer').pos=4;chars.find(c=>c.id==='heavy').pos=4;chars.find(c=>c.id==='commander').pos=4;$('log').innerHTML=''}
+function battleResult(){ $('overlay').style.display='none'; showScreen('lobby')}
 const $=id=>document.getElementById(id), log=t=>{$('log').innerHTML+='<div class="logline">'+t+'</div>';$('log').scrollTop=99999};
 const get=id=>chars.find(c=>c.id===id), alive=c=>c&&c.hp>0;
 function dist(a,b){return a.lane===b.lane?Math.abs(a.pos-b.pos):99}
@@ -82,5 +115,5 @@ function check(){if(!alive(get('ardel')))return end(false,'아르델이 쓰러�
 function end(win,text){$('resultTitle').textContent=win?'전투 성공':'전투 실패';$('resultText').textContent=text;$('overlay').style.display='flex'}
 $('end').onclick=()=>enemyTurn();
 
-render();skills();log('전투 개시: 장수를 선택하면 이동 범위와 공격 가능한 적이 표시됩니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.');log('엘리오스: 북쪽 숲에서 이동 흔적을 확인했습니다.');log('아르델: 두 의견을 듣고 내가 결정한다.');
+showScreen('lobby');
 </script></body></html>
