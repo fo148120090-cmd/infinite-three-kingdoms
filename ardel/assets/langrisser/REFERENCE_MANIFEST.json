@@ -1,0 +1,66 @@
+{
+  "version": "0.30.6",
+  "purpose": "PC 없이 확보 가능한 Langrisser Mobile Chibi Model 참고자료. 원본 파일은 저장하지 않고 참조 URL과 ARDEL 제작 방향만 기록.",
+  "sources": [
+    {
+      "name": "Lana",
+      "url": "https://www.spriters-resource.com/mobile/langrisser/asset/274565/",
+      "format": "PNG",
+      "size": "512x512",
+      "use": "Iris 마법사 체형 참고"
+    },
+    {
+      "name": "Luna",
+      "url": "https://www.spriters-resource.com/mobile/langrisser/asset/274573/",
+      "format": "PNG",
+      "size": "1024x512",
+      "use": "Elios 궁병·기동 체형 참고"
+    },
+    {
+      "name": "Sofia",
+      "url": "https://www.spriters-resource.com/mobile/langrisser/asset/274598/",
+      "format": "PNG",
+      "size": "512x512",
+      "use": "지원형 여성 캐릭터 비율 참고"
+    },
+    {
+      "name": "Liffany",
+      "url": "https://www.spriters-resource.com/mobile/langrisser/asset/274569/",
+      "format": "PNG",
+      "size": "512x512",
+      "use": "마법사 여성 캐릭터 비율 참고"
+    },
+    {
+      "name": "Tiaris",
+      "url": "https://www.spriters-resource.com/mobile/langrisser/asset/274606/",
+      "format": "PNG",
+      "size": "512x512",
+      "use": "여성 지원형 캐릭터 비율 참고"
+    },
+    {
+      "name": "Freya",
+      "url": "https://www.spriters-resource.com/mobile/langrisser/asset/274556/",
+      "format": "PNG",
+      "size": "512x512",
+      "use": "중장·방어형 실루엣 참고"
+    },
+    {
+      "name": "Narm",
+      "url": "https://www.spriters-resource.com/mobile/langrisser/asset/274581/",
+      "format": "ZIP",
+      "size": "8.87MB",
+      "use": "적 궁병 및 활/장비 실루엣 참고"
+    }
+  ],
+  "ardel": {
+    "ardel": "지휘관·보병: 백/청/금 경갑, 깃발, 검, 긴 외투",
+    "leonhardt": "중장 전사: 흑호 수인, 대형 할버드, 대형 방패, 매우 큰 체구",
+    "sera": "기동 전사: 백/은/적 중갑, 대검, 긴 다리와 공격적인 자세",
+    "iris": "마법사: 검은 전술복, 적색 망토, 지팡이/마도서, 화염 효과",
+    "elios": "궁병 정찰: 은발, 청록 눈, 장궁, 가벼운 망토와 바람 정령",
+    "enemy_archer": "궁병: 적군 색상, 활 중심 실루엣",
+    "enemy_heavy": "중장보병: 방패·중갑 중심의 큰 실루엣",
+    "enemy_commander": "기병 지휘관: 장식 갑주와 긴 무기, 적 지휘관 실루엣"
+  },
+  "next": "PC 사용 가능 시 실제 PNG/Spine 자료를 확보한 뒤 이 manifest의 참조와 대조하여 ARDEL 전용 오리지널 스프라이트로 교체."
+}
