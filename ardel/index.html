@@ -184,6 +184,8 @@ enemyList().forEach(e=>{
   })[0];
   if(attackTarget){
     let n=power;if(guardTurns)n=Math.max(4,n-7);if(attackTarget.danger)n=Math.max(4,n-4);
+    if(attackTarget.evasion&&Math.random()<attackTarget.evasion){log(attackTarget.name+'이(가) 회피했다!');return;}
+    if(attackTarget.block&&Math.random()<attackTarget.block){n=Math.floor(n*0.7);log(attackTarget.name+'의 블록! 물리 피해가 30% 감소했다.');}
     dmg(attackTarget.id,n);
     log(e.name+'이 '+attackTarget.name+'을 공격했다.');
     return;
@@ -201,6 +203,8 @@ enemyList().forEach(e=>{
     log(e.name+'이 '+t.name+'을 추적해 이동했다.');
     if(gridDist(e,t)<=e.range){
       let n=power;if(guardTurns)n=Math.max(4,n-7);if(t.danger)n=Math.max(4,n-4);
+      if(t.evasion&&Math.random()<t.evasion){log(t.name+'이(가) 회피했다!');continue;}
+      if(t.block&&Math.random()<t.block){n=Math.floor(n*0.7);log(t.name+'의 블록! 물리 피해가 30% 감소했다.');}
       dmg(t.id,n);log(e.name+'이 이동 후 '+t.name+'을 공격했다.');
     }
   }
