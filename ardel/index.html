@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 메인 로비 v0.9</title>
+<title>ARDEL — 메인 로비 v0.10.1</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -24,7 +24,7 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 #hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
 .roster{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rosterCard{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:10px;cursor:pointer}.rosterCard.sel{border-color:#ffd166}.portrait{font-size:34px;float:right}.bar{height:6px;background:#111;border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:#57d17a}.detail{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:12px}.tag{display:inline-block;padding:3px 7px;border-radius:8px;background:#202b38;font-size:11px;margin:2px}
 </style></head><body><div id="app">
-<header><div><div class="title">ARDEL</div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
+<header><div><div class="title">ARDEL <span style="font-size:11px;color:#9ca9b8;font-weight:600">v0.10.1</span></div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
 <div id="lobby" class="screen active">
 <div class="lobbyHero"><div class="heroName">ARDEL</div><img class="referenceImg" src="https://origin.dzogame.vn/picture.dzogame.vn/aspicturewebsite/img/rotk-the-legend-of-caocao-tactics-3_pp_124.jpg" alt="전술 RPG 참고 이미지" onerror="this.style.display='none'"><div class="heroSub">결정하는 자가 아니라, 그 결과를 짊어지는 자.</div><div style="margin-top:130px"><b>제1장 · 불타는 협곡</b><div class="sub">서부군이 후퇴할 시간을 확보하라.</div></div></div>
 <div class="panel progress"><div><b>아르델</b><div class="sub">지휘관 · Lv. 1</div></div><div class="gold">◆ 1,000</div></div>
@@ -68,7 +68,7 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classL
 function lobbyNotice(t){alert(t)}
 function startStory(){showScreen('story')}
 function showRoster(){showScreen('roster');renderRoster()}
-function renderRoster(){const grid=$('rosterGrid');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectRoster(\\''+c.id+'\\')"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div><span class="tag">'+c.type+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">사거리 '+c.range+'</span><div class="bar"><i style="width:'+Math.round(c.hp/c.max*100)+'%"></i></div></div>').join('');renderRosterDetail()}
+function renderRoster(){const grid=$('rosterGrid');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectRoster(&quot;'+c.id+'&quot;)"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div><span class="tag">'+c.type+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">사거리 '+c.range+'</span><div class="bar"><i style="width:'+Math.round(c.hp/c.max*100)+'%"></i></div></div>').join('');renderRosterDetail()}
 function selectRoster(id){selected=id;renderRoster()}
 function renderRosterDetail(){const c=get(selected)||chars[0];$('rosterDetail').innerHTML='<div style="font-size:28px">'+c.face+' <b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+'</div><div style="margin-top:9px"><span class="tag">'+c.type+'</span><span class="tag">HP '+c.max+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">일반 사거리 '+c.range+'</span></div><p style="font-size:12px;line-height:1.5;margin-bottom:0">'+rosterLore(c.id)+'</p>'}
 function rosterLore(id){return ({ardel:'결정을 내리고 그 결과를 책임지는 지휘관. 전투에서는 진형 유지와 전진 명령으로 아군의 행동을 이끈다.',leon:'거대한 할버드와 방패를 사용하는 흑호 수인 전사. 전선을 버티며 돌파구를 만든다.',sera:'거대한 대검을 다루는 기병 전사. 빠르게 거리를 좁혀 단일 적을 강하게 압박한다.',iris:'화염으로 전장의 지형과 이동로를 바꾸는 책사. 넓은 범위 공격과 표식 연계가 핵심이다.',elios:'정찰과 정보 수집을 담당하는 하이엘프 궁병. 원거리 공격과 적 표식으로 아군의 판단을 돕는다.'})[id]||''}
