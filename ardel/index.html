@@ -159,8 +159,18 @@ enemyList().forEach(e=>{
   let t=targets[0]?.t;if(!t)return;
   const power=(e.id==='archer'?12:e.id==='commander'?16:18)-(e.danger?4:0);
   const attackTarget=allyList().filter(x=>gridDist(e,x)<=e.range).sort((a,b)=>{
-    const priority=(x)=>x.id==='ardel'?0:x.id==='leon'?1:2;
-    return priority(a)-priority(b)||gridDist(e,a)-gridDist(e,b);
+    const score=(x)=>{
+      let s=0;
+      const hpRatio=x.hp/effectiveMax(x);
+      if(x.id==='iris'||x.id==='elios')s+=18;
+      if(x.id==='ardel')s+=8;
+      if(x.id==='leon')s-=8;
+      if(hpRatio<0.45)s+=14;
+      if(x.guard)s-=12;
+      if(x.type===e.type)s+=3;
+      return s;
+    };
+    return score(b)-score(a)||gridDist(e,b)-gridDist(e,a);
   })[0];
   if(attackTarget){
     let n=power;if(guardTurns)n=Math.max(4,n-7);
