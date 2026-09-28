@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 메인 로비 v0.15.1</title>
+<title>ARDEL — 메인 로비 v0.16.0</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -24,7 +24,7 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 #hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
 .roster{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rosterCard{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:10px;cursor:pointer}.rosterCard.sel{border-color:#ffd166}.portrait{font-size:34px;float:right}.bar{height:6px;background:#111;border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:#57d17a}.detail{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:12px}.tag{display:inline-block;padding:3px 7px;border-radius:8px;background:#202b38;font-size:11px;margin:2px}
 </style></head><body><div id="app">
-<header><div><div class="title">ARDEL <span style="font-size:11px;color:#9ca9b8;font-weight:600">v0.15.1</span></div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
+<header><div><div class="title">ARDEL <span style="font-size:11px;color:#9ca9b8;font-weight:600">v0.16.0</span></div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
 <div id="lobby" class="screen active">
 <div class="lobbyHero"><div class="heroName">ARDEL</div><img class="referenceImg" src="https://origin.dzogame.vn/picture.dzogame.vn/aspicturewebsite/img/rotk-the-legend-of-caocao-tactics-3_pp_124.jpg" alt="전술 RPG 참고 이미지" onerror="this.style.display='none'"><div class="heroSub">결정하는 자가 아니라, 그 결과를 짊어지는 자.</div><div style="margin-top:130px"><b>제1장 · 불타는 협곡</b><div class="sub">서부군이 후퇴할 시간을 확보하라.</div></div></div>
 <div class="panel progress"><div><b>아르델</b><div class="sub">지휘관 · Lv. 1</div></div><div class="gold">◆ 1,000</div></div>
@@ -85,7 +85,7 @@ function bindLobbyButtons(){const rb=$('rosterBtn'),eb=$('equipmentBtn');if(rb)r
 function showRoster(){showScreen('roster');renderRoster()}
 function renderRoster(){const grid=$('rosterGrid');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectRoster(&quot;'+c.id+'&quot;)"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div><span class="tag">'+c.type+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">사거리 '+c.range+'</span><div class="bar"><i style="width:'+Math.round(c.hp/effectiveMax(c)*100)+'%"></i></div></div>').join('');renderRosterDetail()}
 function selectRoster(id){selected=id;renderRoster()}
-function renderRosterDetail(){const c=get(selected)||chars[0],p=progress[c.id]||{level:1,exp:0};$('rosterDetail').innerHTML='<div style="font-size:28px">'+c.face+' <b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+'</div><div style="margin-top:9px"><span class="tag">Lv. '+p.level+'</span><span class="tag">EXP '+p.exp+' / '+expNeed(p.level)+'</span><span class="tag">HP '+effectiveMax(c)+'</span><span class="tag">공격 '+stat(c,'atk')+'</span><span class="tag">방어 '+stat(c,'def')+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">일반 사거리 '+c.range+'</span></div><p style="font-size:12px;line-height:1.5;margin-bottom:0">'+rosterLore(c.id)+'</p><button type="button" class="skill" style="width:100%;margin-top:8px" onclick="gainExp(selected,100)">경험치 +100</button><button type="button" class="skill" style="width:100%;margin-top:6px" onclick="gainExp(selected,500)">경험치 +500</button>'} function gainExp(id,n){const c=get(id);if(!c)return;progress[id].exp+=n;levelUp(c);renderRoster();renderEquipmentDetail()}
+function renderRosterDetail(){const c=get(selected)||chars[0],p=progress[c.id]||{level:1,exp:0};$('rosterDetail').innerHTML='<div style="font-size:28px">'+c.face+' <b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+'</div><div style="margin-top:9px"><span class="tag">Lv. '+p.level+'</span><span class="tag">EXP '+p.exp+' / '+expNeed(p.level)+'</span><span class="tag">HP '+effectiveMax(c)+'</span><span class="tag">공격 '+stat(c,'atk')+'</span><span class="tag">방어 '+stat(c,'def')+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">일반 사거리 '+c.range+'</span></div><p style="font-size:12px;line-height:1.5;margin-bottom:0">'+rosterLore(c.id)+'</p><button type="button" class="skill" style="width:100%;margin-top:8px"'} function gainExp(id,n){const c=get(id);if(!c)return;progress[id].exp+=n;levelUp(c);renderRoster();renderEquipmentDetail()}
 function rosterLore(id){return ({ardel:'결정을 내리고 그 결과를 책임지는 지휘관. 전투에서는 진형 유지와 전진 명령으로 아군의 행동을 이끈다.',leon:'거대한 할버드와 방패를 사용하는 흑호 수인 전사. 전선을 버티며 돌파구를 만든다.',sera:'거대한 대검을 다루는 기병 전사. 빠르게 거리를 좁혀 단일 적을 강하게 압박한다.',iris:'화염으로 전장의 지형과 이동로를 바꾸는 책사. 넓은 범위 공격과 표식 연계가 핵심이다.',elios:'정찰과 정보 수집을 담당하는 하이엘프 궁병. 원거리 공격과 적 표식으로 아군의 판단을 돕는다.'})[id]||''}
 
 function startBattle(){showScreen('battle');resetBattle();render();skills();log('전투 준비 완료. 장수를 선택해 이동과 공격을 시작하세요.')}
@@ -107,7 +107,7 @@ for(let p=0;p<5;p++)for(let l=0;l<3;l++){let g=document.createElement('div');g.c
 if(mode==='move'&&canAct(get(selected))&&!get(selected).moved){let c=get(selected);for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=c.move&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p))$('field').appendChild(tile(c.lane,p,'move'))}
 if(mode==='attack'&&canAct(get(selected))){let c=get(selected);enemyList().filter(e=>dist(c,e)<=c.range).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>attack(e.id))))}
 if(mode==='fire'&&canAct(get(selected))){for(let p=0;p<5;p++)$('field').appendChild(tile(0,p,'fire',()=>fireAt(p)))}
-chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'')+(c.acted?' acted':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="face">'+c.face+'</div><small>'+c.name+(c.acted?' · 행동완료':'')+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/c.max*100)+'%"></i></div>';e.onclick=()=>{if(mode==='attack'&&c.side==='enemy'){attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
+chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'')+(c.acted?' acted':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="face">'+c.face+'</div><small>'+c.name+(c.acted?' · 행동완료':'')+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/effectiveMax(c)*100)+'%"></i></div>';e.onclick=()=>{if(mode==='attack'&&c.side==='enemy'){attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
 $('turn').textContent=turn+' / 15';$('ap').textContent=allyList().filter(c=>!c.acted).length;$('morale').textContent=get('commander')?.hp||0;$('time').textContent='진행';
 }
 function tile(l,p,cls,fn){let t=document.createElement('div');t.className='tile '+cls;t.style.left=X[p]+'px';t.style.top=Y[l]+'px';t.onclick=()=>{fn?fn():doMove(p)};return t}
@@ -135,9 +135,7 @@ if(fireTurns)fireTurns--;guardTurns=0;
 chars.filter(c=>c.side==='ally').forEach(c=>{c.acted=false;c.moved=false});
 turn++;mode='normal';render();skills();check()
 }
-function check(){if(!alive(get('ardel')))return end(false,'아르델이 쓰러졌습니다.');if(!alive(get('commander')))return end(true,'적 지휘관을 격파했습니다.');if(!allyList().length)return end(false,'아군이 전멸했습니다.');if(turn>15)return end(false,'전투가 장기화되어 작전은 실패했습니다.')}
-function end(win,text){$('resultTitle').textContent=win?'전투 성공':'전투 실패';$('resultText').textContent=text;$('overlay').style.display='flex'}
-$('end').onclick=()=>enemyTurn();
+function check(){if(!alive(get('ardel')))return end(false,'아르델이 쓰러졌습니다.');if(!alive(get('commander')))return end(true,'적 지휘관을 격파했습니다.');if(!allyList().length)return end(false,'아군이 전멸했습니다.');if(turn>15)return end(false,'전투가 장기화되어 작전은 실패했습니다.')}function battleExp(){return 80+Math.max(0,16-turn)*5}function end(win,text){if(win){const reward=battleExp();allyList().forEach(c=>{progress[c.id].exp+=reward;levelUp(c)});text+=' 경험치 +'+reward+'를 획득했습니다.'}$('resultTitle').textContent=win?'전투 성공':'전투 실패';$('resultText').textContent=text;$('overlay').style.display='flex'}$('end').onclick=()=>enemyTurn();
 
 bindLobbyButtons();showScreen('lobby');
 </script></body></html>
