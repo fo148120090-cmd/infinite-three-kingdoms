@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 불타는 협곡 v0.5</title>
+<title>ARDEL — 불타는 협곡 v0.7</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -15,9 +15,9 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 .overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:24px;z-index:20}.card{max-width:430px;width:100%;background:#151d28;border:1px solid #526176;border-radius:18px;padding:22px;text-align:center}.card button{width:100%;padding:12px;margin-top:10px;border:0;border-radius:10px;background:#d6b36a;color:#17130b;font-weight:800}
 #hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
 </style></head><body><div id="app">
-<header><div><div class="title">ARDEL</div><div class="sub">제1장 · 불타는 협곡</div></div><div class="sub">전술 전투 v0.5</div></header>
+<header><div><div class="title">ARDEL</div><div class="sub">제1장 · 불타는 협곡</div></div><div class="sub">전술 전투 v0.7</div></header>
 <div class="panel"><div><b>목표</b> · 적 지휘관을 격파하라</div><div class="sub" style="margin-top:5px">15턴 · 각 장수는 턴마다 1회 행동 · 이동 후 공격/스킬 선택</div></div>
-<div class="stats"><div class="stat">TURN<b id="turn">1 / 15</b></div><div class="stat">아군 행동<b id="ap">5</b></div><div class="stat">적 지휘관<b id="morale">105</b></div><div class="stat">전투<b id="time">진행</b></div></div>
+<div class="stats"><div class="stat">TURN<b id="turn">1 / 15</b></div><div class="stat">행동 가능<b id="ap">5</b></div><div class="stat">적 지휘관<b id="morale">105</b></div><div class="stat">전투<b id="time">진행</b></div></div>
 <div id="field"><div class="lane" style="top:0"></div><div class="lane" style="top:110px"></div><div class="lane" style="top:220px"></div></div>
 <div class="panel"><div><b id="selected">아르델</b> <span class="sub" id="role">지휘관</span></div><div id="hint">아군을 선택하고 이동 또는 행동을 선택하세요.</div><div id="skills" style="margin-top:8px"></div><button id="end" class="skill" style="width:100%;margin-top:8px;text-align:center">턴 종료 → 적 행동</button></div>
 <div class="panel"><b>전장 기록</b><div id="log" style="margin-top:8px"></div></div>
@@ -26,14 +26,14 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 <script>
 const W=82, X=[18,112,206,300,394], Y=[18,128,238];
 const chars=[
-{id:'ardel',name:'아르델',role:'지휘관',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1},
+{id:'ardel',name:'아르델',role:'지휘관',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1,move:2},
 {id:'leon',name:'레온하르트',role:'전사 · 전선 유지',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1},
 {id:'sera',name:'세라',role:'전사 · 결투',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1},
-{id:'iris',name:'아이리스',role:'책사 · 전장 설계',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3},
-{id:'elios',name:'엘리오스',role:'정찰 · 정보',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4},
+{id:'iris',name:'아이리스',role:'책사 · 전장 설계',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3,move:2},
+{id:'elios',name:'엘리오스',role:'정찰 · 정보',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4,move:3},
 {id:'archer',name:'적 궁병',role:'원거리',face:'🏹',lane:0,pos:4,hp:75,max:75,side:'enemy',range:3},
 {id:'heavy',name:'적 중보병',role:'전선',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1},
-{id:'commander',name:'적 지휘관',role:'지휘관',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2}];
+{id:'commander',name:'적 지휘관',role:'지휘관',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2,move:2}];
 let turn=1,ap=5,morale=100,west=0,selected='ardel',mode='normal',marked=null,fireTurns=0,guardTurns=0;
 const $=id=>document.getElementById(id), log=t=>{$('log').innerHTML+='<div class="logline">'+t+'</div>';$('log').scrollTop=99999};
 const get=id=>chars.find(c=>c.id===id), alive=c=>c&&c.hp>0;
@@ -43,11 +43,11 @@ function allyList(){return chars.filter(c=>c.side==='ally'&&alive(c))}
 function dmg(id,n){let c=get(id);if(!alive(c))return;c.hp=Math.max(0,c.hp-n);if(c.id==='commander')$('morale').textContent=c.hp;log(c.name+'에게 '+n+' 피해');}
 function setMode(m){mode=m;render();skills()}
 function canAct(c){return alive(c)&&!c.acted}
-function move(c,p){if(!canAct(c)||c.moved||p<0||p>4||p===c.pos)return false;let occupied=chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p);if(occupied)return false;c.pos=p;c.moved=true;log(c.name+'이 '+(c.lane+1)+'번 전선에서 이동했다.');return true}
+function move(c,p){if(!canAct(c)||c.moved||p<0||p>4||p===c.pos||Math.abs(p-c.pos)>c.move)return false;let occupied=chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p);if(occupied)return false;c.pos=p;c.moved=true;log(c.name+'이 '+(c.lane+1)+'번 전선에서 이동했다.');return true}
 function render(){
 document.querySelectorAll('.unit,.tile').forEach(e=>e.remove());
 for(let p=0;p<5;p++)for(let l=0;l<3;l++){let g=document.createElement('div');g.className='grid';g.style.left=(X[p]+41)+'px';$('field').appendChild(g)}
-if(mode==='move'&&canAct(get(selected))&&!get(selected).moved){let c=get(selected);for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=1&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p))$('field').appendChild(tile(c.lane,p,'move'))}
+if(mode==='move'&&canAct(get(selected))&&!get(selected).moved){let c=get(selected);for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=c.move&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p))$('field').appendChild(tile(c.lane,p,'move'))}
 if(mode==='attack'&&canAct(get(selected))){let c=get(selected);enemyList().filter(e=>dist(c,e)<=c.range).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>attack(e.id)))}
 if(mode==='fire'&&canAct(get(selected))){for(let p=0;p<5;p++)$('field').appendChild(tile(0,p,'fire',()=>fireAt(p)))}
 chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'')+(c.acted?' acted':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="face">'+c.face+'</div><small>'+c.name+(c.acted?' · 행동완료':'')+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/c.max*100)+'%"></i></div>';e.onclick=()=>{if(mode==='attack'&&c.side==='enemy'){attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
@@ -68,7 +68,7 @@ if(c.id==='iris')arr=[['이동',0,()=>setMode('move')],['화염선',0,()=>setMod
 if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>setMode('attack')],['바람의 눈',0,()=>{log('엘리오스: 적의 위치와 이동 경로를 확인했다.');finishAction(c)}],['정령의 표식',0,()=>{let e=enemyList()[0];if(e){marked=e.id;log(e.name+'에게 정령의 표식. 다음 공격 강화.');finishAction(c)}}],['위험 감지',0,()=>{log('엘리오스: 다음 적 공격의 위험 지점을 포착했다.');finishAction(c)}]];
 $('skills').innerHTML=arr.map(x=>'<button class="skill" onclick="skillRun(\\''+x[0]+'\\')"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
 window._actions=arr;
-$('hint').textContent=mode==='move'?'한 칸 이동할 위치를 선택하세요. 이동 후 공격 또는 스킬을 사용할 수 있습니다.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='fire'?'화염선을 놓을 위치를 선택하세요.':'장수를 선택하고 이동 → 공격/스킬 순서로 행동하세요.';
+$('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='fire'?'화염선을 놓을 위치를 선택하세요.':'장수를 선택하고 이동 → 공격/스킬 순서로 행동하세요.';
 }
 function skillRun(name){let a=window._actions.find(x=>x[0]===name);if(!a)return;a[2]();if(mode==='normal'){render();skills();check()}}
 function enemyTurn(){
@@ -82,5 +82,5 @@ function check(){if(!alive(get('ardel')))return end(false,'아르델이 쓰러�
 function end(win,text){$('resultTitle').textContent=win?'전투 성공':'전투 실패';$('resultText').textContent=text;$('overlay').style.display='flex'}
 $('end').onclick=()=>enemyTurn();
 
-render();skills();log('전투 개시: 이동 가능한 장수를 선택하고, 위치를 잡은 뒤 공격 또는 스킬을 사용하세요.');log('엘리오스: 북쪽 숲에서 이동 흔적을 확인했습니다.');log('아르델: 두 의견을 듣고 내가 결정한다.');
+render();skills();log('전투 개시: 장수를 선택하면 이동 범위와 공격 가능한 적이 표시됩니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.');log('엘리오스: 북쪽 숲에서 이동 흔적을 확인했습니다.');log('아르델: 두 의견을 듣고 내가 결정한다.');
 </script></body></html>
