@@ -27,12 +27,12 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 const W=82, X=[18,112,206,300,394], Y=[18,128,238];
 const chars=[
 {id:'ardel',name:'아르델',role:'지휘관',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1,move:2},
-{id:'leon',name:'레온하르트',role:'전사 · 전선 유지',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1},
-{id:'sera',name:'세라',role:'전사 · 결투',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1},
+{id:'leon',name:'레온하르트',role:'전사 · 전선 유지',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1,move:2},
+{id:'sera',name:'세라',role:'전사 · 결투',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1,move:3},
 {id:'iris',name:'아이리스',role:'책사 · 전장 설계',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3,move:2},
 {id:'elios',name:'엘리오스',role:'정찰 · 정보',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4,move:3},
-{id:'archer',name:'적 궁병',role:'원거리',face:'🏹',lane:0,pos:4,hp:75,max:75,side:'enemy',range:3},
-{id:'heavy',name:'적 중보병',role:'전선',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1},
+{id:'archer',name:'적 궁병',role:'원거리',face:'🏹',lane:0,pos:4,hp:75,max:75,side:'enemy',range:3,move:2},
+{id:'heavy',name:'적 중보병',role:'전선',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1,move:1},
 {id:'commander',name:'적 지휘관',role:'지휘관',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2,move:2}];
 let turn=1,ap=5,morale=100,west=0,selected='ardel',mode='normal',marked=null,fireTurns=0,guardTurns=0;
 const $=id=>document.getElementById(id), log=t=>{$('log').innerHTML+='<div class="logline">'+t+'</div>';$('log').scrollTop=99999};
