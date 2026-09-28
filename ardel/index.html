@@ -71,7 +71,7 @@ function renderInventory(){const g=$('inventoryGrid');if(!g)return;g.innerHTML='
 function equipFromInventory(itemId){const c=get(selected),x=inventory.find(i=>i.id===itemId);if(!c||!x)return;const old=equipment[c.id][x.slot];equipment[c.id][x.slot]={name:x.name,icon:x.icon,atk:x.atk||0,def:x.def||0,hp:x.hp||0};inventory.find(i=>i.id===itemId).qty--;if(old){let back=inventory.find(i=>i.name===old.name&&i.slot===x.slot);if(back)back.qty++;else inventory.push({id:'old_'+Date.now(),slot:x.slot,name:old.name,icon:old.icon,atk:old.atk||0,def:old.def||0,hp:old.hp||0,qty:1})}renderEquipmentDetail();renderInventory()}
 function unequipSlot(id,slot){const x=equipment[id][slot];if(!x)return;inventory.push({id:'old_'+Date.now(),slot,name:x.name,icon:x.icon,atk:x.atk||0,def:x.def||0,hp:x.hp||0,qty:1});equipment[id][slot]={name:'장비 없음',icon:'—'};renderEquipmentDetail();renderInventory()}
 function equipStat(c,key){return Object.values(equipment[c.id]||{}).reduce((v,x)=>v+(x[key]||0),0)}
-function stat(c,key){const base=key==='atk'?(c.baseAtk||0):key==='def'?(c.baseDef||0):(c[key]||0);return base+equipStat(c,key)+(key==='atk'?(c.atkBuff||0):0)}
+function stat(c,key){const base=key==='atk'?(c.baseAtk||0):key==='def'?(c.baseDef||0):(c[key]||0);let v=base+equipStat(c,key)+(key==='atk'?(c.atkBuff||0):0);if(key==='atk'&&c.side==='ally'&&c.id!=='ardel'){const commander=get('ardel');if(commander&&alive(commander)&&gridDist(c,commander)<=1)v+=2}return v}
 function effectiveMax(c){return c.max+equipStat(c,'hp')}
 let turn=1,ap=5,morale=100,west=0,selected='ardel',mode='normal',marked=null,fireTurns=0,guardTurns=0;
 function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');$('headerMode').textContent=id==='lobby'?'메인 로비':id==='story'?'시나리오':id==='roster'?'장수':id==='equipment'?'장비':'전술 전투'}
@@ -148,7 +148,7 @@ if(c.id==='leon')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>se
 if(c.id==='sera')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['강타',0,()=>seraSmash()]];
 if(c.id==='iris')arr=[['이동',0,()=>setMode('move')],['화염선',0,()=>setMode('fire')],['표식 폭발',0,()=>{if(marked&&alive(get(marked))){let m=get(marked);enemyList().filter(e=>gridDist(m,e)<=1).forEach(e=>dmg(e.id,e.id===m.id?68:30));marked=null;log('아이리스: 정령 표식을 폭발시켜 중심 대상에게 큰 피해를 주고 주변 적까지 휩쓸었다.');finishAction(c)}else log('아이리스: 폭발할 표식이 없습니다.')}],['전장 소각',0,()=>skillAttackMode(1.0,3,1)]];
 if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>skillAttackMode(1.25,5)],['바람의 눈',0,()=>{allyList().forEach(x=>x.atkBuff=(x.atkBuff||0)+2);log('엘리오스: 적의 위치와 이동 경로를 읽어 아군의 공격을 보조한다.');finishAction(c)}],['정령의 표식',0,()=>{mode='mark';window._markRange=5;render();skills()}],['위험 감지',0,()=>{enemyList().forEach(e=>e.danger=1);log('엘리오스: 위험 지점을 포착했다. 다음 적 공격 피해가 감소한다.');finishAction(c)}]];
-let passive=c.id==='leon'?'고유: 블록 30% (물리 피해 30% 감소)':c.id==='sera'?'고유: 회피 25% · 치명타 25% (피해 +50%)':c.id==='ardel'?'고유: 지휘·보호':c.id==='iris'?'고유: 전장 제어':c.id==='elios'?'고유: 정찰·정보':'고유 능력';$('skills').innerHTML='<div class="sub passiveLine">'+passive+'</div>'+arr.map(x=>'<button class="skill" onclick="skillRun(&quot;'+x[0]+'&quot;)"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
+let passive=c.id==='leon'?'고유: 블록 30% (물리 피해 30% 감소)':c.id==='sera'?'고유: 회피 25% · 치명타 25% (피해 +50%)':c.id==='ardel'?'고유: 지휘 범위 · 인접 아군 공격 +2 · 보호':c.id==='iris'?'고유: 전장 제어':c.id==='elios'?'고유: 정찰·정보':'고유 능력';$('skills').innerHTML='<div class="sub passiveLine">'+passive+'</div>'+arr.map(x=>'<button class="skill" onclick="skillRun(&quot;'+x[0]+'&quot;)"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
 window._actions=arr;
 $('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='skill'?(window._skillRadius?'범위 공격 중심이 될 적을 선택하세요.':'스킬 공격 범위의 적을 직접 선택하세요.'):mode==='fire'?'화염선을 놓을 위치를 선택하세요.':mode==='mark'?'표식을 부여할 적을 직접 선택하세요.':'장수를 선택하고 이동 → 공격/스킬 순서로 행동하세요.';
 }
@@ -157,7 +157,7 @@ function enemyTurn(){
 log('<b>— 적군 행동 —</b>');
 enemyList().forEach(e=>{
   if(!alive(e))return;
-  if(fireTurns&&e.fireSlow&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');continue}
+  if(fireTurns&&e.fireSlow&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}
   let targets=allyList().map(t=>({t,d:gridDist(e,t)})).sort((a,b)=>a.d-b.d);
   let t=targets[0]?.t;if(!t)return;
   const power=(e.id==='archer'?12:e.id==='commander'?16:18);
@@ -203,7 +203,7 @@ enemyList().forEach(e=>{
     log(e.name+'이 '+t.name+'을 추적해 이동했다.');
     if(gridDist(e,t)<=e.range){
       let n=power;if(guardTurns)n=Math.max(4,n-7);if(t.danger)n=Math.max(4,n-4);
-      if(t.evasion&&Math.random()<t.evasion){log(t.name+'이(가) 회피했다!');continue;}
+      if(t.evasion&&Math.random()<t.evasion){log(t.name+'이(가) 회피했다!');return;}
       if(t.block&&Math.random()<t.block){n=Math.floor(n*0.7);log(t.name+'의 블록! 물리 피해가 30% 감소했다.');}
       dmg(t.id,n);log(e.name+'이 이동 후 '+t.name+'을 공격했다.');
     }
