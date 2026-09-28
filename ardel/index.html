@@ -112,8 +112,8 @@ for(let l=0;l<3;l++)for(let p=0;p<5;p++){
   let cell=document.createElement('div');cell.className='cell';cell.style.left=X[p]+'px';cell.style.top=Y[l]+'px';
   if(c&&canAct(c)){
     if(mode==='move'&&!c.moved&&gridDist(c,{lane:l,pos:p})<=c.move&&(l!==c.lane||p!==c.pos)&&!chars.some(x=>alive(x)&&x.lane===l&&x.pos===p))cell.classList.add('move');
-    if(mode==='attack'||mode==='skill'){
-      let range=mode==='skill'?(window._skillRange||c.range):c.range;
+    if(mode==='attack'||mode==='skill'||mode==='mark'){
+      let range=mode==='skill'?(window._skillRange||c.range):mode==='mark'?window._markRange:c.range;
       if(gridDist(c,{lane:l,pos:p})<=range&&(l!==c.lane||p!==c.pos))cell.classList.add('range');
     }
     if(mode==='fire'&&l===0)cell.classList.add('fire');
@@ -127,7 +127,7 @@ chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.clas
 $('turn').textContent=turn+' / 15';$('ap').textContent=allyList().filter(c=>!c.acted).length;$('morale').textContent=get('commander')?.hp||0;$('time').textContent='진행';
 }
 function tile(l,p,cls,fn){let t=document.createElement('div');t.className='tile '+cls;t.style.left=X[p]+'px';t.style.top=Y[l]+'px';t.onclick=()=>{fn?fn():doMove(l,p)};return t}
-function doMove(l,p){let c=get(selected);if(move(c,l,p)){mode='normal';window._skillEffect=null;render();skills();check()}}
+function doMove(l,p){let c=get(selected);if(move(c,l,p)){mode='normal';window._skillEffect=null;window._markRange=0;render();skills();check()}}
 function finishAction(c){c.acted=true;mode='normal';render();skills();check()}
 function skillAttack(a,e,power,allowCounter=true,range=a.range){if(!canAct(a)||!alive(e)||gridDist(a,e)>range)return false;let n=Math.floor(stat(a,'atk')*power);let adv=advantage(a,e);if(adv>1){n=Math.floor(n*adv);log(a.name+'의 병종 상성 우위! 피해가 증가했다.')}if(marked===e.id){n+=18;marked=null;log('정령 표식이 공격을 증폭했다.')}dmg(e.id,n);if(allowCounter&&alive(e)&&e.range>=gridDist(e,a)){let counter=Math.max(4,Math.floor(n*.35));const au=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(a.name));if(au)au.classList.add('counterShake');dmg(a.id,counter);log(e.name+'의 반격!');setTimeout(()=>au?.classList.remove('counterShake'),300)}return true}
 function seraSmash(){let a=get(selected);if(!canAct(a))return;mode='skill';window._skillPower=1.35;window._skillRange=1;window._skillRadius=0;window._skillEffect='smash';render();skills()}
@@ -138,7 +138,7 @@ function skillEffect(a,e){const u=[...document.querySelectorAll('.unit')].find(x
 function showAoe(e,radius){for(let l=0;l<3;l++)for(let p=0;p<5;p++)if(Math.abs(l-e.lane)+Math.abs(p-e.pos)<=radius){let cell=document.createElement('div');cell.className='cell aoeCell';cell.style.left=X[p]+'px';cell.style.top=Y[l]+'px';$('field').appendChild(cell)}}
 function animateAttack(a,e,done){const attacker=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(a.name));const target=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(e.name));if(attacker)attacker.classList.add(a.side==='ally'?'attackLunge':'attackLungeBack');if(target)target.classList.add('hitFlash');setTimeout(()=>{attacker?.classList.remove('attackLunge','attackLungeBack');target?.classList.remove('hitFlash');done()},280)}
 function skillAttackMode(power,range=3,radius=0){let a=get(selected);if(!canAct(a))return;mode='skill';window._skillPower=power;window._skillRange=range;window._skillRadius=radius;render();skills()}
-function resolveSkillAttack(id){if(window._skillEffect)return resolveSpecialSkill(id);let a=get(selected),e=get(id);if(!canAct(a)||!alive(e)||gridDist(a,e)>(window._skillRange||a.range))return;let targets=enemyList().filter(x=>gridDist(e,x)<=(window._skillRadius||0));let power=window._skillPower||1.2;if(!targets.length)return;if(window._skillRadius)showAoe(e,window._skillRadius);skillEffect(a,e);setTimeout(()=>{targets.forEach(x=>skillAttack(a,x,power,false,window._skillRange||a.range));if(targets.length)finishAction(a)},170)}
+function resolveSkillAttack(id){if(window._skillEffect)return resolveSpecialSkill(id);let a=get(selected),e=get(id);if(mode==='mark'){if(!canAct(a)||!alive(e)||gridDist(a,e)>window._markRange)return;marked=e.id;log(e.name+'에게 정령의 표식! 다음 공격과 폭발 피해가 강화된다.');finishAction(a);return}if(!canAct(a)||!alive(e)||gridDist(a,e)>(window._skillRange||a.range))return;let targets=enemyList().filter(x=>gridDist(e,x)<=(window._skillRadius||0));let power=window._skillPower||1.2;if(!targets.length)return;if(window._skillRadius)showAoe(e,window._skillRadius);skillEffect(a,e);setTimeout(()=>{targets.forEach(x=>skillAttack(a,x,power,false,window._skillRange||a.range));if(targets.length)finishAction(a)},170)}
 function fireAt(p){let a=get(selected);if(!canAct(a))return;let hit=enemyList().filter(e=>e.lane===0&&Math.abs(e.pos-p)<=1);hit.forEach(e=>{dmg(e.id,Math.floor(stat(a,'atk')*.8));e.fireSlow=2;e.damageDown=0});fireTurns=2;log('아이리스: 화염선을 설치해 피해를 주고 적의 이동을 방해한다.');finishAction(a)}
 function skills(){
 let c=get(selected);$('selected').textContent=c?.name||'—';$('role').textContent=c?.role||'';let arr=[];
@@ -147,10 +147,10 @@ if(c.id==='ardel')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>s
 if(c.id==='leon')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['방패벽',0,()=>{allyList().forEach(x=>{if(gridDist(c,x)<=1)x.guard=2});log('레온하르트가 방패벽을 세운다. 인접 아군을 보호한다.');finishAction(c)}],['할버드 돌파',0,()=>leonBreakthrough()]];
 if(c.id==='sera')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['강타',0,()=>seraSmash()]];
 if(c.id==='iris')arr=[['이동',0,()=>setMode('move')],['화염선',0,()=>setMode('fire')],['표식 폭발',0,()=>{if(marked&&alive(get(marked))){let m=get(marked);enemyList().filter(e=>gridDist(m,e)<=1).forEach(e=>dmg(e.id,e.id===m.id?50:25));marked=null;log('아이리스: 표식이 폭발하며 주변 적까지 휩쓸었다.');finishAction(c)}else log('아이리스: 폭발할 표식이 없습니다.')}],['전장 소각',0,()=>skillAttackMode(1.0,3,1)]];
-if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>skillAttackMode(1.25,5)],['바람의 눈',0,()=>{allyList().forEach(x=>x.atkBuff=(x.atkBuff||0)+2);log('엘리오스: 적의 위치와 이동 경로를 읽어 아군의 공격을 보조한다.');finishAction(c)}],['정령의 표식',0,()=>{let e=enemyList().sort((a,b)=>gridDist(c,a)-gridDist(c,b))[0];if(e){marked=e.id;log(e.name+'에게 정령의 표식. 다음 공격과 폭발 피해가 강화된다.');finishAction(c)}}],['위험 감지',0,()=>{enemyList().forEach(e=>e.danger=1);log('엘리오스: 위험 지점을 포착했다. 다음 적 공격이 약화된다.');finishAction(c)}]];
+if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>skillAttackMode(1.25,5)],['바람의 눈',0,()=>{allyList().forEach(x=>x.atkBuff=(x.atkBuff||0)+2);log('엘리오스: 적의 위치와 이동 경로를 읽어 아군의 공격을 보조한다.');finishAction(c)}],['정령의 표식',0,()=>{mode='mark';window._markRange=5;render();skills()}],['위험 감지',0,()=>{enemyList().forEach(e=>e.danger=1);log('엘리오스: 위험 지점을 포착했다. 다음 적 공격이 약화된다.');finishAction(c)}]];
 $('skills').innerHTML=arr.map(x=>'<button class="skill" onclick="skillRun(&quot;'+x[0]+'&quot;)"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
 window._actions=arr;
-$('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='skill'?(window._skillRadius?'범위 공격 중심이 될 적을 선택하세요.':'스킬 공격 범위의 적을 직접 선택하세요.'):mode==='fire'?'화염선을 놓을 위치를 선택하세요.':'장수를 선택하고 이동 → 공격/스킬 순서로 행동하세요.';
+$('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이동 후 공격 또는 스킬을 사용할 수 있습니다.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='skill'?(window._skillRadius?'범위 공격 중심이 될 적을 선택하세요.':'스킬 공격 범위의 적을 직접 선택하세요.'):mode==='fire'?'화염선을 놓을 위치를 선택하세요.':mode==='mark'?'표식을 부여할 적을 직접 선택하세요.':'장수를 선택하고 이동 → 공격/스킬 순서로 행동하세요.';
 }
 function skillRun(name){let a=window._actions.find(x=>x[0]===name);if(!a)return;a[2]();if(mode==='normal'){render();skills();check()}}
 function enemyTurn(){
