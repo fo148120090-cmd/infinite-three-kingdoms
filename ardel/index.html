@@ -22,6 +22,7 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 #log{height:125px;overflow:auto;font-size:12px;line-height:1.55;background:#0b1119;border-radius:10px;padding:8px}.logline{border-bottom:1px solid #202a36;padding:2px 0}
 .overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:24px;z-index:20}.card{max-width:430px;width:100%;background:#151d28;border:1px solid #526176;border-radius:18px;padding:22px;text-align:center}.card button{width:100%;padding:12px;margin-top:10px;border:0;border-radius:10px;background:#d6b36a;color:#17130b;font-weight:800}
 #hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
+.roster{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rosterCard{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:10px;cursor:pointer}.rosterCard.sel{border-color:#ffd166}.portrait{font-size:34px;float:right}.bar{height:6px;background:#111;border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:#57d17a}.detail{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:12px}.tag{display:inline-block;padding:3px 7px;border-radius:8px;background:#202b38;font-size:11px;margin:2px}
 </style></head><body><div id="app">
 <header><div><div class="title">ARDEL</div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
 <div id="lobby" class="screen active">
@@ -29,7 +30,7 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 <div class="panel progress"><div><b>아르델</b><div class="sub">지휘관 · Lv. 1</div></div><div class="gold">◆ 1,000</div></div>
 <div class="panel"><b>주요 메뉴</b><div class="menuGrid">
 <button class="menuBtn" onclick="startStory()"><b>⚔ 이야기</b><span>시나리오와 전투를 진행합니다.</span></button>
-<button class="menuBtn" onclick="lobbyNotice('장수 메뉴는 다음 단계에서 추가합니다.')"><b>♟ 장수</b><span>장수 정보와 성장</span></button>
+<button class="menuBtn" onclick="showRoster()"><b>♟ 장수</b><span>장수 정보와 성장</span></button>
 <button class="menuBtn" onclick="lobbyNotice('장비 메뉴는 다음 단계에서 추가합니다.')"><b>◆ 장비</b><span>장비 장착과 관리</span></button>
 <button class="menuBtn" onclick="lobbyNotice('도감 메뉴는 다음 단계에서 추가합니다.')"><b>📖 도감</b><span>장수와 세계의 기록</span></button>
 <button class="menuBtn" onclick="lobbyNotice('상점 메뉴는 다음 단계에서 추가합니다.')"><b>▣ 상점</b><span>아이템과 재화</span></button>
@@ -37,6 +38,7 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 </div></div>
 <div class="panel"><b>전투 스프라이트 기반</b><div class="sub" style="margin:5px 0 7px">조조전 계열 전투 스프라이트를 참고해 이후 ARDEL 전용 스프라이트로 교체할 영역</div><div class="spriteStrip"><div class="spriteRef"><img src="https://koeitecmo.wiki/wiki/Special:Redirect/file/Cao_Cao_Battle_Sprite_(ROTKLCC).png" onerror="this.style.display='none'"><small>지휘관</small></div><div class="spriteRef"><img src="https://koeitecmo.wiki/wiki/Special:Redirect/file/Archer_Battle_Sprite_(ROTKLCC).png" onerror="this.style.display='none'"><small>궁병</small></div><div class="spriteRef"><img src="https://koeitecmo.wiki/wiki/Special:Redirect/file/Dian_Wei_Battle_Sprite_(ROTKLCC).png" onerror="this.style.display='none'"><small>중장</small></div></div></div><div class="panel"><b>장비 구조 샘플</b><div class="sub" style="margin:5px 0 7px">무기 · 방어구 · 보조장비 슬롯</div><div class="equipGrid"><div class="equipCard"><div style="font-size:24px">⚔️</div><small>무기</small></div><div class="equipCard"><div style="font-size:24px">🛡️</div><small>방어구</small></div><div class="equipCard"><div style="font-size:24px">💠</div><small>보조</small></div></div></div><div class="panel"><b>다음 전투</b><div class="sub" style="margin-top:5px">제1장 · 불타는 협곡 — 적 지휘관을 격파하라.</div><button class="skill" style="width:100%;margin-top:9px;text-align:center" onclick="startStory()">전투 준비</button></div>
 </div>
+<div id="roster" class="screen"><div class="panel"><b>장수</b><div class="sub" style="margin-top:5px">출전 장수와 기본 전투 정보를 확인합니다.</div></div><div class="panel"><div id="rosterGrid" class="roster"></div></div><div class="panel"><div id="rosterDetail" class="detail"></div><button class="skill" style="width:100%;margin-top:8px;text-align:center" onclick="showScreen('lobby')">← 로비</button></div></div>
 <div id="story" class="screen">
 <div class="panel"><b>제1장 · 불타는 협곡</b><div class="sub" style="margin-top:5px">서부군이 후퇴할 시간을 확보하기 위해 협곡을 지킨다.</div></div>
 <div class="panel"><b>작전 목표</b><p style="font-size:13px;line-height:1.5">적 지휘관을 격파하고 협곡을 돌파하라.</p><button class="skill" style="width:100%;text-align:center" onclick="startBattle()">전투 시작</button><button class="skill" style="width:100%;margin-top:8px;text-align:center" onclick="showScreen('lobby')">← 로비</button></div>
@@ -65,6 +67,12 @@ let turn=1,ap=5,morale=100,west=0,selected='ardel',mode='normal',marked=null,fir
 function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');$('headerMode').textContent=id==='lobby'?'메인 로비':id==='story'?'시나리오':'전술 전투'}
 function lobbyNotice(t){alert(t)}
 function startStory(){showScreen('story')}
+function showRoster(){showScreen('roster');renderRoster()}
+function renderRoster(){const grid=$('rosterGrid');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectRoster(\\''+c.id+'\\')"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div><span class="tag">'+c.type+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">사거리 '+c.range+'</span><div class="bar"><i style="width:'+Math.round(c.hp/c.max*100)+'%"></i></div></div>').join('');renderRosterDetail()}
+function selectRoster(id){selected=id;renderRoster()}
+function renderRosterDetail(){const c=get(selected)||chars[0];$('rosterDetail').innerHTML='<div style="font-size:28px">'+c.face+' <b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+'</div><div style="margin-top:9px"><span class="tag">'+c.type+'</span><span class="tag">HP '+c.max+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">일반 사거리 '+c.range+'</span></div><p style="font-size:12px;line-height:1.5;margin-bottom:0">'+rosterLore(c.id)+'</p>'}
+function rosterLore(id){return ({ardel:'결정을 내리고 그 결과를 책임지는 지휘관. 전투에서는 진형 유지와 전진 명령으로 아군의 행동을 이끈다.',leon:'거대한 할버드와 방패를 사용하는 흑호 수인 전사. 전선을 버티며 돌파구를 만든다.',sera:'거대한 대검을 다루는 기병 전사. 빠르게 거리를 좁혀 단일 적을 강하게 압박한다.',iris:'화염으로 전장의 지형과 이동로를 바꾸는 책사. 넓은 범위 공격과 표식 연계가 핵심이다.',elios:'정찰과 정보 수집을 담당하는 하이엘프 궁병. 원거리 공격과 적 표식으로 아군의 판단을 돕는다.'})[id]||''}
+
 function startBattle(){showScreen('battle');resetBattle();render();skills();log('전투 준비 완료. 장수를 선택해 이동과 공격을 시작하세요.')}
 function resetBattle(){turn=1;selected='ardel';mode='normal';marked=null;fireTurns=0;guardTurns=0;chars.forEach(c=>{c.hp=c.max;c.acted=false;c.moved=false});chars.find(c=>c.id==='ardel').lane=1;chars.find(c=>c.id==='ardel').pos=0;chars.find(c=>c.id==='leon').lane=1;chars.find(c=>c.id==='leon').pos=1;chars.find(c=>c.id==='sera').lane=0;chars.find(c=>c.id==='sera').pos=0;chars.find(c=>c.id==='iris').lane=2;chars.find(c=>c.id==='iris').pos=0;chars.find(c=>c.id==='elios').lane=0;chars.find(c=>c.id==='elios').pos=1;chars.find(c=>c.id==='archer').pos=4;chars.find(c=>c.id==='heavy').pos=4;chars.find(c=>c.id==='commander').pos=4;$('log').innerHTML=''}
 function battleResult(){ $('overlay').style.display='none'; showScreen('lobby')}
