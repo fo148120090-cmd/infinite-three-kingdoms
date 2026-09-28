@@ -136,7 +136,7 @@ function showAoe(e,radius){for(let l=0;l<3;l++)for(let p=0;p<5;p++)if(Math.abs(l
 function animateAttack(a,e,done){const attacker=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(a.name));const target=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(e.name));if(attacker)attacker.classList.add(a.side==='ally'?'attackLunge':'attackLungeBack');if(target)target.classList.add('hitFlash');setTimeout(()=>{attacker?.classList.remove('attackLunge','attackLungeBack');target?.classList.remove('hitFlash');done()},280)}
 function skillAttackMode(power,range=3,radius=0){let a=get(selected);if(!canAct(a))return;mode='skill';window._skillPower=power;window._skillRange=range;window._skillRadius=radius;render();skills()}
 function resolveSkillAttack(id){let a=get(selected),e=get(id);if(!canAct(a)||!alive(e)||gridDist(a,e)>(window._skillRange||a.range))return;let targets=enemyList().filter(x=>gridDist(e,x)<=(window._skillRadius||0));let power=window._skillPower||1.2;if(!targets.length)return;if(window._skillRadius)showAoe(e,window._skillRadius);skillEffect(a,e);setTimeout(()=>{targets.forEach(x=>skillAttack(a,x,power,false,window._skillRange||a.range));if(targets.length)finishAction(a)},170)}
-function fireAt(p){let a=get(selected);if(!canAct(a))return;let hit=enemyList().filter(e=>e.lane===0&&Math.abs(e.pos-p)<=1);hit.forEach(e=>{dmg(e.id,Math.floor(stat(a,'atk')*.8));e.fireSlow=1});fireTurns=2;log('아이리스: 화염선을 설치해 피해를 주고 적의 이동을 방해한다.');finishAction(a)}
+function fireAt(p){let a=get(selected);if(!canAct(a))return;let hit=enemyList().filter(e=>e.lane===0&&Math.abs(e.pos-p)<=1);hit.forEach(e=>{dmg(e.id,Math.floor(stat(a,'atk')*.8));e.fireSlow=2;e.damageDown=0});fireTurns=2;log('아이리스: 화염선을 설치해 피해를 주고 적의 이동을 방해한다.');finishAction(a)}
 function skills(){
 let c=get(selected);$('selected').textContent=c?.name||'—';$('role').textContent=c?.role||'';let arr=[];
 if(!canAct(c)){ $('skills').innerHTML='<div class="sub">이 장수는 이번 턴 행동을 완료했습니다. 다른 장수를 선택하세요.</div>';return}
@@ -154,7 +154,7 @@ function enemyTurn(){
 log('<b>— 적군 행동 —</b>');
 enemyList().forEach(e=>{
   if(!alive(e))return;
-  if(fireTurns&&e.lane===0&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}
+  if(fireTurns&&e.fireSlow&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}
   let targets=allyList().map(t=>({t,d:gridDist(e,t)})).sort((a,b)=>a.d-b.d);
   let t=targets[0]?.t;if(!t)return;
   const power=(e.id==='archer'?12:e.id==='commander'?16:18)-(e.danger?4:0);
