@@ -1,42 +1,84 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>ARDEL — 불타는 협곡</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ARDEL — 불타는 협곡 v0.5</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b0f16;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
+*{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
 header{padding:14px 16px;display:flex;justify-content:space-between;border-bottom:1px solid #344050}.title{font-weight:800}.sub{font-size:12px;color:#9ca9b8}
-.panel{margin:12px;border:1px solid #344050;background:#141b25;border-radius:14px;padding:12px}.stats{display:flex;gap:8px}.stat{flex:1;background:#0d131c;border-radius:10px;padding:8px;text-align:center;font-size:12px}.stat b{display:block;font-size:18px}
-#field{position:relative;height:330px;margin:12px;border:1px solid #3c4a5d;border-radius:16px;overflow:hidden;background:repeating-linear-gradient(to bottom,#1b2630 0,#1b2630 108px,#263442 109px,#263442 110px)}.lane{position:absolute;left:0;right:0;height:110px;border-bottom:1px solid #344555}.unit{position:absolute;width:92px;height:74px;border-radius:12px;border:2px solid #617286;background:#202b38;padding:5px;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;transition:.15s}.unit.sel{border-color:#ffd166;box-shadow:0 0 0 2px #ffd16644}.unit.enemy{background:#392025;border-color:#9b5860}.unit .face{font-size:26px}.unit small{font-size:11px}.hp{width:80px;height:5px;background:#111;border-radius:5px;margin-top:3px;overflow:hidden}.hp i{display:block;height:100%;background:#57d17a}.enemy .hp i{background:#e95b65}
+.panel{margin:12px;border:1px solid #344050;background:#141b25;border-radius:14px;padding:12px}.stats{display:flex;gap:7px}.stat{flex:1;background:#0d131c;border-radius:10px;padding:7px;text-align:center;font-size:11px}.stat b{display:block;font-size:17px}
+#field{position:relative;height:330px;margin:12px;border:1px solid #3c4a5d;border-radius:16px;overflow:hidden;background:repeating-linear-gradient(to bottom,#1b2630 0,#1b2630 108px,#263442 109px,#263442 110px)}
+.lane{position:absolute;left:0;right:0;height:110px;border-bottom:1px solid #344555}.grid{position:absolute;top:0;bottom:0;width:1px;background:#ffffff08}
+.unit{position:absolute;width:82px;height:68px;border-radius:12px;border:2px solid #617286;background:#202b38;padding:4px;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;transition:.15s;z-index:4}.unit.sel{border-color:#ffd166;box-shadow:0 0 0 2px #ffd16655}.unit.enemy{background:#392025;border-color:#9b5860}.unit .face{font-size:23px}.unit small{font-size:10px;white-space:nowrap}.hp{width:70px;height:5px;background:#111;border-radius:5px;margin-top:3px;overflow:hidden}.hp i{display:block;height:100%;background:#57d17a}.enemy .hp i{background:#e95b65}
+.tile{position:absolute;width:82px;height:68px;border:1px dashed #6e7f91;border-radius:10px;background:#ffffff08;z-index:2;cursor:pointer}.tile.move{background:#6aa9ff18;border-color:#6aa9ff}.tile.target{background:#ff696918;border-color:#ff8c8c}.tile.fire{background:#ff5b351c;border-color:#ff704d}
 #skills{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.skill{border:1px solid #445365;background:#202b38;color:#fff;border-radius:11px;padding:10px;text-align:left}.skill:disabled{opacity:.35}.skill b{display:block}.skill span{font-size:11px;color:#aeb9c6}
 #log{height:125px;overflow:auto;font-size:12px;line-height:1.55;background:#0b1119;border-radius:10px;padding:8px}.logline{border-bottom:1px solid #202a36;padding:2px 0}
-.overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:24px}.card{max-width:430px;width:100%;background:#151d28;border:1px solid #526176;border-radius:18px;padding:22px;text-align:center}.card button{width:100%;padding:12px;margin-top:10px;border:0;border-radius:10px;background:#d6b36a;color:#17130b;font-weight:800}
+.overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:24px;z-index:20}.card{max-width:430px;width:100%;background:#151d28;border:1px solid #526176;border-radius:18px;padding:22px;text-align:center}.card button{width:100%;padding:12px;margin-top:10px;border:0;border-radius:10px;background:#d6b36a;color:#17130b;font-weight:800}
+#hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
 </style></head><body><div id="app">
-<header><div><div class="title">ARDEL</div><div class="sub">제1장 · 불타는 협곡</div></div><div class="sub">전투 프로토타입</div></header>
-<div class="panel"><div><b>목표</b> · 서부군이 이동할 시간을 확보하라</div><div class="sub" style="margin-top:5px">전략 목표 4턴 확보 · 적 지휘관 처치는 필수가 아님</div></div>
-<div class="stats"><div class="stat">TURN<b id="turn">1 / 7</b></div><div class="stat">AP<b id="ap">3</b></div><div class="stat">사기<b id="morale">100</b></div><div class="stat">서부군 시간<b id="time">0 / 4</b></div></div>
+<header><div><div class="title">ARDEL</div><div class="sub">제1장 · 불타는 협곡</div></div><div class="sub">전술 전투 v0.5</div></header>
+<div class="panel"><div><b>목표</b> · 서부군이 이동할 시간을 확보하라</div><div class="sub" style="margin-top:5px">7턴 · AP 3 · 서부군 시간 4 이상이면 성공 · 적 지휘관 처치는 필수가 아님</div></div>
+<div class="stats"><div class="stat">TURN<b id="turn">1 / 7</b></div><div class="stat">AP<b id="ap">3</b></div><div class="stat">사기<b id="morale">100</b></div><div class="stat">서부군<b id="time">0 / 4</b></div></div>
 <div id="field"><div class="lane" style="top:0"></div><div class="lane" style="top:110px"></div><div class="lane" style="top:220px"></div></div>
-<div class="panel"><div style="margin-bottom:8px"><b id="selected">아르델</b> <span class="sub">— 행동을 선택하세요</span></div><div id="skills"></div><button id="end" class="skill" style="width:100%;margin-top:8px;text-align:center">턴 종료 → 적 행동</button></div>
+<div class="panel"><div><b id="selected">아르델</b> <span class="sub" id="role">지휘관</span></div><div id="hint">아군을 선택하고 이동 또는 행동을 선택하세요.</div><div id="skills" style="margin-top:8px"></div><button id="end" class="skill" style="width:100%;margin-top:8px;text-align:center">턴 종료 → 적 행동</button></div>
 <div class="panel"><b>전장 기록</b><div id="log" style="margin-top:8px"></div></div>
 </div>
 <div class="overlay" id="overlay"><div class="card"><h2 id="resultTitle"></h2><p id="resultText"></p><button onclick="location.reload()">다시 전투</button></div></div>
 <script>
+const W=82, X=[18,112,206,300,394], Y=[18,128,238];
 const chars=[
-{id:'ardel',name:'아르델',face:'👩🏻‍⚔️',lane:1,hp:100,max:100,side:'ally'},
-{id:'leon',name:'레온하르트',face:'🐯',lane:1,hp:125,max:125,side:'ally'},
-{id:'sera',name:'세라',face:'⚔️',lane:0,hp:95,max:95,side:'ally'},
-{id:'iris',name:'아이리스',face:'🔥',lane:2,hp:85,max:85,side:'ally'},
-{id:'elios',name:'엘리오스',face:'🏹',lane:0,hp:80,max:80,side:'ally'},
-{id:'archer',name:'적 궁병',face:'🏹',lane:0,hp:75,max:75,side:'enemy'},
-{id:'heavy',name:'적 중보병',face:'🛡️',lane:1,hp:125,max:125,side:'enemy'},
-{id:'commander',name:'적 지휘관',face:'👹',lane:2,hp:105,max:105,side:'enemy'}];
-let turn=1,ap=3,morale=100,west=0,selected='ardel',fireline=0,marked=null;
-const $=id=>document.getElementById(id); const log=t=>{$('log').innerHTML+=`<div class="logline">${t}</div>`;$('log').scrollTop=99999};
-function alive(c){return c.hp>0} function get(id){return chars.find(c=>c.id===id)}
-function render(){document.querySelectorAll('.unit').forEach(e=>e.remove());chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'');e.style.left=(c.side==='ally'?(c.lane===0?10:c.lane===1?115:220):(c.lane===0?390:c.lane===1?285:180))+'px';e.style.top=(c.lane*110+18)+'px';e.innerHTML=`<div class="face">${c.face}</div><small>${c.name}</small><div class="hp"><i style="width:${Math.max(0,c.hp/c.max*100)}%"></i></div>`;e.onclick=()=>{selected=c.id;render();skills()};$('field').appendChild(e)});$('turn').textContent=turn+' / 7';$('ap').textContent=ap;$('morale').textContent=morale;$('time').textContent=west+' / 4'}
-function dmg(id,n){let c=get(id);if(!c||!alive(c))return;c.hp=Math.max(0,c.hp-n);log(c.name+'에게 '+n+' 피해');}
-function skill(id,cost,fn){if(ap<cost||!alive(get(selected)))return;ap-=cost;fn();render();skills();check()}
-function skills(){let c=get(selected);$('selected').textContent=c?.name||'—';let arr={ardel:[['진형 유지',1,()=>{morale=Math.min(100,morale+12);log('아르델: 전열을 유지한다. 사기 +12')}],['전군 진격',2,()=>{west++;log('아르델: 전군 진격! 서부군 확보 시간 +1')}],['작전 변경',1,()=>{log('아르델: 계획을 수정한다. 다음 적 행동 피해 감소')}]],leon:[['방패벽',1,()=>{morale=Math.min(100,morale+8);log('레온하르트가 협곡 입구를 붙잡았다.')}],['할버드 돌파',2,()=>{let e=chars.filter(x=>x.side==='enemy'&&alive(x)).sort((a,b)=>a.lane-b.lane)[0];if(e)dmg(e.id,45)}]],sera:[['강타',1,()=>{let e=chars.filter(x=>x.side==='enemy'&&alive(x))[0];if(e)dmg(e.id,42)}],['거대 적 처단',2,()=>{let e=get('heavy');if(alive(e))dmg(e.id,70)}]],iris:[['화염선',1,()=>{fireline=2;log('아이리스가 화염선을 설치했다. 적 이동이 제한된다.')}],['표식 폭발',1,()=>{if(marked&&alive(get(marked))){dmg(marked,55);marked=null}else log('폭발할 표식이 없다.')}],['전장 소각',3,()=>{chars.filter(x=>x.side==='enemy'&&alive(x)).forEach(e=>dmg(e.id,35));fireline=2;log('전장 소각!')}}],elios:[['바람의 눈',1,()=>{log('엘리오스: 적의 이동로와 매복 징후를 확인했다.')}],['정령의 표식',1,()=>{let e=chars.filter(x=>x.side==='enemy'&&alive(x))[0];if(e){marked=e.id;log(e.name+'에게 정령의 표식. 다음 공격이 강화된다.')}}],['위험 감지',1,()=>{log('엘리오스: 다음 적 행동은 중앙 전열을 노릴 가능성이 높습니다.')}}]}[c?.id]||[];$('skills').innerHTML=arr.map((x,i)=>`<button class="skill" ${ap<x[1]?'disabled':''} onclick="skill('${c.id}',${x[1]},${x[2].toString()})"><b>${x[0]}</b><span>AP ${x[1]}</span></button>`).join('')}
-function enemyTurn(){log('<b>— 적 행동 —</b>');let targets=chars.filter(x=>x.side==='ally'&&alive(x));let e=chars.filter(x=>x.side==='enemy'&&alive(x));e.forEach(en=>{let t=targets.find(x=>x.lane===en.lane)||targets[0];if(t){dmg(t.id,en.id==='archer'?12:en.id==='commander'?16:18)}});if(fireline){e.forEach(en=>{if(alive(en))dmg(en.id,15)});fireline--;log('화염선이 적을 태웠다.')}west++;turn++;ap=3;render();skills();check()}
-function check(){if(!alive(get('ardel'))||morale<=0)return end(false,'지휘관이 전투를 지속할 수 없습니다.');if(west>=4)return end(true,'서부군이 충분한 시간을 확보했습니다.');if(turn>7)return end(west>=3,'전투 제한 시간이 끝났습니다.')}
+{id:'ardel',name:'아르델',role:'지휘관',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1},
+{id:'leon',name:'레온하르트',role:'전사 · 전선 유지',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1},
+{id:'sera',name:'세라',role:'전사 · 결투',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1},
+{id:'iris',name:'아이리스',role:'책사 · 전장 설계',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3},
+{id:'elios',name:'엘리오스',role:'정찰 · 정보',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4},
+{id:'archer',name:'적 궁병',role:'원거리',face:'🏹',lane:0,pos:4,hp:75,max:75,side:'enemy',range:3},
+{id:'heavy',name:'적 중보병',role:'전선',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1},
+{id:'commander',name:'적 지휘관',role:'지휘관',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2}];
+let turn=1,ap=3,morale=100,west=0,selected='ardel',mode='normal',marked=null,fireTurns=0,guardTurns=0;
+const $=id=>document.getElementById(id), log=t=>{$('log').innerHTML+='<div class="logline">'+t+'</div>';$('log').scrollTop=99999};
+const get=id=>chars.find(c=>c.id===id), alive=c=>c&&c.hp>0;
+function dist(a,b){return a.lane===b.lane?Math.abs(a.pos-b.pos):99}
+function enemyList(){return chars.filter(c=>c.side==='enemy'&&alive(c))}
+function allyList(){return chars.filter(c=>c.side==='ally'&&alive(c))}
+function dmg(id,n){let c=get(id);if(!alive(c))return;c.hp=Math.max(0,c.hp-n);log(c.name+'에게 '+n+' 피해');}
+function setMode(m){mode=m;render();skills()}
+function move(c,p){if(ap<1||p<0||p>4||p===c.pos)return false;let occupied=chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p);if(occupied)return false;c.pos=p;ap--;log(c.name+'이 '+(c.lane+1)+'번 전선에서 이동했다.');return true}
+function render(){
+document.querySelectorAll('.unit,.tile').forEach(e=>e.remove());
+for(let p=0;p<5;p++)for(let l=0;l<3;l++){let g=document.createElement('div');g.className='grid';g.style.left=(X[p]+41)+'px';$('field').appendChild(g)}
+if(mode==='move'&&alive(get(selected))){let c=get(selected);for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=1&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p)){let t=tile(c.lane,p,'move');$('field').appendChild(t)}}
+if(mode==='attack'&&alive(get(selected))){let c=get(selected);enemyList().filter(e=>dist(c,e)<=c.range).forEach(e=>{$('field').appendChild(tile(e.lane,e.pos,'target',()=>attack(e.id)))})}
+if(mode==='fire'&&alive(get(selected))){for(let p=0;p<5;p++){$('field').appendChild(tile(0,p,'fire',()=>fireAt(p)))}}
+chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="face">'+c.face+'</div><small>'+c.name+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/c.max*100)+'%"></i></div>';e.onclick=()=>{if(mode==='move'&&c.id===selected)return;if(mode!=='normal'&&c.side==='enemy'){if(mode==='attack')attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
+$('turn').textContent=turn+' / 7';$('ap').textContent=ap;$('morale').textContent=morale;$('time').textContent=west+' / 4';
+}
+function tile(l,p,cls,fn){let t=document.createElement('div');t.className='tile '+cls;t.style.left=X[p]+'px';t.style.top=Y[l]+'px';t.onclick=()=>{fn?fn():doMove(p)};return t}
+function doMove(p){let c=get(selected);if(alive(c)&&move(c,p)){mode='normal';render();skills();check()}}
+function attack(id){let a=get(selected),e=get(id);if(!alive(a)||!alive(e)||ap<1||dist(a,e)>a.range)return;ap--;let n=a.id==='sera'?38:a.id==='leon'?32:a.id==='elios'?20:a.id==='iris'?18:24;if(marked===e.id){n+=18;marked=null;log('정령 표식이 공격을 증폭했다.')}dmg(e.id,n);if(alive(e)&&e.range>=dist(e,a)&&e.hp>0){let counter=guardTurns?5:Math.max(4,Math.floor(n*.35));dmg(a.id,counter);log(e.name+'의 반격!')}mode='normal';render();skills();check()}
+function fireAt(p){if(ap<1)return;ap--;let hit=enemyList().filter(e=>e.lane===0&&Math.abs(e.pos-p)<=1);hit.forEach(e=>dmg(e.id,24));fireTurns=2;log('아이리스: 화염선이 북쪽 전선을 가른다. 이동이 제한된다.');mode='normal';render();skills();check()}
+function skills(){
+let c=get(selected);$('selected').textContent=c?.name||'—';$('role').textContent=c?.role||'';let arr=[];
+if(!alive(c)){ $('skills').innerHTML='';return }
+if(c.id==='ardel')arr=[['이동',1,()=>setMode('move')],['일반 공격',1,()=>setMode('attack')],['진형 유지',1,()=>{morale=Math.min(100,morale+12);guardTurns=1;log('아르델: 전열을 유지한다. 사기 +12, 방어 지휘')}],['전군 진격',2,()=>{west++;log('아르델: 전군 진격! 서부군 확보 시간 +1')}],['작전 변경',1,()=>{guardTurns=2;log('아르델: 작전을 변경한다. 다음 적 행동의 피해가 감소한다.')}];
+if(c.id==='leon')arr=[['이동',1,()=>setMode('move')],['일반 공격',1,()=>setMode('attack')],['방패벽',1,()=>{guardTurns=2;morale=Math.min(100,morale+8);log('레온하르트가 협곡 입구를 붙잡았다.')}],['할버드 돌파',2,()=>setMode('attack')];
+if(c.id==='sera')arr=[['이동',1,()=>setMode('move')],['일반 공격',1,()=>setMode('attack')],['강타',1,()=>setMode('attack')];
+if(c.id==='iris')arr=[['이동',1,()=>setMode('move')],['화염선',1,()=>setMode('fire')],['표식 폭발',1,()=>{if(marked&&alive(get(marked))){dmg(marked,50);marked=null}else log('아이리스: 폭발할 표식이 없습니다.')}],['전장 소각',3,()=>{enemyList().forEach(e=>dmg(e.id,30));fireTurns=2;log('아이리스: 전장 소각. 적의 이동 경로가 무너진다.')}];
+if(c.id==='elios')arr=[['이동',1,()=>setMode('move')],['정령의 화살',1,()=>setMode('attack')],['바람의 눈',1,()=>{log('엘리오스: 적 이동 경로와 매복 징후를 확인했습니다.');log('정보: 북쪽 적 궁병은 후퇴할 가능성이 있습니다.')}],['정령의 표식',1,()=>{let e=enemyList()[0];if(e){marked=e.id;log(e.name+'에게 정령의 표식. 다음 공격 강화.')}}],['위험 감지',1,()=>{log('엘리오스: 중앙 전열에 집중 공격 위험이 있습니다.')}]];
+$('skills').innerHTML=arr.map(x=>'<button class="skill" '+(ap<x[1]?'disabled':'')+' onclick="skillRun('+x[1]+',\''+x[0]+'\')"><b>'+x[0]+'</b><span>AP '+x[1]+'</span></button>').join('');
+window._actions=arr;
+$('hint').textContent=mode==='move'?'이동 가능한 칸을 선택하세요.':mode==='attack'?'공격 가능한 적을 직접 선택하세요.':mode==='fire'?'화염선을 놓을 위치를 선택하세요.':'아군을 선택하고 이동 또는 행동을 선택하세요.';
+}
+function skillRun(cost,name){let a=window._actions.find(x=>x[0]===name);if(!a||ap<cost)return;ap-=cost;a[2]();if(mode==='normal'){render();skills();check()}}
+function enemyTurn(){
+log('<b>— 적 행동 —</b>');
+enemyList().forEach(e=>{let targets=allyList().sort((a,b)=>dist(e,a)-dist(e,b));let t=targets[0];if(!t)return;
+if(fireTurns&&e.lane===0){log(e.name+'이 화염선을 피해 이동을 시도한다.');if(e.pos>0)e.pos--;return}
+if(dist(e,t)<=e.range){let n=e.id==='archer'?12:e.id==='commander'?16:18;if(guardTurns)n=Math.max(4,n-7);dmg(t.id,n)}
+else if(e.pos>0){let np=e.pos-1;if(!chars.some(x=>alive(x)&&x.pos===np&&x.lane===e.lane)){e.pos=np;log(e.name+'이 전진했다.')}}});
+if(fireTurns)fireTurns--;guardTurns=0;west++;turn++;ap=3;mode='normal';render();skills();check()
+}
+function check(){if(!alive(get('ardel'))||morale<=0)return end(false,'아르델의 지휘가 무너졌습니다.');if(west>=4)return end(true,'서부군이 안전하게 이동할 시간을 확보했습니다.');if(turn>7)return end(false,'시간이 다했습니다. 확보한 시간: '+west+'턴');if(!enemyList().length)return end(true,'적 전력이 붕괴했습니다.')}
 function end(win,text){$('resultTitle').textContent=win?'전투 성공':'전투 실패';$('resultText').textContent=text;$('overlay').style.display='flex'}
-chars.forEach(c=>{if(c.side==='ally'){}});document.querySelectorAll('#field').forEach(()=>{});$('end').onclick=()=>{if(ap!==3){log('턴을 종료합니다.');enemyTurn()}else enemyTurn()};render();skills();log('아이리스: 적의 배치는 너무 정직합니다. 미끼일 가능성이 있습니다.');log('엘리오스: 북쪽 숲에서 이동 흔적을 확인했습니다.');log('아르델: 두 의견을 듣고 내가 결정한다.');
+$('end').onclick=()=>enemyTurn();
+render();skills();log('아이리스: 적의 배치는 너무 정직합니다. 미끼일 가능성이 있습니다.');log('엘리오스: 북쪽 숲에서 이동 흔적을 확인했습니다.');log('아르델: 두 의견을 듣고 내가 결정한다.');
 </script></body></html>
