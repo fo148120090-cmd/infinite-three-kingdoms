@@ -26,21 +26,21 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 <script>
 const W=82, X=[18,112,206,300,394], Y=[18,128,238];
 const chars=[
-{id:'ardel',name:'아르델',role:'지휘관',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1,move:2},
-{id:'leon',name:'레온하르트',role:'전사 · 전선 유지',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1,move:2},
-{id:'sera',name:'세라',role:'전사 · 결투',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1,move:3},
-{id:'iris',name:'아이리스',role:'책사 · 전장 설계',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3,move:2},
-{id:'elios',name:'엘리오스',role:'정찰 · 정보',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4,move:3},
-{id:'archer',name:'적 궁병',role:'원거리',face:'🏹',lane:0,pos:4,hp:75,max:75,side:'enemy',range:3,move:2},
-{id:'heavy',name:'적 중보병',role:'전선',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1,move:1},
-{id:'commander',name:'적 지휘관',role:'지휘관',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2,move:2}];
+{id:'ardel',name:'아르델',role:'지휘관',type:'보병',face:'👩🏻‍⚔️',lane:1,pos:0,hp:100,max:100,side:'ally',range:1,move:2},
+{id:'leon',name:'레온하르트',role:'전사 · 전선 유지',type:'보병',face:'🐯',lane:1,pos:1,hp:125,max:125,side:'ally',range:1,move:2},
+{id:'sera',name:'세라',role:'전사 · 결투',type:'기병',face:'⚔️',lane:0,pos:0,hp:95,max:95,side:'ally',range:1,move:3},
+{id:'iris',name:'아이리스',role:'책사 · 전장 설계',type:'책사',face:'🔥',lane:2,pos:0,hp:85,max:85,side:'ally',range:3,move:2},
+{id:'elios',name:'엘리오스',role:'정찰 · 정보',type:'궁병',face:'🏹',lane:0,pos:1,hp:80,max:80,side:'ally',range:4,move:3},
+{id:'archer',name:'적 궁병',role:'원거리',type:'궁병',face:'🏹',lane:0,pos:4,hp:75,max:75,side:'enemy',range:3,move:2},
+{id:'heavy',name:'적 중보병',role:'전선',type:'보병',face:'🛡️',lane:1,pos:4,hp:125,max:125,side:'enemy',range:1,move:1},
+{id:'commander',name:'적 지휘관',role:'지휘관',type:'보병',face:'👹',lane:2,pos:4,hp:105,max:105,side:'enemy',range:2,move:2}];
 let turn=1,ap=5,morale=100,west=0,selected='ardel',mode='normal',marked=null,fireTurns=0,guardTurns=0;
 const $=id=>document.getElementById(id), log=t=>{$('log').innerHTML+='<div class="logline">'+t+'</div>';$('log').scrollTop=99999};
 const get=id=>chars.find(c=>c.id===id), alive=c=>c&&c.hp>0;
 function dist(a,b){return a.lane===b.lane?Math.abs(a.pos-b.pos):99}
 function enemyList(){return chars.filter(c=>c.side==='enemy'&&alive(c))}
 function allyList(){return chars.filter(c=>c.side==='ally'&&alive(c))}
-function dmg(id,n){let c=get(id);if(!alive(c))return;c.hp=Math.max(0,c.hp-n);if(c.id==='commander')$('morale').textContent=c.hp;log(c.name+'에게 '+n+' 피해');}
+function advantage(a,e){if(!a||!e||a.type==='책사'||e.type==='책사')return 1;if(a.type==='기병'&&e.type==='궁병')return 1.2;if(a.type==='궁병'&&e.type==='보병')return 1.2;if(a.type==='보병'&&e.type==='기병')return 1.2;return 1}\nfunction dmg(id,n){let c=get(id);if(!alive(c))return;c.hp=Math.max(0,c.hp-n);if(c.id==='commander')$('morale').textContent=c.hp;log(c.name+'에게 '+n+' 피해');}
 function setMode(m){mode=m;render();skills()}
 function canAct(c){return alive(c)&&!c.acted}
 function move(c,p){if(!canAct(c)||c.moved||p<0||p>4||p===c.pos||Math.abs(p-c.pos)>c.move)return false;let occupied=chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p);if(occupied)return false;c.pos=p;c.moved=true;log(c.name+'이 '+(c.lane+1)+'번 전선에서 이동했다.');return true}
@@ -56,15 +56,15 @@ $('turn').textContent=turn+' / 15';$('ap').textContent=allyList().filter(c=>!c.a
 function tile(l,p,cls,fn){let t=document.createElement('div');t.className='tile '+cls;t.style.left=X[p]+'px';t.style.top=Y[l]+'px';t.onclick=()=>{fn?fn():doMove(p)};return t}
 function doMove(p){let c=get(selected);if(move(c,p)){mode='normal';render();skills();check()}}
 function finishAction(c){c.acted=true;mode='normal';render();skills();check()}
-function attack(id){let a=get(selected),e=get(id);if(!canAct(a)||!alive(e)||dist(a,e)>a.range)return;let n=a.id==='sera'?38:a.id==='leon'?32:a.id==='elios'?20:a.id==='iris'?18:24;if(marked===e.id){n+=18;marked=null;log('정령 표식이 공격을 증폭했다.')}dmg(e.id,n);if(alive(e)&&e.range>=dist(e,a)){let counter=Math.max(4,Math.floor(n*.35));dmg(a.id,counter);log(e.name+'의 반격!')}finishAction(a)}
+function attack(id){let a=get(selected),e=get(id);if(!canAct(a)||!alive(e)||dist(a,e)>a.range)return;let n=a.id==='sera'?38:a.id==='leon'?32:a.id==='elios'?20:a.id==='iris'?18:24;let adv=advantage(a,e);if(adv>1){n=Math.floor(n*adv);log(a.name+'의 병종 상성 우위! 피해가 증가했다.')}if(marked===e.id){n+=18;marked=null;log('정령 표식이 공격을 증폭했다.')}dmg(e.id,n);if(alive(e)&&e.range>=dist(e,a)){let counter=Math.max(4,Math.floor(n*.35));dmg(a.id,counter);log(e.name+'의 반격!')}finishAction(a)}
 function fireAt(p){let a=get(selected);if(!canAct(a))return;let hit=enemyList().filter(e=>e.lane===0&&Math.abs(e.pos-p)<=1);hit.forEach(e=>dmg(e.id,24));fireTurns=2;log('아이리스: 화염선으로 적의 이동로를 차단한다.');finishAction(a)}
 function skills(){
 let c=get(selected);$('selected').textContent=c?.name||'—';$('role').textContent=c?.role||'';let arr=[];
 if(!canAct(c)){ $('skills').innerHTML='<div class="sub">이 장수는 이번 턴 행동을 완료했습니다. 다른 장수를 선택하세요.</div>';return}
 if(c.id==='ardel')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['진형 유지',0,()=>{guardTurns=1;log('아르델: 전열을 유지한다. 다음 적 공격을 경감한다.');finishAction(c)}],['전군 진격',0,()=>{c.lane=Math.max(0,c.lane-1);log('아르델: 전군 진격! 아군의 공격 대형을 전진시킨다.');finishAction(c)}],['작전 변경',0,()=>{guardTurns=2;log('아르델: 작전을 변경한다. 다음 적 행동의 피해가 감소한다.');finishAction(c)}]];
-if(c.id==='leon')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['방패벽',0,()=>{guardTurns=2;log('레온하르트가 방패벽을 세운다. 다음 두 적 공격을 경감한다.');finishAction(c)}],['할버드 돌파',0,()=>setMode('attack')];
-if(c.id==='sera')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['강타',0,()=>setMode('attack')];
-if(c.id==='iris')arr=[['이동',0,()=>setMode('move')],['화염선',0,()=>setMode('fire')],['표식 폭발',0,()=>{if(marked&&alive(get(marked))){dmg(marked,50);marked=null;finishAction(c)}else log('아이리스: 폭발할 표식이 없습니다.')}],['전장 소각',0,()=>{enemyList().forEach(e=>dmg(e.id,30));fireTurns=2;log('아이리스: 전장 소각. 넓은 범위를 공격한다.');finishAction(c)}];
+if(c.id==='leon')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['방패벽',0,()=>{guardTurns=2;log('레온하르트가 방패벽을 세운다. 다음 두 적 공격을 경감한다.');finishAction(c)}],['할버드 돌파',0,()=>setMode('attack')]];
+if(c.id==='sera')arr=[['이동',0,()=>setMode('move')],['일반 공격',0,()=>setMode('attack')],['강타',0,()=>setMode('attack')]];
+if(c.id==='iris')arr=[['이동',0,()=>setMode('move')],['화염선',0,()=>setMode('fire')],['표식 폭발',0,()=>{if(marked&&alive(get(marked))){dmg(marked,50);marked=null;finishAction(c)}else log('아이리스: 폭발할 표식이 없습니다.')}],['전장 소각',0,()=>{enemyList().forEach(e=>dmg(e.id,30));fireTurns=2;log('아이리스: 전장 소각. 넓은 범위를 공격한다.');finishAction(c)}]];
 if(c.id==='elios')arr=[['이동',0,()=>setMode('move')],['정령의 화살',0,()=>setMode('attack')],['바람의 눈',0,()=>{log('엘리오스: 적의 위치와 이동 경로를 확인했다.');finishAction(c)}],['정령의 표식',0,()=>{let e=enemyList()[0];if(e){marked=e.id;log(e.name+'에게 정령의 표식. 다음 공격 강화.');finishAction(c)}}],['위험 감지',0,()=>{log('엘리오스: 다음 적 공격의 위험 지점을 포착했다.');finishAction(c)}]];
 $('skills').innerHTML=arr.map(x=>'<button class="skill" onclick="skillRun(\\''+x[0]+'\\')"><b>'+x[0]+'</b><span>행동 1회</span></button>').join('');
 window._actions=arr;
