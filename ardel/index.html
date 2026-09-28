@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 메인 로비 v0.12.0</title>
+<title>ARDEL — 메인 로비 v0.12.2</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -24,7 +24,7 @@ header{padding:14px 16px;display:flex;justify-content:space-between;border-botto
 #hint{min-height:18px;color:#ffd166;font-size:12px;margin-top:7px}
 .roster{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rosterCard{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:10px;cursor:pointer}.rosterCard.sel{border-color:#ffd166}.portrait{font-size:34px;float:right}.bar{height:6px;background:#111;border-radius:6px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:#57d17a}.detail{background:#0d131c;border:1px solid #3d4b5d;border-radius:12px;padding:12px}.tag{display:inline-block;padding:3px 7px;border-radius:8px;background:#202b38;font-size:11px;margin:2px}
 </style></head><body><div id="app">
-<header><div><div class="title">ARDEL <span style="font-size:11px;color:#9ca9b8;font-weight:600">v0.12.0</span></div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
+<header><div><div class="title">ARDEL <span style="font-size:11px;color:#9ca9b8;font-weight:600">v0.12.2</span></div><div class="sub">불타는 협곡</div></div><div class="sub" id="headerMode">메인 로비</div></header>
 <div id="lobby" class="screen active">
 <div class="lobbyHero"><div class="heroName">ARDEL</div><img class="referenceImg" src="https://origin.dzogame.vn/picture.dzogame.vn/aspicturewebsite/img/rotk-the-legend-of-caocao-tactics-3_pp_124.jpg" alt="전술 RPG 참고 이미지" onerror="this.style.display='none'"><div class="heroSub">결정하는 자가 아니라, 그 결과를 짊어지는 자.</div><div style="margin-top:130px"><b>제1장 · 불타는 협곡</b><div class="sub">서부군이 후퇴할 시간을 확보하라.</div></div></div>
 <div class="panel progress"><div><b>아르델</b><div class="sub">지휘관 · Lv. 1</div></div><div class="gold">◆ 1,000</div></div>
@@ -71,9 +71,7 @@ function startStory(){showScreen('story')}
 function showEquipment(){showScreen('equipment');renderEquipment()}
 function renderEquipment(){const grid=$('equipRoster');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectEquipment(&quot;'+c.id+'&quot;)"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div></div>').join('');renderEquipmentDetail()}
 function selectEquipment(id){selected=id;renderEquipment()}
-function renderEquipmentDetail(){const c=get(selected)||chars[0];$('equipDetail').innerHTML='<div style="font-size:24px"><b>'+c.name+'</b></div><div class="sub" style="margin-top:4px">'+c.role+' · '+c.type+'</div><div class="equipGrid" style="margin-top:10px"><div class="equipCard"><div style="font-size:24px">⚔️</div><b>무기</b><div class="sub">초급 철검 · 공격 +5</div></div><div class="equipCard"><div style="font-size:24px">🛡️</div><b>방어구</b><div class="sub">초급 갑옷 · 방어 +5</div></div><div class="equipCard"><div style="font-size:24px">💠</div><b>보조</b><div class="sub">초급 부적 · HP +10</div></div></div><p style="font-size:11px;color:#9ca9b8;margin-bottom:0">현재는 장비 화면과 슬롯 구조를 먼저 구현합니다. 다음 단계에서 실제 장비 데이터와 전투 능력치 연동을 추가합니다.</p>}
-
-
+function renderEquipmentDetail(){const c=get(selected)||chars[0];const d=$('equipDetail');d.innerHTML='';const title=document.createElement('div');title.style.fontSize='24px';title.innerHTML='<b>'+c.name+'</b>';d.appendChild(title);const sub=document.createElement('div');sub.className='sub';sub.style.marginTop='4px';sub.textContent=c.role+' · '+c.type;d.appendChild(sub);const grid=document.createElement('div');grid.className='equipGrid';grid.style.marginTop='10px';[['⚔️','무기','초급 철검 · 공격 +5'],['🛡️','방어구','초급 갑옷 · 방어 +5'],['💠','보조','초급 부적 · HP +10']].forEach(x=>{const card=document.createElement('div');card.className='equipCard';card.innerHTML='<div style="font-size:24px">'+x[0]+'</div><b>'+x[1]+'</b><div class="sub">'+x[2]+'</div>';grid.appendChild(card)});d.appendChild(grid);const note=document.createElement('p');note.style.cssText='font-size:11px;color:#9ca9b8;margin-bottom:0';note.textContent='현재는 장비 화면과 슬롯 구조를 먼저 구현합니다. 다음 단계에서 실제 장비 데이터와 전투 능력치 연동을 추가합니다.';d.appendChild(note)}
 function bindLobbyButtons(){const rb=$('rosterBtn'),eb=$('equipmentBtn');if(rb)rb.addEventListener('click',showRoster);if(eb)eb.addEventListener('click',showEquipment)}
 function showRoster(){showScreen('roster');renderRoster()}
 function renderRoster(){const grid=$('rosterGrid');grid.innerHTML=chars.filter(c=>c.side==='ally').map(c=>'<div class="rosterCard '+(c.id===selected?'sel':'')+'" onclick="selectRoster(&quot;'+c.id+'&quot;)"><div class="portrait">'+c.face+'</div><b>'+c.name+'</b><div class="sub">Lv. 1 · '+c.role+'</div><span class="tag">'+c.type+'</span><span class="tag">이동 '+c.move+'</span><span class="tag">사거리 '+c.range+'</span><div class="bar"><i style="width:'+Math.round(c.hp/c.max*100)+'%"></i></div></div>').join('');renderRosterDetail()}
