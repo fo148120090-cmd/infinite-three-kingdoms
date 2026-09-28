@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 메인 로비 v0.28.0</title>
+<title>ARDEL — 메인 로비 v0.29.0</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:1180px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -102,32 +102,33 @@ function showDeath(c){const u=[...document.querySelectorAll('.unit')].find(x=>x.
 function showDamage(c,n){let el=document.createElement('div');el.className='damageFloat';el.textContent='-'+n;el.style.left=(X[c.pos]+48)+'px';el.style.top=(Y[c.lane]+8)+'px';$('field').appendChild(el);let u=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(c.name));if(u)u.classList.add('hitFlash');setTimeout(()=>el.remove(),700);setTimeout(()=>u?.classList.remove('hitFlash'),250)}
 function setMode(m){mode=m;render();skills()}
 function canAct(c){return alive(c)&&!c.acted}
-function move(c,p){if(!canAct(c)||c.moved||p<0||p>4||p===c.pos||Math.abs(p-c.pos)>c.move)return false;let occupied=chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p);if(occupied)return false;c.pos=p;c.moved=true;log(c.name+'이 '+(c.lane+1)+'번 전선에서 이동했다.');return true}
+function gridDist(a,b){return Math.abs(a.lane-b.lane)+Math.abs(a.pos-b.pos)}
+function move(c,l,p){if(!canAct(c)||c.moved||l<0||l>2||p<0||p>4||(l===c.lane&&p===c.pos)||gridDist(c,{lane:l,pos:p})>c.move)return false;let occupied=chars.some(x=>alive(x)&&x.id!==c.id&&x.lane===l&&x.pos===p);if(occupied)return false;c.lane=l;c.pos=p;c.moved=true;log(c.name+'이 '+(l+1)+'번 전선의 '+(p+1)+'칸으로 이동했다.');return true}
 function render(){
 document.querySelectorAll('.unit,.tile,.cell').forEach(e=>e.remove());
 let c=get(selected);
 for(let l=0;l<3;l++)for(let p=0;p<5;p++){
   let cell=document.createElement('div');cell.className='cell';cell.style.left=X[p]+'px';cell.style.top=Y[l]+'px';
   if(c&&canAct(c)){
-    if(mode==='move'&&l===c.lane&&!c.moved&&p!==c.pos&&Math.abs(p-c.pos)<=c.move&&!chars.some(x=>alive(x)&&x.lane===l&&x.pos===p))cell.classList.add('move');
+    if(mode==='move'&&!c.moved&&gridDist(c,{lane:l,pos:p})<=c.move&&(l!==c.lane||p!==c.pos)&&!chars.some(x=>alive(x)&&x.lane===l&&x.pos===p))cell.classList.add('move');
     if(mode==='attack'||mode==='skill'){
       let range=mode==='skill'?(window._skillRange||c.range):c.range;
-      if(l===c.lane&&Math.abs(p-c.pos)<=range&&p!==c.pos)cell.classList.add('range');
+      if(gridDist(c,{lane:l,pos:p})<=range&&(l!==c.lane||p!==c.pos))cell.classList.add('range');
     }
     if(mode==='fire'&&l===0)cell.classList.add('fire');
   }
   $('field').appendChild(cell);
 }
 if(mode==='move'&&c&&canAct(c)&&!c.moved){for(let p=0;p<5;p++)if(Math.abs(p-c.pos)<=c.move&&p!==c.pos&&!chars.some(x=>alive(x)&&x.lane===c.lane&&x.pos===p))$('field').appendChild(tile(c.lane,p,'move'))}
-if((mode==='attack'||mode==='skill')&&c&&canAct(c)){let range=mode==='skill'?(window._skillRange||c.range):c.range;enemyList().filter(e=>dist(c,e)<=range).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>mode==='skill'?resolveSkillAttack(e.id):attack(e.id))))}
+if((mode==='attack'||mode==='skill')&&c&&canAct(c)){let range=mode==='skill'?(window._skillRange||c.range):c.range;enemyList().filter(e=>gridDist(c,e)<=range).forEach(e=>$('field').appendChild(tile(e.lane,e.pos,'target',()=>mode==='skill'?resolveSkillAttack(e.id):attack(e.id))))}
 if(mode==='fire'&&c&&canAct(c)){for(let p=0;p<5;p++)$('field').appendChild(tile(0,p,'fire',()=>fireAt(p)))}
 chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'')+(c.acted?' acted':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="spriteBadge '+(c.side==='enemy'?'enemyBadge':'')+'">'+c.type+'</div><div class="face">'+c.face+'</div><small>'+c.name+(c.acted?' · 행동완료':'')+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/effectiveMax(c)*100)+'%"></i></div>';e.onclick=()=>{if((mode==='attack'||mode==='skill')&&c.side==='enemy'){if(mode==='skill')resolveSkillAttack(c.id);else attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
 $('turn').textContent=turn+' / 15';$('ap').textContent=allyList().filter(c=>!c.acted).length;$('morale').textContent=get('commander')?.hp||0;$('time').textContent='진행';
 }
 function tile(l,p,cls,fn){let t=document.createElement('div');t.className='tile '+cls;t.style.left=X[p]+'px';t.style.top=Y[l]+'px';t.onclick=()=>{fn?fn():doMove(p)};return t}
-function doMove(p){let c=get(selected);if(move(c,p)){mode='normal';render();skills();check()}}
+function doMove(l,p){let c=get(selected);if(move(c,l,p)){mode='normal';render();skills();check()}}
 function finishAction(c){c.acted=true;mode='normal';render();skills();check()}
-function skillAttack(a,e,power,allowCounter=true){if(!canAct(a)||!alive(e)||dist(a,e)>a.range)return false;let n=Math.floor(stat(a,'atk')*power);let adv=advantage(a,e);if(adv>1){n=Math.floor(n*adv);log(a.name+'의 병종 상성 우위! 피해가 증가했다.')}if(marked===e.id){n+=18;marked=null;log('정령 표식이 공격을 증폭했다.')}dmg(e.id,n);if(allowCounter&&alive(e)&&e.range>=dist(e,a)){let counter=Math.max(4,Math.floor(n*.35));const au=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(a.name));if(au)au.classList.add('counterShake');dmg(a.id,counter);log(e.name+'의 반격!');setTimeout(()=>au?.classList.remove('counterShake'),300)}return true}
+function skillAttack(a,e,power,allowCounter=true){if(!canAct(a)||!alive(e)||gridDist(a,e)>a.range)return false;let n=Math.floor(stat(a,'atk')*power);let adv=advantage(a,e);if(adv>1){n=Math.floor(n*adv);log(a.name+'의 병종 상성 우위! 피해가 증가했다.')}if(marked===e.id){n+=18;marked=null;log('정령 표식이 공격을 증폭했다.')}dmg(e.id,n);if(allowCounter&&alive(e)&&e.range>=gridDist(e,a)){let counter=Math.max(4,Math.floor(n*.35));const au=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(a.name));if(au)au.classList.add('counterShake');dmg(a.id,counter);log(e.name+'의 반격!');setTimeout(()=>au?.classList.remove('counterShake'),300)}return true}
 function attack(id){let a=get(selected),e=get(id);if(!canAct(a)||!alive(e)||dist(a,e)>a.range)return false;animateAttack(a,e,()=>{skillAttack(a,e,1);if(alive(a))finishAction(a)});return true}
 function skillEffect(a,e){const u=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(a.name));if(u){u.classList.add('skillCast');setTimeout(()=>u.classList.remove('skillCast'),320)}const el=document.createElement('div');el.className='skillBurst';el.textContent=a.id==='iris'?'🔥':a.id==='elios'?'➤':a.id==='sera'?'⚔️':a.id==='leon'?'◆':'✦';el.style.left=(X[e.pos]+42)+'px';el.style.top=(Y[e.lane]+18)+'px';$('field').appendChild(el);setTimeout(()=>el.remove(),430);const line=document.createElement('div');line.className='skillLine';line.style.left=(X[a.pos]+58)+'px';line.style.top=(Y[a.lane]+46)+'px';line.style.width=Math.max(28,Math.abs(X[e.pos]-X[a.pos]))+'px';line.style.transform='rotate('+(e.pos>=a.pos?0:180)+'deg)';line.style.background=a.id==='iris'?'#ff704d':a.id==='elios'?'#8be9ff':a.id==='sera'?'#f0d7b0':'#b8c7ff';$('field').appendChild(line);setTimeout(()=>line.remove(),350)}
 function showAoe(e,radius){for(let l=0;l<3;l++)for(let p=0;p<5;p++)if(Math.abs(l-e.lane)+Math.abs(p-e.pos)<=radius){let cell=document.createElement('div');cell.className='cell aoeCell';cell.style.left=X[p]+'px';cell.style.top=Y[l]+'px';$('field').appendChild(cell)}}
@@ -150,7 +151,7 @@ $('hint').textContent=mode==='move'?'파란 칸은 이동 범위입니다. 이�
 function skillRun(name){let a=window._actions.find(x=>x[0]===name);if(!a)return;a[2]();if(mode==='normal'){render();skills();check()}}
 function enemyTurn(){
 log('<b>— 적군 행동 —</b>');
-enemyList().forEach(e=>{if(fireTurns&&e.lane===0&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}let targets=allyList().sort((a,b)=>dist(e,a)-dist(e,b));let t=targets[0];if(!t)return;if(dist(e,t)<=e.range){let n=e.id==='archer'?12:e.id==='commander'?16:18;if(guardTurns)n=Math.max(4,n-7);dmg(t.id,n)}else if(e.pos>0){let np=e.pos-1;if(!chars.some(x=>alive(x)&&x.pos===np&&x.lane===e.lane)){e.pos=np;log(e.name+'이 전진했다.');if(dist(e,t)<=e.range){let n=e.id==='archer'?12:e.id==='commander'?16:18;dmg(t.id,n)}}}});
+enemyList().forEach(e=>{if(fireTurns&&e.lane===0&&e.pos>0){e.pos--;log(e.name+'이 화염선을 피해 이동했다.');return}let targets=allyList().sort((a,b)=>gridDist(e,a)-gridDist(e,b));let t=targets[0];if(!t)return;if(gridDist(e,t)<=e.range){let n=e.id==='archer'?12:e.id==='commander'?16:18;if(guardTurns)n=Math.max(4,n-7);dmg(t.id,n)}else{let candidates=[];if(e.lane>0)candidates.push({lane:e.lane-1,pos:e.pos});if(e.lane<2)candidates.push({lane:e.lane+1,pos:e.pos});if(e.pos>0)candidates.push({lane:e.lane,pos:e.pos-1});if(e.pos<4)candidates.push({lane:e.lane,pos:e.pos+1});candidates=candidates.filter(q=>!chars.some(x=>alive(x)&&x.lane===q.lane&&x.pos===q.pos)).sort((a,b)=>gridDist(a,t)-gridDist(b,t));if(candidates.length){e.lane=candidates[0].lane;e.pos=candidates[0].pos;log(e.name+'이 전술 격자를 따라 이동했다.');if(gridDist(e,t)<=e.range){let n=e.id==='archer'?12:e.id==='commander'?16:18;if(guardTurns)n=Math.max(4,n-7);dmg(t.id,n)}}}});
 if(fireTurns)fireTurns--;guardTurns=0;
 chars.filter(c=>c.side==='ally').forEach(c=>{c.acted=false;c.moved=false});
 turn++;mode='normal';render();skills();check()
