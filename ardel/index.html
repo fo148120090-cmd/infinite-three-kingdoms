@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ARDEL — 메인 로비 v0.29.0</title>
+<title>ARDEL — 메인 로비 v0.29.1</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090d13;color:#eef2f7;font-family:system-ui,-apple-system,sans-serif}button{font:inherit}
 #app{max-width:1180px;margin:auto;min-height:100vh;background:linear-gradient(#18202b,#0c1119);padding-bottom:18px}
@@ -125,7 +125,7 @@ if(mode==='fire'&&c&&canAct(c)){for(let p=0;p<5;p++)$('field').appendChild(tile(
 chars.forEach(c=>{if(!alive(c))return;let e=document.createElement('div');e.className='unit '+(c.side==='enemy'?'enemy ':'')+(c.id===selected?'sel':'')+(c.acted?' acted':'');e.style.left=X[c.pos]+'px';e.style.top=Y[c.lane]+'px';e.innerHTML='<div class="spriteBadge '+(c.side==='enemy'?'enemyBadge':'')+'">'+c.type+'</div><div class="face">'+c.face+'</div><small>'+c.name+(c.acted?' · 행동완료':'')+'</small><div class="hp"><i style="width:'+Math.max(0,c.hp/effectiveMax(c)*100)+'%"></i></div>';e.onclick=()=>{if((mode==='attack'||mode==='skill')&&c.side==='enemy'){if(mode==='skill')resolveSkillAttack(c.id);else attack(c.id);return}if(c.side==='ally'){selected=c.id;mode='normal';render();skills()}};$('field').appendChild(e)});
 $('turn').textContent=turn+' / 15';$('ap').textContent=allyList().filter(c=>!c.acted).length;$('morale').textContent=get('commander')?.hp||0;$('time').textContent='진행';
 }
-function tile(l,p,cls,fn){let t=document.createElement('div');t.className='tile '+cls;t.style.left=X[p]+'px';t.style.top=Y[l]+'px';t.onclick=()=>{fn?fn():doMove(p)};return t}
+function tile(l,p,cls,fn){let t=document.createElement('div');t.className='tile '+cls;t.style.left=X[p]+'px';t.style.top=Y[l]+'px';t.onclick=()=>{fn?fn():doMove(l,p)};return t}
 function doMove(l,p){let c=get(selected);if(move(c,l,p)){mode='normal';render();skills();check()}}
 function finishAction(c){c.acted=true;mode='normal';render();skills();check()}
 function skillAttack(a,e,power,allowCounter=true){if(!canAct(a)||!alive(e)||gridDist(a,e)>a.range)return false;let n=Math.floor(stat(a,'atk')*power);let adv=advantage(a,e);if(adv>1){n=Math.floor(n*adv);log(a.name+'의 병종 상성 우위! 피해가 증가했다.')}if(marked===e.id){n+=18;marked=null;log('정령 표식이 공격을 증폭했다.')}dmg(e.id,n);if(allowCounter&&alive(e)&&e.range>=gridDist(e,a)){let counter=Math.max(4,Math.floor(n*.35));const au=[...document.querySelectorAll('.unit')].find(x=>x.querySelector('small')?.textContent.startsWith(a.name));if(au)au.classList.add('counterShake');dmg(a.id,counter);log(e.name+'의 반격!');setTimeout(()=>au?.classList.remove('counterShake'),300)}return true}
